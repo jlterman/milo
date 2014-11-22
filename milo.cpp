@@ -33,7 +33,7 @@ public:
 
 	static NodePtr parse(Parser& p, NodePtr one);
 
-private:
+protected:
 	NodePtr m_first;
 	NodePtr m_second;
 	char m_op;
@@ -44,6 +44,8 @@ class Divide : public Binary
 public:
 	Divide(NodePtr one, NodePtr two) : Binary('/', one, two) {}
 	~Divide() {}
+
+	ostream& xml_out(ostream& os) const;
 };
 
 class Power : public Binary
@@ -51,6 +53,8 @@ class Power : public Binary
 public:
 	Power(NodePtr one, NodePtr two) : Binary('^', one, two) {}
 	~Power() {}
+
+	ostream& xml_out(ostream& os) const;
 };
 
 class Function : public Node
@@ -61,6 +65,7 @@ public:
 
 	static NodePtr parse(Parser& p);
 	string toString() { return "\033[32m" + m_name + "\033[30m" + m_arg->toString(); }
+	ostream& xml_out(ostream& os) const;
 
 	Function(const string& name, func_ptr fp, NodePtr node) : 
 		Node(), m_name(name), m_func(fp), m_arg(node) {}
@@ -86,6 +91,7 @@ public:
 	~Variable() {}
 
 	string toString() { return string(string("") + m_name); }
+	ostream& xml_out(ostream& os) const;
 
 	static NodePtr parse(Parser& p);
 
@@ -103,6 +109,7 @@ public:
 	void getNumber(Parser& p);
 
 	string toString();
+	ostream& xml_out(ostream& os) const;
 
 	static NodePtr parse(Parser& p);
 
@@ -123,6 +130,7 @@ public:
 	static NodePtr parse(Parser& p);
 
 	string toString();
+	ostream& xml_out(ostream& os) const;
 
 private:
 	vector<NodePtr> factors;
@@ -137,12 +145,26 @@ public:
 	bool add(Parser& p);
 
 	string toString();
+	ostream& xml_out(ostream& os) const;
 
 	static NodePtr parse(Parser& p);
 
 private:
 	vector<NodePtr> terms;	
 };
+
+int Equation::xml_indent = 0;
+
+void Equation::indent(ostream& os) {
+	for (int i = 0; i < xml_indent; ++i) os << ' ';
+}
+
+void Equation::xml_out(ostream& os) {
+	clear_indent();
+	os << "<equation>" << endl; inc_indent();
+	os << m_root;
+	dec_indent(); os << "</equation>" << endl;
+}
 
 Equation::Equation(string eq) { 
 	Parser p(eq); 
@@ -217,6 +239,15 @@ NodePtr Function::parse(Parser& p) {
 	return nullptr;
 }
 
+ostream& Function::xml_out(ostream& os) const {
+	Equation::indent(os);   os << "<function name =\"" << m_name << "\"";
+	                        os << (getSign() ? ">" : " negative=\"true\">") << endl; 
+	Equation::inc_indent(); os << m_arg; 
+	Equation::dec_indent();
+	Equation::indent(os);   os << "</function>" << endl; 
+	return os;
+}
+
 NodePtr Binary::parse(Parser& p, NodePtr one)
 {
 	char c = p.peek();
@@ -228,6 +259,22 @@ NodePtr Binary::parse(Parser& p, NodePtr one)
 
 	return ( c == '/' ) ? NodePtr(new Divide(one, two)) : 
 		                  NodePtr(new Power(one, two));
+}
+
+ostream& Divide::xml_out(ostream& os) const {
+	Equation::indent(os);   os << "<divide" << (getSign() ? ">" : " negative=\"true\">") << endl; 
+	Equation::inc_indent(); os << m_first << m_second;
+	Equation::dec_indent();
+	Equation::indent(os);   os << "</divide>" << endl; 
+	return os;
+}
+
+ostream& Power::xml_out(ostream& os) const {
+	Equation::indent(os);   os << "<power" << (getSign() ? ">" : " negative=\"true\">") << endl;
+	Equation::inc_indent(); os << m_first << m_second;
+	Equation::dec_indent();
+	Equation::indent(os);   os << "</power>" << endl; 
+	return os;
 }
 
 char Parser::next()
@@ -255,6 +302,12 @@ NodePtr Variable::parse(Parser& p)
 	}
 	else
 		return nullptr;
+}
+
+ostream& Variable::xml_out(ostream& os) const {
+	Equation::indent(os);   os << "<variable name=\"" << m_name << "\"";
+	                        os << (getSign() ? "/>" : " negative=\"true\"/>") << endl;
+	return os;
 }
 
 NodePtr Number::parse(Parser& p)
@@ -335,6 +388,14 @@ string Number::toString()
 	return result;
 }
 
+ostream& Number::xml_out(ostream& os) const {
+	Equation::indent(os);
+	os << "<number real=\"" << m_value.real();
+	os << "\" imaginary=\"" << m_value.imag() << "\"";
+	os << (getSign() ? "/>" : " negative=\"true\"/>") << endl;
+	return os;
+}
+
 NodePtr Term::parse(Parser& p)
 {
 	char c = p.peek();
@@ -359,6 +420,15 @@ bool Term::add(Parser& p)
 	return true;
 }
 
+ostream& Term::xml_out(ostream& os) const {
+	Equation::indent(os); os << "<term" << (getSign() ? ">" : " negative=\"true\">") << endl;
+	Equation::inc_indent();
+	for ( auto n : factors ) { os << n; }
+	Equation::dec_indent();
+	Equation::indent(os); os << "</term>" << endl;
+	return os;
+}
+
 bool Expression::add(Parser& p)
 {
 	bool neg = false;
@@ -369,18 +439,30 @@ bool Expression::add(Parser& p)
 	NodePtr term = NodePtr( new Term(p) );
 	if (neg) term->negative();
 	terms.push_back(term);
-	return ( p.peek() != '\0' && p.peek() != ')' );
+	
+	if ( p.peek() == '\0' || p.peek() == ')' ) {
+		char c = p.next();
+		return false;
+	}
+	else
+		return true;
 }
 
 NodePtr Expression::parse(Parser& p) {
 	if (p.peek() != '(') return nullptr;
 	char c = p.next();
 	NodePtr node = NodePtr(new Expression(p));
-	c = p.next();
-	if ( c != ')' ) throw logic_error("bad format");
 	return node;
 }
 
+ostream& Expression::xml_out(ostream& os) const {
+	Equation::indent(os); os << "<expression" << (getSign() ? ">" : " negative=\"true\">") << endl;
+	Equation::inc_indent();
+	for ( auto n : terms ) { os << n; }
+	Equation::dec_indent();
+	Equation::indent(os); os << "</expression>" << endl;
+	return os;
+}
 
 string Term::toString()
 {
@@ -404,4 +486,6 @@ int main(int argc, char* argv[])
 {
 	Equation eqn(argv[1]);
 	cout << eqn.toString() << endl;
+	cout << "---------" << endl;
+	eqn.xml_out(cout);
 }

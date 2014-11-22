@@ -3,7 +3,7 @@ all: milo
 milo: milo.o
 	g++ -g -std=c++11 milo.o -o milo
 
-milo.o: milo.cpp
+milo.o: milo.cpp milo.h
 	g++ -g -std=c++11 milo.cpp -c
 
 test: test.o
