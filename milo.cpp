@@ -4,9 +4,33 @@
 #include <exception>
 #include <map>
 #include <limits>
+#include <initializer_list>
 #include "milo.h"
 
 using namespace std;
+
+class XML
+{
+public:
+	XML(ostream& os) : 
+		m_os(os), m_indent(2) { m_os << "<document>" << endl; }
+	~XML() { m_os << "</document>" << endl; }
+
+	void header(const string& tag, bool atomic, 
+				initializer_list<string>);
+
+	void header(const string& tag, bool atomic = false);
+
+	void footer(const string& tag);
+private:
+	vector<string> m_tags;
+	int m_indent;
+	ostream& m_os;
+
+	void print_indent(ostream& os) {
+		for (int i = 0; i < m_indent; ++i) m_os << ' ';
+	}
+};
 
 class Parser
 {
@@ -33,6 +57,8 @@ public:
 
 	static NodePtr parse(Parser& p, NodePtr one);
 
+	void xml_out(const string& tag, XML& xml) const;
+
 protected:
 	NodePtr m_first;
 	NodePtr m_second;
@@ -45,7 +71,7 @@ public:
 	Divide(NodePtr one, NodePtr two) : Binary('/', one, two) {}
 	~Divide() {}
 
-	ostream& xml_out(ostream& os) const;
+	void xml_out(XML& xml) const { Binary::xml_out("divide", xml); }
 };
 
 class Power : public Binary
@@ -54,7 +80,7 @@ public:
 	Power(NodePtr one, NodePtr two) : Binary('^', one, two) {}
 	~Power() {}
 
-	ostream& xml_out(ostream& os) const;
+	void xml_out(XML& xml) const { Binary::xml_out("power", xml); }
 };
 
 class Function : public Node
@@ -65,7 +91,7 @@ public:
 
 	static NodePtr parse(Parser& p);
 	string toString() { return "\033[32m" + m_name + "\033[30m" + m_arg->toString(); }
-	ostream& xml_out(ostream& os) const;
+	void xml_out(XML& xml) const;
 
 	Function(const string& name, func_ptr fp, NodePtr node) : 
 		Node(), m_name(name), m_func(fp), m_arg(node) {}
@@ -91,7 +117,7 @@ public:
 	~Variable() {}
 
 	string toString() { return string(string("") + m_name); }
-	ostream& xml_out(ostream& os) const;
+	void xml_out(XML& xml) const;
 
 	static NodePtr parse(Parser& p);
 
@@ -109,7 +135,7 @@ public:
 	void getNumber(Parser& p);
 
 	string toString();
-	ostream& xml_out(ostream& os) const;
+	void xml_out(XML& xml) const;
 
 	static NodePtr parse(Parser& p);
 
@@ -130,7 +156,7 @@ public:
 	static NodePtr parse(Parser& p);
 
 	string toString();
-	ostream& xml_out(ostream& os) const;
+	void xml_out(XML& xml) const;
 
 private:
 	vector<NodePtr> factors;
@@ -145,7 +171,7 @@ public:
 	bool add(Parser& p);
 
 	string toString();
-	ostream& xml_out(ostream& os) const;
+	void xml_out(XML& xml) const;
 
 	static NodePtr parse(Parser& p);
 
@@ -153,17 +179,55 @@ private:
 	vector<NodePtr> terms;	
 };
 
-int Equation::xml_indent = 0;
-
-void Equation::indent(ostream& os) {
-	for (int i = 0; i < xml_indent; ++i) os << ' ';
+void XML::header(const string& tag, bool atomic)
+{
+	print_indent(m_os);
+	m_os << "<" << tag << (atomic ? "/>" : ">") << endl;
+	if (!atomic) {
+		m_indent += 2;
+		m_tags.push_back(tag);
+	}
 }
 
-void Equation::xml_out(ostream& os) {
-	clear_indent();
-	os << "<equation>" << endl; inc_indent();
-	os << m_root;
-	dec_indent(); os << "</equation>" << endl;
+void XML::header(const string& tag, bool atomic, 
+				 initializer_list<string> children)
+{
+	print_indent(m_os);
+	m_os << "<" << tag;
+	if (children.size()%2 == 1) throw invalid_argument("odd xml tag pairs");
+	auto it = children.begin();
+	while ( it != children.end() ) {
+		string name = *it++;
+		string value = *it++;
+		m_os << " " << name << "=\""<< value << "\"";
+	}
+	if (atomic) {
+		m_os << "/>" << endl;
+		return;
+	}
+	m_os << ">" << endl;
+	m_indent += 2;
+	m_tags.push_back(tag);
+}
+
+void XML::footer(const string& tag)
+{
+	string close_tag;
+	do {
+		close_tag = m_tags.back(); m_tags.pop_back();
+
+		m_indent -= 2;
+		print_indent(m_os);
+		m_os << "</" << close_tag << ">" << endl;
+
+	}
+	while (close_tag.compare(tag) != 0);
+}
+
+void Equation::xml_out(XML& xml) {
+	xml.header("equation");
+	m_root->xml_out(xml);
+	xml.footer("equation");
 }
 
 Equation::Equation(string eq) { 
@@ -239,13 +303,13 @@ NodePtr Function::parse(Parser& p) {
 	return nullptr;
 }
 
-ostream& Function::xml_out(ostream& os) const {
-	Equation::indent(os);   os << "<function name =\"" << m_name << "\"";
-	                        os << (getSign() ? ">" : " negative=\"true\">") << endl; 
-	Equation::inc_indent(); os << m_arg; 
-	Equation::dec_indent();
-	Equation::indent(os);   os << "</function>" << endl; 
-	return os;
+void Function::xml_out(XML& xml) const {
+	if (getSign()) 
+		xml.header("function", false, {"name", m_name});
+	else
+		xml.header("function", false, {"name", m_name, "negative", "true"});
+	m_arg->xml_out(xml);
+	xml.footer("function");
 }
 
 NodePtr Binary::parse(Parser& p, NodePtr one)
@@ -261,20 +325,15 @@ NodePtr Binary::parse(Parser& p, NodePtr one)
 		                  NodePtr(new Power(one, two));
 }
 
-ostream& Divide::xml_out(ostream& os) const {
-	Equation::indent(os);   os << "<divide" << (getSign() ? ">" : " negative=\"true\">") << endl; 
-	Equation::inc_indent(); os << m_first << m_second;
-	Equation::dec_indent();
-	Equation::indent(os);   os << "</divide>" << endl; 
-	return os;
-}
-
-ostream& Power::xml_out(ostream& os) const {
-	Equation::indent(os);   os << "<power" << (getSign() ? ">" : " negative=\"true\">") << endl;
-	Equation::inc_indent(); os << m_first << m_second;
-	Equation::dec_indent();
-	Equation::indent(os);   os << "</power>" << endl; 
-	return os;
+void Binary::xml_out(const string& tag, XML& xml) const {
+	if (getSign()) 
+		xml.header(tag);
+	else 
+		xml.header(tag, false, { "negative", "true" });
+	
+	m_first->xml_out(xml);
+	m_second->xml_out(xml);
+	xml.footer(tag);
 }
 
 char Parser::next()
@@ -304,10 +363,12 @@ NodePtr Variable::parse(Parser& p)
 		return nullptr;
 }
 
-ostream& Variable::xml_out(ostream& os) const {
-	Equation::indent(os);   os << "<variable name=\"" << m_name << "\"";
-	                        os << (getSign() ? "/>" : " negative=\"true\"/>") << endl;
-	return os;
+void Variable::xml_out(XML& xml) const {
+	string name = string("") + m_name;
+	if (getSign()) 
+		xml.header("variable", true, {"name", name});
+	else
+		xml.header("variable", true, {"name", name, "negative", "true"});
 }
 
 NodePtr Number::parse(Parser& p)
@@ -388,12 +449,12 @@ string Number::toString()
 	return result;
 }
 
-ostream& Number::xml_out(ostream& os) const {
-	Equation::indent(os);
-	os << "<number real=\"" << m_value.real();
-	os << "\" imaginary=\"" << m_value.imag() << "\"";
-	os << (getSign() ? "/>" : " negative=\"true\"/>") << endl;
-	return os;
+void Number::xml_out(XML& xml) const {
+	xml.header("number", true, 
+			   { "real", to_string(m_value.real()),
+				 "imag", to_string(m_value.imag()),
+				 "negative", (getSign() ? "false" : "true") });
+					   
 }
 
 NodePtr Term::parse(Parser& p)
@@ -420,13 +481,14 @@ bool Term::add(Parser& p)
 	return true;
 }
 
-ostream& Term::xml_out(ostream& os) const {
-	Equation::indent(os); os << "<term" << (getSign() ? ">" : " negative=\"true\">") << endl;
-	Equation::inc_indent();
-	for ( auto n : factors ) { os << n; }
-	Equation::dec_indent();
-	Equation::indent(os); os << "</term>" << endl;
-	return os;
+void Term::xml_out(XML& xml) const {
+	if (getSign()) 
+		xml.header("term", false);
+	else 
+		xml.header("term", false, { "negative", "true" });
+
+	for ( auto n : factors ) { n->xml_out(xml); }
+	xml.footer("term");
 }
 
 bool Expression::add(Parser& p)
@@ -455,13 +517,14 @@ NodePtr Expression::parse(Parser& p) {
 	return node;
 }
 
-ostream& Expression::xml_out(ostream& os) const {
-	Equation::indent(os); os << "<expression" << (getSign() ? ">" : " negative=\"true\">") << endl;
-	Equation::inc_indent();
-	for ( auto n : terms ) { os << n; }
-	Equation::dec_indent();
-	Equation::indent(os); os << "</expression>" << endl;
-	return os;
+void Expression::xml_out(XML& xml) const {
+	if (getSign()) 
+		xml.header("expression", false);
+	else 
+		xml.header("expression", false, { "negative", "true" });
+
+	for ( auto n : terms ) { n->xml_out(xml); }
+	xml.footer("expression");
 }
 
 string Term::toString()
@@ -487,5 +550,6 @@ int main(int argc, char* argv[])
 	Equation eqn(argv[1]);
 	cout << eqn.toString() << endl;
 	cout << "---------" << endl;
-	eqn.xml_out(cout);
+	XML xml(cout);
+	eqn.xml_out(xml);
 }
