@@ -9,6 +9,7 @@ bool isZero(double x);
 bool isZero(Complex z);
 
 class XML;
+class DrawText;
 
 class Node
 {
@@ -20,8 +21,8 @@ public:
 	virtual std::string toString() const=0;
 	virtual void calcTermSize()=0;
 	virtual void calcTermOrig(int x, int y)=0;
-	virtual char asciiArt(int x, int y) const=0;
-	char asciiArtParenthesis(bool right, int y) const;
+	virtual void asciiArt(DrawText& draw) const=0;
+	void asciiArtParenthesis(DrawText& draw) const;
 
 	void negative() { m_sign = !m_sign; }
 	bool getSign() const { return m_sign; }
@@ -30,7 +31,6 @@ public:
 	int getTermSizeY() const { return termSize_y; }
 	int getTermOrigX() const { return termOrig_x; }
 	int getTermOrigY() const { return termOrig_y; }
-	bool insideNodeTerm(int x, int y) const;
 
 	void setTermSize(int x, int y) { termSize_x = x; termSize_y = y; }
 	void setTermOrig(int x, int y) { termOrig_x = x; termOrig_y = y; }
@@ -57,5 +57,17 @@ public:
 	void asciiArt(std::ostream& os) const;
 private:
 	NodePtr m_root;
+};
+
+class DrawText
+{
+public:
+    DrawText(int size_x, int size_y) : m_xSize(size_x), m_ySize(size_y) {}
+	~DrawText() {}
+
+	virtual void at(int x, int y, char c)=0;
+protected:
+	int m_xSize;
+	int m_ySize;
 };
 

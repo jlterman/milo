@@ -74,7 +74,7 @@ public:
 	void xml_out(XML& xml) const { Binary::xml_out("divide", xml); }
 	void calcTermSize();
 	void calcTermOrig(int x, int y);
-	char asciiArt(int x, int y) const;
+	void asciiArt(DrawText& draw) const;
 };
 
 class Power : public Binary
@@ -86,7 +86,7 @@ public:
 	void xml_out(XML& xml) const { Binary::xml_out("power", xml); }
 	void calcTermSize();
 	void calcTermOrig(int x, int y);
-	char asciiArt(int x, int y) const;
+	void asciiArt(DrawText& draw) const;
 };
 
 class Function : public Node
@@ -100,7 +100,7 @@ public:
 	void xml_out(XML& xml) const;
 	void calcTermSize();
 	void calcTermOrig(int x, int y);
-	char asciiArt(int x, int y) const;
+	void asciiArt(DrawText& draw) const;
 
 	Function(const string& name, func_ptr fp, NodePtr node) : 
 		Node(), m_name(name), m_func(fp), m_arg(node) {}
@@ -129,7 +129,7 @@ public:
 	void xml_out(XML& xml) const;
 	void calcTermSize();
 	void calcTermOrig(int x, int y);
-	char asciiArt(int x, int y) const;
+	void asciiArt(DrawText& draw) const;
 
 	static NodePtr parse(Parser& p);
 
@@ -150,7 +150,7 @@ public:
 	void xml_out(XML& xml) const;
 	void calcTermSize();
 	void calcTermOrig(int x, int y);
-	char asciiArt(int x, int y) const;
+	void asciiArt(DrawText& draw) const;
 
 	static NodePtr parse(Parser& p);
 
@@ -174,7 +174,7 @@ public:
 	void xml_out(XML& xml) const;
 	void calcTermSize();
 	void calcTermOrig(int x, int y);
-	char asciiArt(int x, int y) const;
+	void asciiArt(DrawText& draw) const;
 
 private:
 	vector<NodePtr> factors;
@@ -192,12 +192,33 @@ public:
 	void xml_out(XML& xml) const;
 	void calcTermSize();
 	void calcTermOrig(int x, int y);
-	char asciiArt(int x, int y) const;
+	void asciiArt(DrawText& draw) const;
 
 	static NodePtr parse(Parser& p);
 
 private:
 	vector<NodePtr> terms;	
+};
+
+class DrawString : public DrawText
+{
+public:
+	DrawString(int x, int  y) : 
+		DrawText(x, y) {
+		string line;
+		for (int i = 0; i < x; ++i) line += ' ';
+		for (int i = 0; i < y; ++i) m_field.push_back(line);
+	}
+
+	DrawString(NodePtr n) : 
+		DrawString(n->getTermSizeX(), n->getTermSizeY()) {}
+
+	~DrawString() { }
+
+	void at(int x, int y, char c) { m_field[y][x] = c; }
+	void out(ostream& os) { for (int i = 0; i < m_field.size(); ++i ) os << m_field[i] << endl; }
+private:
+	vector<string> m_field;
 };
 
 void XML::header(const string& tag, bool atomic)
@@ -245,21 +266,23 @@ void XML::footer(const string& tag)
 	while (close_tag.compare(tag) != 0);
 }
 
-char Node::asciiArtParenthesis(bool right, int y) const
+void Node::asciiArtParenthesis(DrawText& draw) const
 {
-	if (y < getTermOrigY() || y >= (getTermOrigY() + getTermSizeY())) return '@';
-
-	if (getTermSizeY() == 1) return (right ? ')' : '(');
-
-	if (y == getTermOrigY()) return (right ? '\\' : '/');
-	if (y == (getTermOrigY() + getTermSizeY() - 1)) return (right ? '/' : '\\');
-	return '|';
-}
-
-bool Node::insideNodeTerm(int x, int y) const
-{
-	return (x >= getTermOrigX()) && (x < (getTermOrigX() + getTermSizeX())) &&
-           (y >= getTermOrigY()) && (y < (getTermOrigY() + getTermSizeY()));
+	if (getTermSizeY() == 1) {
+		draw.at(getTermOrigX(), getTermOrigY(), '(');
+		draw.at(getTermOrigX() + getTermSizeX() - 1, getTermOrigY(), ')');
+	}
+	else {
+		draw.at(getTermOrigX(), getTermOrigY(), '/');
+		draw.at(getTermOrigX(), getTermOrigY() + getTermSizeY() - 1, '\\');
+		draw.at(getTermOrigX() + getTermSizeX() - 1, getTermOrigY(), '\\');
+		draw.at(getTermOrigX() + getTermSizeX() - 1, getTermOrigY() + getTermSizeY() - 1, '/');
+		for (int y = 1; y < getTermOrigY() + getTermSizeY() - 1; ++y) {
+			draw.at(getTermOrigX(), y, '|');
+			draw.at(getTermOrigX() + getTermSizeX() - 1, y, '|');
+			
+		}
+	}
 }
 
 void Equation::xml_out(XML& xml) const
@@ -299,16 +322,13 @@ void Divide::calcTermOrig(int x, int y)
 }
 
 
-char Divide::asciiArt(int x, int y) const
+void Divide::asciiArt(DrawText& draw) const
 {
-	if (!insideNodeTerm(x, y)) return '@';
-
-	if (y == (m_first->getTermOrigY() + m_first->getTermSizeY())) return '-';
-
-	if (m_first->insideNodeTerm(x, y)) return m_first->asciiArt(x, y);
-	if (m_second->insideNodeTerm(x, y)) return m_second->asciiArt(x, y);
-
-	return ' ';
+	m_first->asciiArt(draw);
+	for (int x = 0; x < getTermSizeX(); ++x) {
+		draw.at(x + getTermOrigX(), getTermOrigY() + getTermSizeY()/2, '-');
+	}
+	m_second->asciiArt(draw);
 }
 
 void Power::calcTermSize()
@@ -326,14 +346,10 @@ void Power::calcTermOrig(int x, int y)
 	m_second->calcTermOrig(x + m_first->getTermSizeX(), y);
 }
 
-char Power::asciiArt(int x, int y) const
+void Power::asciiArt(DrawText& draw) const
 {
-	if (!insideNodeTerm(x, y)) return '@';
-
-	if (m_first->insideNodeTerm(x, y)) return m_first->asciiArt(x, y);
-	if (m_second->insideNodeTerm(x, y)) return m_second->asciiArt(x, y);
-
-	return ' ';
+	m_first->asciiArt(draw);
+	m_second->asciiArt(draw);
 }
 
 Complex Function::sinZ(Complex z) {
@@ -418,18 +434,12 @@ void Function::calcTermOrig(int x, int y)
 	m_arg->calcTermOrig(x + m_name.length() + 1, y);
 }
 
-char Function::asciiArt(int x, int y) const
+void Function::asciiArt(DrawText & draw) const
 {
-	if (!insideNodeTerm(x, y)) return '@';
-
-	if (m_arg->insideNodeTerm(x, y)) return m_arg->asciiArt(x, y);
-
-	int x0 = x - getTermOrigX(), y0 = y - getTermOrigY();
-	if (x0 < m_name.length() && y0 == getTermSizeY()/2) return m_name[x0];
-
-	if ( x0 == m_name.length()) return asciiArtParenthesis(false, y);
-	if ( x0 == (getTermSizeX() - 1)) return asciiArtParenthesis(true, y);
-	return ' ';
+	for (int x = 0; x < m_name.length(); ++x) {
+		draw.at(getTermOrigX() + x, getTermOrigY() + getTermSizeY()/2, m_name[x]);
+	}
+	m_arg->asciiArt(draw);
 }
 
 NodePtr Binary::parse(Parser& p, NodePtr one)
@@ -501,11 +511,9 @@ void Variable::calcTermOrig(int x, int y)
 	setTermOrig(x, y);
 }
 
-char Variable::asciiArt(int x, int y) const
+void Variable::asciiArt(DrawText& draw) const
 {
-	if (!insideNodeTerm(x, y)) return '@';
-
-	return m_name;
+	draw.at(getTermOrigX(), getTermOrigY(), m_name);
 }
 
 NodePtr Number::parse(Parser& p)
@@ -605,12 +613,12 @@ void Number::calcTermOrig(int x, int y)
 	setTermOrig(x, y);
 }
 
-char Number::asciiArt(int x, int y) const
+void Number::asciiArt(DrawText& draw) const
 {
-	if (!insideNodeTerm(x, y)) return '@';
-
 	string n = toString();
-	return n[x];
+	for (int x = 0; x < n.length(); ++x) {
+		draw.at(getTermOrigX() + x, getTermOrigY() + getTermSizeY()/2, n[x]);
+	}
 }
 
 NodePtr Term::parse(Parser& p)
@@ -667,16 +675,10 @@ void Term::calcTermOrig(int x, int y)
 	}
 }
 
-char Term::asciiArt(int x, int y) const
+void Term::asciiArt(DrawText& draw) const
 {
-	if (!insideNodeTerm(x, y)) return '@';
-
-	if (x == getTermOrigX() && y == (getTermOrigY() + getTermSizeY()/2))
-		return (getSign() ? '+' : '-');
-	for ( auto n : factors ) {
-		if (n->insideNodeTerm(x, y)) return n->asciiArt(x, y);
-	}
-	return ' ';
+	draw.at(getTermOrigX(), getTermOrigY() + getTermSizeY()/2, getSign() ? '+' : '-');
+	for ( auto n : factors ) n->asciiArt(draw);
 }
 
 string Term::toString() const
@@ -744,14 +746,9 @@ void Expression::calcTermOrig(int x, int y)
 	}
 }
 
-char Expression::asciiArt(int x, int y) const
+void Expression::asciiArt(DrawText& draw) const
 {
-	if (!insideNodeTerm(x, y)) return '@';
-
-	for ( auto n : terms ) { 
-		if (n->insideNodeTerm(x,y)) return n->asciiArt(x, y);
-	}
-	return ' ';
+	for ( auto n : terms ) n->asciiArt(draw); 
 }
 
 string Expression::toString() const
@@ -766,16 +763,11 @@ string Expression::toString() const
 
 void Equation::asciiArt(ostream& os) const
 {
-	string line;
 	m_root->calcTermSize();
 	m_root->calcTermOrig(0, 0);
-	for (int y = 0; y < m_root->getTermSizeY(); ++y) {
-		line.clear();
-		for (int x = 0; x < m_root->getTermSizeX(); ++x) {
-			line += m_root->asciiArt(x, y);
-		}
-		os << line << endl;
-	}
+	DrawString draw(m_root);
+	m_root->asciiArt(draw);
+	draw.out(os);
 }
 
 
