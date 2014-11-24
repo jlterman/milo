@@ -53,7 +53,7 @@ public:
 
 	~Binary() {}
 
-	string toString() { return m_first->toString() + m_op + m_second->toString(); }
+	string toString() const { return m_first->toString() + m_op + m_second->toString(); }
 
 	static NodePtr parse(Parser& p, NodePtr one);
 
@@ -72,6 +72,9 @@ public:
 	~Divide() {}
 
 	void xml_out(XML& xml) const { Binary::xml_out("divide", xml); }
+	void calcTermSize();
+	void calcTermOrig(int x, int y);
+	char asciiArt(int x, int y) const;
 };
 
 class Power : public Binary
@@ -81,6 +84,9 @@ public:
 	~Power() {}
 
 	void xml_out(XML& xml) const { Binary::xml_out("power", xml); }
+	void calcTermSize();
+	void calcTermOrig(int x, int y);
+	char asciiArt(int x, int y) const;
 };
 
 class Function : public Node
@@ -90,8 +96,11 @@ public:
 	using func_map = map<string, func_ptr>;
 
 	static NodePtr parse(Parser& p);
-	string toString() { return "\033[32m" + m_name + "\033[30m" + m_arg->toString(); }
+	string toString() const { return "\033[32m" + m_name + "\033[30m" + m_arg->toString(); }
 	void xml_out(XML& xml) const;
+	void calcTermSize();
+	void calcTermOrig(int x, int y);
+	char asciiArt(int x, int y) const;
 
 	Function(const string& name, func_ptr fp, NodePtr node) : 
 		Node(), m_name(name), m_func(fp), m_arg(node) {}
@@ -116,8 +125,11 @@ public:
 	Variable(Parser& p) : Node(), m_name( p.next() ) {}
 	~Variable() {}
 
-	string toString() { return string(string("") + m_name); }
+	string toString() const { return string(string("") + m_name); }
 	void xml_out(XML& xml) const;
+	void calcTermSize();
+	void calcTermOrig(int x, int y);
+	char asciiArt(int x, int y) const;
 
 	static NodePtr parse(Parser& p);
 
@@ -134,8 +146,11 @@ public:
 	double getReal(Parser& p);
 	void getNumber(Parser& p);
 
-	string toString();
+	string toString() const;
 	void xml_out(XML& xml) const;
+	void calcTermSize();
+	void calcTermOrig(int x, int y);
+	char asciiArt(int x, int y) const;
 
 	static NodePtr parse(Parser& p);
 
@@ -155,8 +170,11 @@ public:
 	
 	static NodePtr parse(Parser& p);
 
-	string toString();
+	string toString() const;
 	void xml_out(XML& xml) const;
+	void calcTermSize();
+	void calcTermOrig(int x, int y);
+	char asciiArt(int x, int y) const;
 
 private:
 	vector<NodePtr> factors;
@@ -170,8 +188,11 @@ public:
 
 	bool add(Parser& p);
 
-	string toString();
+	string toString() const;
 	void xml_out(XML& xml) const;
+	void calcTermSize();
+	void calcTermOrig(int x, int y);
+	char asciiArt(int x, int y) const;
 
 	static NodePtr parse(Parser& p);
 
@@ -224,7 +245,25 @@ void XML::footer(const string& tag)
 	while (close_tag.compare(tag) != 0);
 }
 
-void Equation::xml_out(XML& xml) {
+char Node::asciiArtParenthesis(bool right, int y) const
+{
+	if (y < getTermOrigY() || y >= (getTermOrigY() + getTermSizeY())) return '@';
+
+	if (getTermSizeY() == 1) return (right ? ')' : '(');
+
+	if (y == getTermOrigY()) return (right ? '\\' : '/');
+	if (y == (getTermOrigY() + getTermSizeY() - 1)) return (right ? '/' : '\\');
+	return '|';
+}
+
+bool Node::insideNodeTerm(int x, int y) const
+{
+	return (x >= getTermOrigX()) && (x < (getTermOrigX() + getTermSizeX())) &&
+           (y >= getTermOrigY()) && (y < (getTermOrigY() + getTermSizeY()));
+}
+
+void Equation::xml_out(XML& xml) const
+{
 	xml.header("equation");
 	m_root->xml_out(xml);
 	xml.footer("equation");
@@ -241,6 +280,60 @@ bool isZero(double x) {
 
 bool isZero(Complex z) {
 	return isZero(z.real()) && isZero(z.imag());
+}
+
+void Divide::calcTermSize()
+{
+	m_first->calcTermSize();
+	m_second->calcTermSize();
+	setTermSize( max(m_first->getTermSizeX(), m_second->getTermSizeX()),
+					 m_first->getTermSizeY() + 1 + m_second->getTermSizeY() );
+}
+
+void Divide::calcTermOrig(int x, int y)
+{
+	setTermOrig(x, y);
+	m_first->calcTermOrig(x + (getTermSizeX() - m_first->getTermSizeX())/2, y);
+	m_second->calcTermOrig(x + (getTermSizeX() - m_second->getTermSizeX())/2, 
+				 		   y + m_first->getTermSizeY() + 1);
+}
+
+
+char Divide::asciiArt(int x, int y) const
+{
+	if (!insideNodeTerm(x, y)) return '@';
+
+	if (y == (m_first->getTermOrigY() + m_first->getTermSizeY())) return '-';
+
+	if (m_first->insideNodeTerm(x, y)) return m_first->asciiArt(x, y);
+	if (m_second->insideNodeTerm(x, y)) return m_second->asciiArt(x, y);
+
+	return ' ';
+}
+
+void Power::calcTermSize()
+{
+	m_first->calcTermSize();
+	m_second->calcTermSize();
+	setTermSize(m_first->getTermSizeX() + m_second->getTermSizeX(),
+				m_first->getTermSizeY() + m_second->getTermSizeY());
+}
+
+void Power::calcTermOrig(int x, int y)
+{
+	setTermOrig(x, y);
+	m_first->calcTermOrig(x, y + m_second->getTermSizeY());
+	m_second->calcTermOrig(x + m_first->getTermSizeX(), y);
+}
+
+char Power::asciiArt(int x, int y) const
+{
+	if (!insideNodeTerm(x, y)) return '@';
+
+	if (m_first->insideNodeTerm(x, y)) return m_first->asciiArt(x, y);
+	if (m_second->insideNodeTerm(x, y)) return m_second->asciiArt(x, y);
+
+	return ' ';
 }
 
 Complex Function::sinZ(Complex z) {
@@ -303,13 +396,40 @@ NodePtr Function::parse(Parser& p) {
 	return nullptr;
 }
 
-void Function::xml_out(XML& xml) const {
+void Function::xml_out(XML& xml) const 
+{
 	if (getSign()) 
 		xml.header("function", false, {"name", m_name});
 	else
 		xml.header("function", false, {"name", m_name, "negative", "true"});
 	m_arg->xml_out(xml);
 	xml.footer("function");
+}
+
+void Function::calcTermSize() 
+{
+	m_arg->calcTermSize();
+	setTermSize(m_name.length() + 2 + m_arg->getTermSizeX(), m_arg->getTermSizeY());
+}
+
+void Function::calcTermOrig(int x, int y)
+{
+	setTermOrig(x, y);
+	m_arg->calcTermOrig(x + m_name.length() + 1, y);
+}
+
+char Function::asciiArt(int x, int y) const
+{
+	if (!insideNodeTerm(x, y)) return '@';
+
+	if (m_arg->insideNodeTerm(x, y)) return m_arg->asciiArt(x, y);
+
+	int x0 = x - getTermOrigX(), y0 = y - getTermOrigY();
+	if (x0 < m_name.length() && y0 == getTermSizeY()/2) return m_name[x0];
+
+	if ( x0 == m_name.length()) return asciiArtParenthesis(false, y);
+	if ( x0 == (getTermSizeX() - 1)) return asciiArtParenthesis(true, y);
+	return ' ';
 }
 
 NodePtr Binary::parse(Parser& p, NodePtr one)
@@ -371,6 +491,23 @@ void Variable::xml_out(XML& xml) const {
 		xml.header("variable", true, {"name", name, "negative", "true"});
 }
 
+void Variable::calcTermSize() 
+{
+	setTermSize(1, 1);
+}
+
+void Variable::calcTermOrig(int x, int y)
+{
+	setTermOrig(x, y);
+}
+
+char Variable::asciiArt(int x, int y) const
+{
+	if (!insideNodeTerm(x, y)) return '@';
+
+	return m_name;
+}
+
 NodePtr Number::parse(Parser& p)
 {
 	char c = p.peek();
@@ -422,7 +559,7 @@ void Number::getNumber(Parser& p)
 	}
 }
 
-string Number::toString()
+string Number::toString() const
 {
 	double realValue = abs(m_value.real());
 	bool realNeg = signbit(m_value.real());
@@ -457,6 +594,25 @@ void Number::xml_out(XML& xml) const {
 					   
 }
 
+void Number::calcTermSize() 
+{
+	string n = toString();
+	setTermSize(n.length(), 1);
+}
+
+void Number::calcTermOrig(int x, int y)
+{
+	setTermOrig(x, y);
+}
+
+char Number::asciiArt(int x, int y) const
+{
+	if (!insideNodeTerm(x, y)) return '@';
+
+	string n = toString();
+	return n[x];
+}
+
 NodePtr Term::parse(Parser& p)
 {
 	char c = p.peek();
@@ -489,6 +645,47 @@ void Term::xml_out(XML& xml) const {
 
 	for ( auto n : factors ) { n->xml_out(xml); }
 	xml.footer("term");
+}
+
+void Term::calcTermSize() 
+{
+	int x = 0, y = 0;
+	for ( auto n : factors ) { 
+		n->calcTermSize(); 
+		x += n->getTermSizeX();
+		y = max(y, n->getTermSizeY());
+	}
+	setTermSize(x + 1, y);
+}
+
+void Term::calcTermOrig(int x, int y)
+{
+	setTermOrig(x, y); ++x;
+	for ( auto n : factors ) {
+		n->calcTermOrig(x, y + (getTermSizeY() - n->getTermSizeY())/2);
+		x += n->getTermSizeX();
+	}
+}
+
+char Term::asciiArt(int x, int y) const
+{
+	if (!insideNodeTerm(x, y)) return '@';
+
+	if (x == getTermOrigX() && y == (getTermOrigY() + getTermSizeY()/2))
+		return (getSign() ? '+' : '-');
+	for ( auto n : factors ) {
+		if (n->insideNodeTerm(x, y)) return n->asciiArt(x, y);
+	}
+	return ' ';
+}
+
+string Term::toString() const
+{
+	string s = "";
+	for ( auto f : factors ) { 
+		s += ( f->getSign() ? "" : "(-" ) + f->toString() + ( f->getSign() ? "" : ")" );
+	}
+	return s; 	
 }
 
 bool Expression::add(Parser& p)
@@ -527,16 +724,38 @@ void Expression::xml_out(XML& xml) const {
 	xml.footer("expression");
 }
 
-string Term::toString()
+void Expression::calcTermSize() 
 {
-	string s = "";
-	for ( auto f : factors ) { 
-		s += ( f->getSign() ? "" : "(-" ) + f->toString() + ( f->getSign() ? "" : ")" );
+	int x = 0, y = 0;
+	for ( auto n : terms ) { 
+		n->calcTermSize(); 
+		x += n->getTermSizeX();
+		y = max(y, n->getTermSizeY());
 	}
-	return s; 	
+	setTermSize(x, y);
 }
 
-string Expression::toString() { 
+void Expression::calcTermOrig(int x, int y)
+{
+	setTermOrig(x, y);
+	for ( auto n : terms ) {
+		n->calcTermOrig(x, y + (getTermSizeY() - n->getTermSizeY())/2);
+		x += n->getTermSizeX();
+	}
+}
+
+char Expression::asciiArt(int x, int y) const
+{
+	if (!insideNodeTerm(x, y)) return '@';
+
+	for ( auto n : terms ) { 
+		if (n->insideNodeTerm(x,y)) return n->asciiArt(x, y);
+	}
+	return ' ';
+}
+
+string Expression::toString() const
+{ 
 	string s = "(";
 	for ( auto t : terms ) { 
 		s += t->getSign() ? '+' : '-'; 
@@ -545,11 +764,30 @@ string Expression::toString() {
 	return s += ")";
 }
 
+void Equation::asciiArt(ostream& os) const
+{
+	string line;
+	m_root->calcTermSize();
+	m_root->calcTermOrig(0, 0);
+	for (int y = 0; y < m_root->getTermSizeY(); ++y) {
+		line.clear();
+		for (int x = 0; x < m_root->getTermSizeX(); ++x) {
+			line += m_root->asciiArt(x, y);
+		}
+		os << line << endl;
+	}
+}
+
+
 int main(int argc, char* argv[])
 {
 	Equation eqn(argv[1]);
 	cout << eqn.toString() << endl;
 	cout << "---------" << endl;
-	XML xml(cout);
-	eqn.xml_out(xml);
+	{
+		XML xml(cout);
+		eqn.xml_out(xml);
+	}
+	cout << "---------" << endl;
+	eqn.asciiArt(cout);
 }

@@ -17,19 +17,29 @@ public:
 	~Node() {}
 
 	virtual void xml_out(XML& xml) const=0;
-	virtual std::string toString()=0;
+	virtual std::string toString() const=0;
 	virtual void calcTermSize()=0;
+	virtual void calcTermOrig(int x, int y)=0;
+	virtual char asciiArt(int x, int y) const=0;
+	char asciiArtParenthesis(bool right, int y) const;
 
 	void negative() { m_sign = !m_sign; }
 	bool getSign() const { return m_sign; }
-	int getTermSizeX() { return termSize_x; }
-	int getTermSizeY() { return termSize_y; }
 
-protected:
-	int termSize_x;
-	int termSize_y;
+	int getTermSizeX() const { return termSize_x; }
+	int getTermSizeY() const { return termSize_y; }
+	int getTermOrigX() const { return termOrig_x; }
+	int getTermOrigY() const { return termOrig_y; }
+	bool insideNodeTerm(int x, int y) const;
+
+	void setTermSize(int x, int y) { termSize_x = x; termSize_y = y; }
+	void setTermOrig(int x, int y) { termOrig_x = x; termOrig_y = y; }
 
 private:
+	int termSize_x;
+	int termSize_y;
+	int termOrig_x;
+	int termOrig_y;
 	bool m_sign;
 };
 
@@ -40,16 +50,12 @@ class Equation
 public:
 	Equation(std::string eq);
 
-	std::string toString()  { return m_root->toString(); }
+	std::string toString() const { return m_root->toString(); }
 	
-	void xml_out(XML& xml);
-	static void indent(std::ostream& os);
-	static void inc_indent() { xml_indent += 2; }
-	static void dec_indent() { xml_indent -= 2; }
+	void xml_out(XML& xml) const;
+
+	void asciiArt(std::ostream& os) const;
 private:
 	NodePtr m_root;
-
-	static int xml_indent;
-	static void clear_indent() { xml_indent = 0; }
 };
 
