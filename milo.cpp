@@ -196,6 +196,8 @@ public:
 	void calcTermOrig(int x, int y);
 	void asciiArt(DrawText& draw) const;
 
+	bool firstTerm(const NodePtr n) const { return (terms.size() > 1) && (terms[0] == n); }
+
 	static NodePtr parse(Parser& p, NodePtr parent = nullptr);
 
 private:
@@ -670,12 +672,12 @@ void Term::calcTermSize()
 		x += n->getTermSizeX();
 		y = max(y, n->getTermSizeY());
 	}
-	setTermSize(x + 1, y);
+	setTermSize(x, y);
 }
 
 void Term::calcTermOrig(int x, int y)
 {
-	setTermOrig(x, y); ++x;
+	setTermOrig(x, y);
 	for ( auto n : factors ) {
 		n->calcTermOrig(x, y + (getTermSizeY() - n->getTermSizeY())/2);
 		x += n->getTermSizeX();
@@ -684,7 +686,6 @@ void Term::calcTermOrig(int x, int y)
 
 void Term::asciiArt(DrawText& draw) const
 {
-	draw.at(getTermOrigX(), getTermOrigY() + getTermSizeY()/2, getSign() ? '+' : '-');
 	for ( auto n : factors ) n->asciiArt(draw);
 }
 
@@ -738,6 +739,7 @@ void Expression::calcTermSize()
 	int x = 0, y = 0;
 	if (getParent()) x += 1;
 	for ( auto n : terms ) { 
+		if (n != terms[0] || !n->getSign()) x += 1;
 		n->calcTermSize(); 
 		x += n->getTermSizeX();
 		y = max(y, n->getTermSizeY());
@@ -751,6 +753,7 @@ void Expression::calcTermOrig(int x, int y)
 	setTermOrig(x, y);
 	if (getParent()) x += 1;
 	for ( auto n : terms ) {
+		if (n != terms[0] || !n->getSign()) x+=1;
 		n->calcTermOrig(x, y + (getTermSizeY() - n->getTermSizeY())/2);
 		x += n->getTermSizeX();
 	}
@@ -759,7 +762,12 @@ void Expression::calcTermOrig(int x, int y)
 void Expression::asciiArt(DrawText& draw) const
 {
 	if (getParent()) asciiArtParenthesis(draw);
-	for ( auto n : terms ) n->asciiArt(draw); 
+	for ( auto n : terms ) {
+		if (n != terms[0] || !n->getSign()) draw.at(n->getTermOrigX() - 1, 
+													n->getTermOrigY() + n->getTermSizeY()/2,
+													n->getSign() ? '+' : '-');
+		n->asciiArt(draw); 
+	}
 }
 
 string Expression::toString() const
