@@ -11,10 +11,13 @@ bool isZero(Complex z);
 class XML;
 class DrawText;
 
+class Node;
+using NodePtr = std::shared_ptr<Node>;
+
 class Node
 {
 public:
-	Node() : m_sign(true) {}
+    Node(NodePtr parent = nullptr) : m_parent(parent), m_sign(true) {}
 	~Node() {}
 
 	virtual void xml_out(XML& xml) const=0;
@@ -35,15 +38,16 @@ public:
 	void setTermSize(int x, int y) { termSize_x = x; termSize_y = y; }
 	void setTermOrig(int x, int y) { termOrig_x = x; termOrig_y = y; }
 
+	void setParent(NodePtr parent) { m_parent = parent; }
+	NodePtr getParent() const { return m_parent; }
 private:
 	int termSize_x;
 	int termSize_y;
 	int termOrig_x;
 	int termOrig_y;
 	bool m_sign;
+	NodePtr m_parent;
 };
-
-using NodePtr = std::shared_ptr<Node>;
 
 class Equation
 {
