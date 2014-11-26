@@ -9,29 +9,6 @@
 
 using namespace std;
 
-class XML
-{
-public:
-	XML(ostream& os) : 
-		m_os(os), m_indent(2) { m_os << "<document>" << endl; }
-	~XML() { m_os << "</document>" << endl; }
-
-	void header(const string& tag, bool atomic, 
-				initializer_list<string>);
-
-	void header(const string& tag, bool atomic = false);
-
-	void footer(const string& tag);
-private:
-	vector<string> m_tags;
-	int m_indent;
-	ostream& m_os;
-
-	void print_indent(ostream& os) {
-		for (int i = 0; i < m_indent; ++i) m_os << ' ';
-	}
-};
-
 class Parser
 {
 public:
@@ -51,7 +28,7 @@ public:
 	Binary(char op, NodePtr one, NodePtr two, NodePtr parent = nullptr) : 
 		Node(parent), m_op(op), m_first(one), m_second(two) {}
 
-	~Binary() {}
+	virtual ~Binary() {}
 
 	string toString() const { return m_first->toString() + m_op + m_second->toString(); }
 
@@ -204,26 +181,6 @@ private:
 	vector<NodePtr> terms;	
 };
 
-class DrawString : public DrawText
-{
-public:
-	DrawString(int x, int  y) : DrawText(x, y) {
-		string line;
-		for (int i = 0; i < x; ++i) line += ' ';
-		for (int i = 0; i < y; ++i) m_field.push_back(line);
-	}
-
-	DrawString(NodePtr n) : 
-		DrawString(n->getTermSizeX(), n->getTermSizeY()) {}
-
-	~DrawString() { }
-
-	void at(int x, int y, char c) { m_field[y][x] = c; }
-	void out(ostream& os) { for (int i = 0; i < m_field.size(); ++i ) os << m_field[i] << endl; }
-private:
-	vector<string> m_field;
-};
-
 void XML::header(const string& tag, bool atomic)
 {
 	print_indent(m_os);
@@ -295,7 +252,7 @@ void Equation::xml_out(XML& xml) const
 	xml.footer("equation");
 }
 
-Equation::Equation(string eq) { 
+Equation::Equation(string eq, DrawText& draw) : m_draw(draw) { 
 	Parser p(eq); 
 	m_root = NodePtr(new Expression(p));
 }
@@ -314,6 +271,7 @@ void Divide::calcTermSize()
 	m_second->calcTermSize();
 	setTermSize( max(m_first->getTermSizeX(), m_second->getTermSizeX()),
 					 m_first->getTermSizeY() + 1 + m_second->getTermSizeY() );
+	setBaseLine(m_first->getTermSizeY());
 }
 
 void Divide::calcTermOrig(int x, int y)
@@ -329,7 +287,7 @@ void Divide::asciiArt(DrawText& draw) const
 {
 	m_first->asciiArt(draw);
 	for (int x = 0; x < getTermSizeX(); ++x) {
-		draw.at(x + getTermOrigX(), getTermOrigY() + getTermSizeY()/2, '-');
+		draw.at(x + getTermOrigX(), getTermOrigY() + getBaseLine(), '-');
 	}
 	m_second->asciiArt(draw);
 }
@@ -340,6 +298,7 @@ void Power::calcTermSize()
 	m_second->calcTermSize();
 	setTermSize(m_first->getTermSizeX() + m_second->getTermSizeX(),
 				m_first->getTermSizeY() + m_second->getTermSizeY());
+	setBaseLine(m_second->getTermSizeY());
 }
 
 void Power::calcTermOrig(int x, int y)
@@ -431,6 +390,7 @@ void Function::calcTermSize()
 {
 	m_arg->calcTermSize();
 	setTermSize(m_name.length() + m_arg->getTermSizeX(), m_arg->getTermSizeY());
+	setBaseLine(m_arg->getTermSizeY()/2);
 }
 
 void Function::calcTermOrig(int x, int y)
@@ -442,7 +402,7 @@ void Function::calcTermOrig(int x, int y)
 void Function::asciiArt(DrawText & draw) const
 {
 	for (int x = 0; x < m_name.length(); ++x) {
-		draw.at(getTermOrigX() + x, getTermOrigY() + getTermSizeY()/2, m_name[x]);
+		draw.at(getTermOrigX() + x, getTermOrigY() + getBaseLine(), m_name[x]);
 	}
 	m_arg->asciiArt(draw);
 }
@@ -513,6 +473,7 @@ void Variable::xml_out(XML& xml) const {
 void Variable::calcTermSize() 
 {
 	setTermSize(1, 1);
+	setBaseLine(0);
 }
 
 void Variable::calcTermOrig(int x, int y)
@@ -615,6 +576,7 @@ void Number::calcTermSize()
 {
 	string n = toString();
 	setTermSize(n.length(), 1);
+	setBaseLine(0);
 }
 
 void Number::calcTermOrig(int x, int y)
@@ -666,20 +628,22 @@ void Term::xml_out(XML& xml) const {
 
 void Term::calcTermSize() 
 {
-	int x = 0, y = 0;
+	int x = 0, b = 0, y = 0;
 	for ( auto n : factors ) { 
 		n->calcTermSize(); 
 		x += n->getTermSizeX();
-		y = max(y, n->getTermSizeY());
+		y = max(y, n->getTermSizeY() - n->getBaseLine());
+		b = max(b, n->getBaseLine());
 	}
-	setTermSize(x, y);
+	setTermSize(x, b + y);
+	setBaseLine(b);
 }
 
 void Term::calcTermOrig(int x, int y)
 {
 	setTermOrig(x, y);
 	for ( auto n : factors ) {
-		n->calcTermOrig(x, y + (getTermSizeY() - n->getTermSizeY())/2);
+		n->calcTermOrig(x, y + getBaseLine() - n->getBaseLine());
 		x += n->getTermSizeX();
 	}
 }
@@ -736,16 +700,18 @@ void Expression::xml_out(XML& xml) const {
 
 void Expression::calcTermSize() 
 {
-	int x = 0, y = 0;
+	int x = 0, b = 0, y = 0;
 	if (getParent()) x += 1;
 	for ( auto n : terms ) { 
 		if (n != terms[0] || !n->getSign()) x += 1;
 		n->calcTermSize(); 
 		x += n->getTermSizeX();
-		y = max(y, n->getTermSizeY());
+		y = max(y, n->getTermSizeY() - n->getBaseLine());
+		b = max(b, n->getBaseLine());
 	}
 	if (getParent()) x += 1;
-	setTermSize(x, y);
+	setTermSize(x, y + b);
+	setBaseLine(b);
 }
 
 void Expression::calcTermOrig(int x, int y)
@@ -754,7 +720,7 @@ void Expression::calcTermOrig(int x, int y)
 	if (getParent()) x += 1;
 	for ( auto n : terms ) {
 		if (n != terms[0] || !n->getSign()) x+=1;
-		n->calcTermOrig(x, y + (getTermSizeY() - n->getTermSizeY())/2);
+		n->calcTermOrig(x, y + getBaseLine() - n->getBaseLine());
 		x += n->getTermSizeX();
 	}
 }
@@ -780,25 +746,10 @@ string Expression::toString() const
 	return s += ")";
 }
 
-void Equation::asciiArt(ostream& os) const
+void Equation::asciiArt() const
 {
 	m_root->calcTermSize();
 	m_root->calcTermOrig(0, 0);
-	DrawString draw(m_root);
-	m_root->asciiArt(draw);
-	draw.out(os);
-}
-
-
-int main(int argc, char* argv[])
-{
-	Equation eqn(argv[1]);
-	cout << eqn.toString() << endl;
-	cout << "---------" << endl;
-	{
-		XML xml(cout);
-		eqn.xml_out(xml);
-	}
-	cout << "---------" << endl;
-	eqn.asciiArt(cout);
+	m_draw.set(m_root->getTermSizeX(), m_root->getTermSizeY());
+	m_root->asciiArt(m_draw);
 }
