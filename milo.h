@@ -2,6 +2,7 @@
 #include <memory>
 #include <complex>
 #include <ostream>
+#include <vector>
 
 using Complex = std::complex<double>;
 

@@ -1,4 +1,10 @@
-all: milo_test
+all: milo_test milo_ncurses
+
+milo_ncurses: milo.o milo_ncurses.o
+	g++ -g -std=c++11 milo.o milo_ncurses.o -o milo_ncurses -lncurses
+
+milo_ncurses.o: milo_ncurses.cpp milo.h
+	g++ -g -std=c++11 milo_ncurses.cpp -c
 
 milo_test: milo.o milo_test.o
 	g++ -g -std=c++11 milo.o milo_test.o -o milo_test
