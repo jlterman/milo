@@ -142,6 +142,7 @@ public:
 	void calcTermSize();
 	void calcTermOrig(int x, int y);
 	void asciiArt(Draw& draw) const;
+	bool drawParenthesis() { return true; }
 
 	Function(const string& name, func_ptr fp, NodePtr node, Node* parent, bool neg = false) : 
 		Node(parent), m_name(name), m_func(fp), m_arg(node) { if (neg) negative(); }
@@ -227,6 +228,7 @@ public:
 	void calcTermSize();
 	void calcTermOrig(int x, int y);
 	void asciiArt(Draw& draw) const;
+	bool drawParenthesis() { return true; }
 
 private:
 	vector<NodePtr> factors;
@@ -489,7 +491,7 @@ NodePtr Function::parse(Parser& p, Node* parent) {
 
 	for ( auto m : functions ) { 
 		if (p.match(m.first + "(")) {
-			NodePtr arg = NodePtr(new Expression(p));
+			NodePtr arg = NodePtr(new Expression(p, parent));
 			if (!arg) throw logic_error("bad format");
 
 			Node* node = new Function(m.first, m.second, arg, parent);
@@ -1016,7 +1018,7 @@ NodePtr Term::xml_in(XMLParser& in, Node* parent)
 
 bool Term::add(XMLParser& in)
 {
-	NodePtr node = XMLParser::parse(in, nullptr);
+	NodePtr node = XMLParser::parse(in, this);
 	if (!node) return false;
 
 	factors.push_back(node);
@@ -1041,7 +1043,7 @@ NodePtr Term::parse(Parser& p, Node* parent)
 
 bool Term::add(Parser& p)
 {
-	NodePtr node = parse(p);
+	NodePtr node = parse(p, this);
 	if (!node) return false;
 
 	factors.push_back(node);
@@ -1169,7 +1171,7 @@ void Expression::xml_out(XML& xml) const {
 void Expression::calcTermSize() 
 {
 	int x = 0, b = 0, y = 0;
-	if (getParent()) x += 1;
+	if (getParent() && getParent()->drawParenthesis()) x += 1;
 	for ( auto n : terms ) { 
 		if (n != terms[0] || !n->getSign()) x += 1;
 		n->calcTermSize(); 
@@ -1177,7 +1179,7 @@ void Expression::calcTermSize()
 		y = max(y, n->getTermSizeY() - n->getBaseLine());
 		b = max(b, n->getBaseLine());
 	}
-	if (getParent()) x += 1;
+	if (getParent() && getParent()->drawParenthesis()) x += 1;
 	setTermSize(x, y + b);
 	setBaseLine(b);
 }
@@ -1185,7 +1187,7 @@ void Expression::calcTermSize()
 void Expression::calcTermOrig(int x, int y)
 {
 	setTermOrig(x, y);
-	if (getParent()) x += 1;
+	if (getParent() && getParent()->drawParenthesis()) x += 1;
 	for ( auto n : terms ) {
 		if (n != terms[0] || !n->getSign()) x+=1;
 		n->calcTermOrig(x, y + getBaseLine() - n->getBaseLine());
@@ -1195,7 +1197,7 @@ void Expression::calcTermOrig(int x, int y)
 
 void Expression::asciiArt(Draw& draw) const
 {
-	if (getParent()) draw.parenthesis(this);
+	if (getParent() && getParent()->drawParenthesis()) draw.parenthesis(this);
 	for ( auto n : terms ) {
 		if (n != terms[0] || !n->getSign()) draw.at(n->getTermOrigX() - 1, 
 													n->getTermOrigY() + n->getTermSizeY()/2,

@@ -30,6 +30,7 @@ public:
 	virtual void calcTermSize()=0;
 	virtual void calcTermOrig(int x, int y)=0;
 	virtual void asciiArt(Draw& draw) const=0;
+	virtual bool drawParenthesis() { return false; }
 
 	void negative() { m_sign = !m_sign; }
 	bool getSign() const { return m_sign; }
