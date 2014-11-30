@@ -515,7 +515,7 @@ NodePtr Function::xml_in(XMLParser& in, Node* parent)
 
 	for ( auto m : in.getAttributes() ) {
 		if (m.first.compare("negative") == 0) {
-			if ((m.second.compare("true") && m.second.compare("value")))
+			if ((m.second.compare("true") && m.second.compare("false")))
 				throw logic_error("bad format");
 			fNeg = m.second.compare("true") == 0;
 		}
@@ -609,7 +609,7 @@ NodePtr Binary::xml_in(XMLParser& in, char op, const string& name, Node* parent)
 	bool fNeg = false;
 	for ( auto m : in.getAttributes() ) {
 		if (m.first.compare("negative") == 0) {
-			if ((m.second.compare("true") && m.second.compare("value")))
+			if ((m.second.compare("true") && m.second.compare("false")))
 				throw logic_error("bad format");
 			fNeg = m.second.compare("true") == 0;
 		}
@@ -828,7 +828,7 @@ NodePtr Variable::xml_in(XMLParser& in, Node* parent)
 	char var_name;
 	for ( auto m : in.getAttributes() ) {
 		if (m.first.compare("negative") == 0) {
-			if ((m.second.compare("true") && m.second.compare("value")))
+			if ((m.second.compare("true") && m.second.compare("false")))
 				throw logic_error("bad format");
 			fNeg = m.second.compare("true") == 0;
 		}
@@ -996,7 +996,7 @@ Term::Term(XMLParser& in, Node* parent) : Node(parent)
 	bool fNeg = false;
 	for ( auto m : in.getAttributes() ) {
 		if (m.first.compare("negative") == 0) {
-			if ((m.second.compare("true") && m.second.compare("value")))
+			if ((m.second.compare("true") && m.second.compare("false")))
 				throw logic_error("bad format");
 			fNeg = m.second.compare("true") == 0;
 		}
@@ -1103,7 +1103,7 @@ Expression::Expression(XMLParser& in, Node* parent) : Node(parent)
 	bool fNeg = false;
 	for ( auto m : in.getAttributes() ) {
 		if (m.first.compare("negative") == 0) {
-			if ((m.second.compare("true") && m.second.compare("value")))
+			if ((m.second.compare("true") && m.second.compare("false")))
 				throw logic_error("bad format");
 			fNeg = m.second.compare("true") == 0;
 		}
@@ -1244,7 +1244,7 @@ void Input::xml_out(XML& xml) const
 		attributes.emplace_back("current");
 		attributes.emplace_back("true");
 	}
-	if (getSign()) {
+	if (!getSign()) {
 		attributes.emplace_back("negative");
 		attributes.emplace_back("true");
 	}
@@ -1258,19 +1258,19 @@ void Input::xml_out(XML& xml) const
 NodePtr Input::xml_in(XMLParser& in, Node* parent)
 {
 	if (!in.peek(XMLParser::HEADER, "input")) return nullptr;
-	if (in.next(XMLParser::END, "input")) throw logic_error("bad format");
+	in.next();
 
 	bool fNeg = false;
 	bool fCurrent = false;
 	string text;
 	for ( auto m : in.getAttributes() ) {
 		if (m.first.compare("negative") == 0) {
-			if ((m.second.compare("true") && m.second.compare("value")))
+			if ((m.second.compare("true") && m.second.compare("false")))
 				throw logic_error("bad format");
 			fNeg = m.second.compare("true") == 0;
 		}
 		if (m.first.compare("current") == 0) {
-			if ((m.second.compare("true") && m.second.compare("value")))
+			if ((m.second.compare("true") && m.second.compare("false")))
 				throw logic_error("bad format");
 			fCurrent = m.second.compare("true") == 0;
 		}
