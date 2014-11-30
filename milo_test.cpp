@@ -68,6 +68,8 @@ int main(int argc, char* argv[])
 	cout << "---------" << endl;
 	istringstream in(xml);
 	Equation new_eqn(in, draw);
-	new_eqn.xml_out(cout);
+	string xml2;
+	new_eqn.xml_out(xml2);
+	if (xml.compare(xml2) != 0) cout << xml2; else cout << "XML test passed" << endl; 
 	cout << "---------" << endl;
 }
