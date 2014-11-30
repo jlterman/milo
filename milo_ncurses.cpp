@@ -4,7 +4,7 @@
 
 using namespace std;
 
-class DrawCurses : public DrawText
+class DrawCurses : public Draw
 {
 public:
 	DrawCurses() { 
@@ -29,9 +29,11 @@ public:
 	void set(int x, int y, int x0 = 0, int y0 = 0) { 
 		int row, col;
 		getmaxyx(stdscr, row, col);
-		DrawText::set(x, y, (col - x)/2, (row - y)/2);
+		Draw::set(x, y, (col - x)/2, (row - y)/2);
 		clear();
 	}
+
+	void parenthesis(int x_size, int y_size, int x0, int y0);
 
 	int getChar(int x, int y) {
 		mvaddch(y + m_yOrig, x + m_xOrig, ' '); 
@@ -50,6 +52,25 @@ private:
 };
 
 bool DrawCurses::init = false;
+
+void DrawCurses::parenthesis(int x_size, int y_size, int x0, int y0)
+{
+	if (y_size == 1) {
+		at(x0, y0, '(');
+		at(x0 + x_size - 1, y0, ')');
+	}
+	else {
+		at(x0, y0, '/');
+		at(x0, y0 + y_size - 1, '\\');
+		at(x0 + x_size - 1, y0, '\\');
+		at(x0 + x_size - 1, y0 + y_size - 1, '/');
+		for (int y = 1; y < y_size - 1; ++y) {
+			at(x0, y + y0, '|');
+			at(x0 + x_size - 1, y + y0, '|');
+			
+		}
+	}
+}
 
 static vector<string> eqn_list;
 static const bool isAlphaNum[128] = 

@@ -13,7 +13,7 @@ using Complex = std::complex<double>;
 bool isZero(double x);
 bool isZero(Complex z);
 
-class DrawText;
+class Draw;
 class XML;
 class XMLParser;
 class Node;
@@ -29,8 +29,7 @@ public:
 	virtual std::string toString() const=0;
 	virtual void calcTermSize()=0;
 	virtual void calcTermOrig(int x, int y)=0;
-	virtual void asciiArt(DrawText& draw) const=0;
-	void asciiArtParenthesis(DrawText& draw) const;
+	virtual void asciiArt(Draw& draw) const=0;
 
 	void negative() { m_sign = !m_sign; }
 	bool getSign() const { return m_sign; }
@@ -57,12 +56,13 @@ private:
 	int m_base;
 };
 
-class DrawText
+class Draw
 {
 public:
-    DrawText() {}
-	virtual ~DrawText() {}
+    Draw() {}
+	virtual ~Draw() {}
 
+	virtual void parenthesis(int x_size, int y_size, int x0, int y0)=0;
 	virtual void at(int x, int y, char c)=0;
 	virtual void at(int x, int y, const std::string& s)=0;
 	virtual void out()=0;
@@ -70,6 +70,12 @@ public:
 	virtual void set(int x, int y, int x0 = 0, int y0 = 0) { 
 		m_xSize = x; m_ySize = y; m_xOrig = x0, m_yOrig = y0;
 	}
+
+	void parenthesis(const Node* node) { 
+		parenthesis(node->getTermSizeX(), node->getTermSizeY(), 
+					node->getTermOrigX(), node->getTermOrigY());
+	}
+
 protected:
 	int m_xSize;
 	int m_ySize;
@@ -93,7 +99,7 @@ public:
 	void xml_out(XML& xml) const;
 	void calcTermSize();
 	void calcTermOrig(int x, int y);
-	void asciiArt(DrawText& draw) const;
+	void asciiArt(Draw& draw) const;
 
 	void disable() { m_active = false; }
 	void addTyped(char c) { m_typed += c; }
@@ -117,8 +123,8 @@ private:
 class Equation
 {
 public:
-	Equation(std::string eq, DrawText& draw);
-    Equation(std::istream& is, DrawText& draw);
+	Equation(std::string eq, Draw& draw);
+    Equation(std::istream& is, Draw& draw);
 	std::string toString() const { return m_root->toString(); }
 	void xml_out(XML& xml) const;
 	void xml_out(std::ostream& os) const;
@@ -141,7 +147,7 @@ private:
 	int m_input_index = -1;
 
 	NodePtr m_root;
-	DrawText& m_draw;
+	Draw& m_draw;
 
 	static NodePtr xml_in(XMLParser& in);
 };
