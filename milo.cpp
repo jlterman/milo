@@ -952,7 +952,7 @@ NodePtr Number::xml_in(XMLParser& in, Node* parent)
 	string real = "0", imag = "0";
 	for ( auto m : in.getAttributes() ) {
 		if (m.first.compare("negative") == 0) {
-			if ((m.second.compare("true") && m.second.compare("value")))
+			if ((m.second.compare("true") && m.second.compare("false")))
 				throw logic_error("bad format");
 			fNeg = m.second.compare("true") == 0;
 		}
