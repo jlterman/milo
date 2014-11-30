@@ -1,7 +1,11 @@
+#ifndef __MILO_H
+#define __MILO_H
+
 #include <string>
 #include <memory>
 #include <complex>
-#include <ostream>
+#include <iostream>
+#include <sstream>
 #include <vector>
 
 using Complex = std::complex<double>;
@@ -11,13 +15,14 @@ bool isZero(Complex z);
 
 class DrawText;
 class XML;
+class XMLParser;
 class Node;
 using NodePtr = std::shared_ptr<Node>;
 
 class Node
 {
 public:
-    Node(NodePtr parent = nullptr) : m_parent(parent), m_sign(true) {}
+    Node(Node* parent = nullptr) : m_parent(parent), m_sign(true) {}
 	virtual ~Node() {}
 
 	virtual void xml_out(XML& xml) const=0;
@@ -40,33 +45,16 @@ public:
 	void setTermOrig(int x, int y) { termOrig_x = x; termOrig_y = y; }
 	void setBaseLine(int base) { m_base = base; }
 
-	void setParent(NodePtr parent) { m_parent = parent; }
-	NodePtr getParent() const { return m_parent; }
+	void setParent(Node* parent) { m_parent = parent; }
+	Node* getParent() const { return m_parent; }
 private:
 	int termSize_x;
 	int termSize_y;
 	int termOrig_x;
 	int termOrig_y;
 	bool m_sign;
-	NodePtr m_parent;
+	Node* m_parent;
 	int m_base;
-};
-
-class Equation
-{
-public:
-	Equation(std::string eq, DrawText& draw);
-
-	std::string toString() const { return m_root->toString(); }
-	
-	void xml_out(XML& xml) const;
-
-	void asciiArt() const;
-
-	NodePtr getRoot() { return m_root; }
-private:
-	NodePtr m_root;
-	DrawText& m_draw;
 };
 
 class DrawText
@@ -76,6 +64,7 @@ public:
 	virtual ~DrawText() {}
 
 	virtual void at(int x, int y, char c)=0;
+	virtual void at(int x, int y, const std::string& s)=0;
 	virtual void out()=0;
    
 	virtual void set(int x, int y, int x0 = 0, int y0 = 0) { 
@@ -88,25 +77,73 @@ protected:
 	int m_yOrig;
 };
 
-class XML
+class Equation;
+class Parser;
+class Input;
+using InputPtr = std::shared_ptr<Input>;
+
+class Input : public Node
 {
 public:
-    XML(std::ostream& os) : 
-	m_os(os), m_indent(2) { m_os << "<document>" << std::endl; }
-	~XML() { m_os << "</document>" << std::endl; }
+    Input(Parser& p, Node* parent = nullptr);
+    Input(Equation& eqn, std::string txt, Node* parent, bool neg, bool current);
+	~Input() {}
 
-	void header(const std::string& tag, bool atomic, 
-				std::initializer_list<std::string>);
+	std::string toString() const;
+	void xml_out(XML& xml) const;
+	void calcTermSize();
+	void calcTermOrig(int x, int y);
+	void asciiArt(DrawText& draw) const;
 
-	void header(const std::string& tag, bool atomic = false);
+	void disable() { m_active = false; }
+	void addTyped(char c) { m_typed += c; }
+	void delTyped() { m_typed.pop_back(); }
 
-	void footer(const std::string& tag);
+	void handleChar(char ch);
+
+	static NodePtr parse(Parser& p, Node* parent = nullptr);
+	static NodePtr xml_in(XMLParser& in, Node* parent);
+
+	friend class Equation;
 private:
-	std::vector<std::string> m_tags;
-	int m_indent;
-	std::ostream& m_os;
+	std::string m_typed;
+	int m_sn;
+	bool m_active;
+	bool m_current;
 
-	void print_indent(std::ostream& os) {
-		for (int i = 0; i < m_indent; ++i) m_os << ' ';
-	}
+	static int input_sn;
 };
+
+class Equation
+{
+public:
+	Equation(std::string eq, DrawText& draw);
+    Equation(std::istream& is, DrawText& draw);
+	std::string toString() const { return m_root->toString(); }
+	void xml_out(XML& xml) const;
+	void xml_out(std::ostream& os) const;
+	void xml_out(std::string& str) const;
+	void asciiArt() const;
+	NodePtr getRoot() { return m_root; }
+
+	Input* getCurrentInput() { return m_inputs[m_input_index]; }
+	void nextInput() { m_input_index = (++m_input_index)%m_inputs.size(); }
+
+	void setCurrentInput(int in_sn) { 
+		if (m_input_index >= 0) m_inputs[m_input_index]->m_current = false;
+		m_input_index = in_sn;
+		m_inputs[m_input_index]->m_current = true;
+	}
+	void addInput(Input* in) { m_inputs.push_back(in); }
+
+private:
+	std::vector<Input*> m_inputs;
+	int m_input_index = -1;
+
+	NodePtr m_root;
+	DrawText& m_draw;
+
+	static NodePtr xml_in(XMLParser& in);
+};
+
+#endif // __MILO_H
