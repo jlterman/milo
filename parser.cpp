@@ -817,7 +817,7 @@ NodePtr Expression::parse(Parser& p, Node* parent) {
 }
 
 Input::Input(Parser& p, Node* parent) : 
-	Node(parent), m_sn(++input_sn), m_active(true), m_current(false)
+	Node(parent), m_sn(++input_sn), m_active(true), m_current(false), m_typed("")
 {
 	p.getEqn().addInput(this);
 	char c = p.next();

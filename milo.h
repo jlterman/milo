@@ -136,11 +136,7 @@ public:
 	Input* getCurrentInput() { return m_inputs[m_input_index]; }
 	void nextInput() { m_input_index = (++m_input_index)%m_inputs.size(); }
 
-	void setCurrentInput(int in_sn) { 
-		if (m_input_index >= 0) m_inputs[m_input_index]->m_current = false;
-		m_input_index = in_sn;
-		m_inputs[m_input_index]->m_current = true;
-	}
+	void setCurrentInput(int in_sn);
 	void addInput(Input* in) { m_inputs.push_back(in); }
 
 private:

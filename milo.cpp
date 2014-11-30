@@ -18,6 +18,18 @@ void Equation::asciiArt() const
 	m_root->asciiArt(m_draw);
 }
 
+void Equation::setCurrentInput(int in_sn)
+{
+	if (m_input_index >= 0) m_inputs[m_input_index]->m_current = false;
+	for (int i = 0; i < m_inputs.size(); ++i) {
+		if (m_inputs[i]->m_sn == in_sn) {
+			m_input_index = i;
+			m_inputs[m_input_index]->m_current = true;
+			break;
+		}
+	}
+}
+
 bool isZero(double x) {
 	return abs(x)<1e-10;
 }
