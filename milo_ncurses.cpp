@@ -36,8 +36,8 @@ public:
 	void parenthesis(int x_size, int y_size, int x0, int y0);
 
 	int getChar(int x, int y) {
-		mvaddch(y + m_yOrig, x + m_xOrig, ' '); 
-		move(y + m_yOrig, x + m_xOrig);
+		mvaddch(y + m_yOrig, x + m_xOrig + m_xSize - 1, ' '); 
+		move(y + m_yOrig, x + m_xOrig + m_xSize - 1);
 		return getch();
 	}
 
