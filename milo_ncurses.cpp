@@ -35,10 +35,17 @@ public:
 
 	void parenthesis(int x_size, int y_size, int x0, int y0);
 
-	int getChar(int x, int y) {
-		mvaddch(y + m_yOrig, x + m_xOrig + m_xSize - 1, ' '); 
-		move(y + m_yOrig, x + m_xOrig + m_xSize - 1);
+	int getChar(int y, int x) {
+		mvaddch(y + m_yOrig, x + m_xOrig, ' '); 
+		move(y + m_yOrig, x + m_xOrig);
 		return getch();
+	}
+
+	void msg(string m)
+	{
+		int row, col;
+		getmaxyx(stdscr, row, col);
+		at(0, row - 1, m);
 	}
 
 	static DrawCurses& getInstance() {
@@ -73,16 +80,6 @@ void DrawCurses::parenthesis(int x_size, int y_size, int x0, int y0)
 }
 
 static vector<string> eqn_list;
-static const bool isAlphaNum[128] = 
-	{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-	  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-	  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, //  !"#$%&'()*+,-./
-	  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, // 0123456789:;<=>?
-	  0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // @ABCDEFGHIJKLMNO
-	  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, // PQRSTUVWXYZ[\]^_
-	  0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // `abcdefghijklmno
-	  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0  // pqrstuvwxyz{|}~
-	};
 
 int main(int argc, char* argv[])
 {
@@ -96,9 +93,10 @@ int main(int argc, char* argv[])
 		Input* cur = eqn->getCurrentInput();
 
 		bool fChanged = true;
-		char ch = draw.getChar(cur->getTermOrigY(), cur->getTermOrigX());
+		int ch = draw.getChar(cur->getTermOrigY(), cur->getTermOrigX() + cur->getTermSizeX() - 1);
+		draw.msg("Char typed: " + string(1, (char)ch));
 		
-		if (isAlphaNum[ch]) {
+		if (isalnum(ch)) {
 			cur->addTyped(ch);
 		}
 		else {
@@ -136,8 +134,7 @@ int main(int argc, char* argv[])
 					eqn = new Equation(in, DrawCurses::getInstance());
 					fChanged = false;
 			    }
-				case '/':
-				case '(': {
+			    case '+': case '-':	case '^': case '/':	case '(': {
 					cur->handleChar(ch);
 					break;
 				}

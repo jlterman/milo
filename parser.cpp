@@ -10,6 +10,17 @@
 
 using namespace std;
 
+class DrawNull : public Draw
+{
+public:
+	void at(int x, int y, char c) {}
+	void at(int x, int y, const string& s) {}
+	void out() {}
+	void set(int x, int y, int x0 = 0, int y0 = 0) {}
+	void parenthesis(int x_size, int y_size, int x0, int y0) {}
+};
+
+
 class Parser
 {
 public:
@@ -305,7 +316,6 @@ NodePtr XMLParser::parse(XMLParser& in, Node* parent)
 	if (!node) node = Function::xml_in(in, parent);
 	if (!node) node = Variable::xml_in(in, parent);
 	if (!node) node = Number::xml_in(in, parent);
-	if (!node) node = Input::xml_in(in, parent);
 	if (!node) node = Binary::xml_in(in, '/', "divide", parent);
 	if (!node) node = Binary::xml_in(in, '^', "power", parent);
 
@@ -510,7 +520,7 @@ NodePtr Term::xml_in(XMLParser& in, Node* parent)
 {
 	if (!in.peek(XMLParser::HEADER, "term")) return nullptr;
 
-	return NodePtr(new Term(in, parent));
+	return NodePtr(new  Term(in, parent));
 }
 
 bool Term::add(XMLParser& in)
@@ -520,6 +530,59 @@ bool Term::add(XMLParser& in)
 
 	factors.push_back(node);
 	return true;
+}
+
+bool Expression::add(XMLParser& in)
+{
+	NodePtr node = nullptr;
+	if (in.peek(XMLParser::HEADER, "term")) {
+		node = NodePtr( new Term(in, this) );
+	}
+	else if (in.peek(XMLParser::HEADER, "input")) {
+		node = NodePtr( Input::xml_in(in, this) );
+	}
+	if (!node) return false;
+
+	terms.push_back(node);
+	return true;
+}
+
+NodePtr Expression::getTerm(Parser& p, Node* parent)
+{
+	NodePtr node = nullptr;
+	bool neg = false;
+	if (p.peek() == '+' || p.peek() == '-') {
+		char c = p.next();
+		neg = (c == '-') ? true : false;
+	}
+	node = Input::parse(p, parent);
+	if (!node) node = NodePtr( new Term(p, parent) );
+
+	if (neg) node->negative();
+	return node;
+}
+
+bool Expression::add(Parser& p)
+{
+	NodePtr node = getTerm(p, this);
+	terms.push_back(node);
+	
+	if ( p.peek() == '\0' || p.peek() == ')' ) {
+		char c = p.next();
+		return false;
+	}
+	else
+		return true;
+}
+
+NodePtr Expression::parse(Parser& p, Node* parent) {
+	if (p.peek() != '(') return nullptr;
+	
+	NodePtr node = nullptr;
+	if ( (node = Input::parse(p, parent)) ) return node;
+	char c = p.next();
+	node = NodePtr(new Expression(p, parent));
+	return node;
 }
 
 Expression::Expression(XMLParser& in, Node* parent) : Node(parent)
@@ -608,24 +671,37 @@ void Number::xml_out(XML& xml) const {
 
 void Input::xml_out(XML& xml) const
 {
-	vector<string> attributes;
-	if (m_typed.length() > 0) {
-		attributes.emplace_back("text");
-		attributes.push_back(m_typed);
+	bool fAllAlphaNum = true;
+	for ( char c : m_typed ) {  fAllAlphaNum *= isalnum(c); }
+	if (fAllAlphaNum) {
+		vector<string> attributes;
+		if (m_typed.length() > 0) {
+			attributes.emplace_back("text");
+			attributes.push_back(m_typed);
+		}
+		if (m_current) {
+			attributes.emplace_back("current");
+			attributes.emplace_back("true");
+		}
+		if (!getSign()) {
+			attributes.emplace_back("negative");
+			attributes.emplace_back("true");
+		}
+		
+		if (attributes.size() == 0)
+			xml.header("input", true);
+		else
+			xml.header("input", true, attributes);
 	}
-	if (m_current) {
-		attributes.emplace_back("current");
-		attributes.emplace_back("true");
+	else {
+		DrawNull draw;
+		Equation eqn("?", draw);
+		Parser p(m_typed, eqn);
+		while (p.peek()) {
+			NodePtr term = Expression::getTerm(p, nullptr);
+			term->xml_out(xml);
+		}
 	}
-	if (!getSign()) {
-		attributes.emplace_back("negative");
-		attributes.emplace_back("true");
-	}
-
-	if (attributes.size() == 0)
-		xml.header("input", true);
-	else
-		xml.header("input", true, attributes);
 }
 
 void Term::xml_out(XML& xml) const {
@@ -781,53 +857,22 @@ bool Term::add(Parser& p)
 	return true;
 }
 
-bool Expression::add(XMLParser& in)
-{
-	if (!in.peek(XMLParser::HEADER, "term")) return false;
-	
-	NodePtr node = NodePtr( new Term(in, this) );
-	terms.push_back(node);
-	return true;
-}
-
-bool Expression::add(Parser& p)
-{
-	bool neg = false;
-	if (p.peek() == '+' || p.peek() == '-') {
-		char c = p.next();
-		neg = (c == '-') ? true : false;
-	}
-	NodePtr term = NodePtr( new Term(p, this) );
-	if (neg) term->negative();
-	terms.push_back(term);
-	
-	if ( p.peek() == '\0' || p.peek() == ')' ) {
-		char c = p.next();
-		return false;
-	}
-	else
-		return true;
-}
-
-NodePtr Expression::parse(Parser& p, Node* parent) {
-	if (p.peek() != '(') return nullptr;
-	char c = p.next();
-	NodePtr node = NodePtr(new Expression(p, parent));
-	return node;
-}
-
 Input::Input(Parser& p, Node* parent) : 
 	Node(parent), m_sn(++input_sn), m_active(true), m_current(false), m_typed("")
 {
 	p.getEqn().addInput(this);
 	char c = p.next();
-	if (c == '#') p.getEqn().setCurrentInput(m_sn);
+	if (c == '?') return;
+	if (c == '[') {
+		while ( (c = p.next()) != ']' ) { m_typed += c;	}
+	}
+	p.getEqn().setCurrentInput(m_sn);
 }
 
 NodePtr Input::parse(Parser& p, Node* parent)
 {
 	char c = p.peek();
-	if ( c == '?' || c == '#' ) {
+	if ( c == '?' || c == '#' || c == '[' ) {
 		return NodePtr(new Input(p, parent));
 	}
 	else

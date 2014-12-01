@@ -106,7 +106,7 @@ public:
 	void addTyped(char c) { m_typed += c; }
 	void delTyped() { m_typed.pop_back(); }
 
-	void handleChar(char ch);
+	void handleChar(int ch);
 
 	static NodePtr parse(Parser& p, Node* parent = nullptr);
 	static NodePtr xml_in(XMLParser& in, Node* parent);

@@ -174,6 +174,7 @@ public:
 
 	bool firstTerm(const NodePtr n) const { return (terms.size() > 1) && (terms[0] == n); }
 
+	static NodePtr getTerm(Parser& p, Node* parent);
 	static NodePtr parse(Parser& p, Node* parent);
 	static NodePtr xml_in(XMLParser& in, Node* parent);
 

@@ -317,25 +317,39 @@ void Input::calcTermOrig(int x, int y)
 
 void Input::asciiArt(Draw& draw) const
 {
-	draw.at(getTermOrigX(), getTermOrigY(), toString());
+	string in = toString();
+	if (in.length() == 1) {
+		draw.at(getTermOrigX(), getTermOrigY(), in[0]);
+	}
+	else {
+		in.erase(in.begin()); in.erase(in.end()-1);
+		draw.at(getTermOrigX(), getTermOrigY(), in);
+	}
 }
 
 string Input::toString() const
 {
-	if (m_active)
-		return m_typed + (m_current ? '#' : '?');
+	if (m_active) {
+		if (m_typed.empty()) return (m_current ? "#" : "?");
+		return "[" + m_typed + (m_current ? '#' : '?') + "]";
+	}
 	else
 		return m_typed;
 }
 
-void Input::handleChar(char ch)
+void Input::handleChar(int ch)
 {
-	if ( ch == '/' ) {
-		m_typed = "(" + m_typed + ")/";
-		return;
-	}
-	else if ( ch == '(' ) {
-		m_typed = m_typed + "(#)";
-		disable();
+	string op(1, (char)ch);
+	switch (ch) {
+	    case '+':
+	    case '-': m_typed += op + "#";
+		          break;
+        case '/':
+	    case '^': m_typed = "(" + m_typed + ")" + op + "(#)";
+			      break;
+        case '(': m_typed += "(#)";
+			      break;
+    	default:  throw logic_error("bad character");
+		 	      break;
 	}
 }
