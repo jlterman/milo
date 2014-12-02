@@ -331,7 +331,7 @@ string Input::toString() const
 {
 	if (m_active) {
 		if (m_typed.empty()) return (m_current ? "#" : "?");
-		return "[" + m_typed + (m_current ? '#' : '?') + "]";
+		return "[" + m_typed  + "]";
 	}
 	else
 		return m_typed;
@@ -351,5 +351,19 @@ void Input::handleChar(int ch)
 			      break;
     	default:  throw logic_error("bad character");
 		 	      break;
+	}
+}
+
+namespace Log
+{
+	void msg(string m)
+	{
+		char timestamp[256];
+		time_t now = time(NULL);
+		struct tm* local = localtime(&now);
+		strftime(timestamp, 256, "%F %T: ", local);
+		fstream out("/tmp/milo.log", fstream::out | fstream::app);
+		out << timestamp << m << endl; 
+		out.close();
 	}
 }

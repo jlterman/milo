@@ -5,8 +5,10 @@
 #include <memory>
 #include <complex>
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <vector>
+#include <ctime>
 
 using Complex = std::complex<double>;
 
@@ -149,4 +151,10 @@ private:
 	static NodePtr xml_in(XMLParser& in);
 };
 
+namespace Log
+{
+	void msg(std::string m);
+}
+
+#define LOG_TRACE_MSG(m) Log::msg(string("") + __FILE__ + ": " + to_string(__LINE__) + ": " + (m))
 #endif // __MILO_H

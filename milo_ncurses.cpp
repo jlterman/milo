@@ -41,13 +41,6 @@ public:
 		return getch();
 	}
 
-	void msg(string m)
-	{
-		int row, col;
-		getmaxyx(stdscr, row, col);
-		at(0, row - 1, m);
-	}
-
 	static DrawCurses& getInstance() {
 		static DrawCurses draw;
 		
@@ -83,6 +76,7 @@ static vector<string> eqn_list;
 
 int main(int argc, char* argv[])
 {
+	LOG_TRACE_MSG("Starting milo_ncurses...");
 	DrawCurses& draw = DrawCurses::getInstance();
 	eqn_list.emplace_back("#");
 	Equation* eqn = new Equation("#", draw);
@@ -94,7 +88,7 @@ int main(int argc, char* argv[])
 
 		bool fChanged = true;
 		int ch = draw.getChar(cur->getTermOrigY(), cur->getTermOrigX() + cur->getTermSizeX() - 1);
-		draw.msg("Char typed: " + string(1, (char)ch));
+		LOG_TRACE_MSG("Char typed: " + string(1, (char)ch));
 		
 		if (isalnum(ch)) {
 			cur->addTyped(ch);
@@ -103,23 +97,23 @@ int main(int argc, char* argv[])
 			switch (ch) 
 			{
 				case KEY_BACKSPACE: {
-					cur->delTyped();
+					cur->delTyped();                           LOG_TRACE_MSG("Delete typed char");
 					break;
 				}
 			    case 3: { // ctrl-c typed
-					fRunning = false;
+					fRunning = false;                          LOG_TRACE_MSG("ctrl-c typed");
 					fChanged = false;
 				}
 				case 9: { // tab typed
 					draw.at(cur->getTermOrigY(), cur->getTermOrigX(), '?');
 					eqn->nextInput();
-					fChanged = false;
+					fChanged = false;                          LOG_TRACE_MSG("tab typed");
 					break;
 				}
 			    case 13: { // enter typed
 					if ( isalnum(cur->toString().back()) ) {
 					    cur->disable();
-						eqn->nextInput();
+						eqn->nextInput();                      LOG_TRACE_MSG("enter typed, disabled input");
 					}
 					else {
 						fChanged = false;
@@ -132,25 +126,26 @@ int main(int argc, char* argv[])
 					delete eqn;
 					istringstream in(old_eqn);
 					eqn = new Equation(in, DrawCurses::getInstance());
-					fChanged = false;
+					fChanged = false;                          LOG_TRACE_MSG("undo");
+					break;
 			    }
 			    case '+': case '-':	case '^': case '/':	case '(': {
-					cur->handleChar(ch);
+					cur->handleChar(ch);                       LOG_TRACE_MSG("handle operator chr");
 					break;
 				}
 				default: {
-					fChanged = false;
+					fChanged = false;                          LOG_TRACE_MSG("char not handled");
 					break;
 				}
 			}
 		}
 		if (fChanged) {
 			string new_eqn;
-			eqn->xml_out(new_eqn);
+			eqn->xml_out(new_eqn);                             LOG_TRACE_MSG("wrote xml");
 			eqn_list.push_back(new_eqn);
 			delete eqn;
 			istringstream in(new_eqn);
-			eqn = new Equation(in, DrawCurses::getInstance());
+			eqn = new Equation(in, DrawCurses::getInstance()); LOG_TRACE_MSG("got new eqn");
 		}
 	}
 }

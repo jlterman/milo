@@ -266,16 +266,14 @@ string XMLParser::next()
 	peek(tag, m_state);
 	++m_pos;
 
-#if 0
-	cout << "XML read in: " << tag;
-	if (m_state&HEADER) cout << " HEADER";
-	if (m_state&FOOTER) cout << " FOOTER";
-	if (m_state&ATOM) cout << " ATOM";
-	if (m_state&NAME) cout << " NAME";
-	if (m_state&VALUE) cout << " VALUE";
-	if (m_state&END) cout << " END";
-	cout << endl;
-#endif
+	string log = "XML read in: " + tag;
+	if (m_state&HEADER) log += " HEADER";
+	if (m_state&FOOTER) log += " FOOTER";
+	if (m_state&ATOM) log += " ATOM";
+	if (m_state&NAME) log += " NAME";
+	if (m_state&VALUE) log += " VALUE";
+	if (m_state&END) log += " END";
+	LOG_TRACE_MSG(log);
 
 	return tag;
 }
