@@ -187,9 +187,10 @@ string Number::toString() const
 	if (m_isInteger && !isZero(realValue)) 
 		result += std::to_string((int) (realValue + 0.2));
 
-	if (!m_isInteger && !isZero(realValue)) 
+	if (!m_isInteger && !isZero(realValue)) {
 		result += std::to_string(realValue);
-
+		while (result.back() == '0') result.erase(result.end() - 1);
+	}
 	if (m_isInteger && !isZero(imagValue)) {
 		if (!isZero(realValue)) result += realNeg ? "-" : "+";
 		result += "i" + std::to_string((int) (imagValue + 0.2));
@@ -197,6 +198,7 @@ string Number::toString() const
 	if (!m_isInteger && !isZero(imagValue)) {
 		if (!isZero(realValue)) result += realNeg ? "-" : "+";
 		result += "i" + std::to_string(imagValue);
+		while (result.back() == '0') result.erase(result.end() - 1);
 	}
 	return result;
 }
