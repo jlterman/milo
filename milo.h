@@ -128,17 +128,18 @@ private:
 class Equation
 {
 public:
-	Equation(std::string eq, Draw& draw);
-    Equation(std::istream& is, Draw& draw);
+	Equation(std::string eq);
+    Equation(std::istream& is);
 	std::string toString() const { return m_root->toString(); }
 	void xml_out(XML& xml) const;
 	void xml_out(std::ostream& os) const;
 	void xml_out(std::string& str) const;
-	void asciiArt() const;
+	void asciiArt(Draw& draw) const;
 	NodePtr getRoot() { return m_root; }
 
 	Input* getCurrentInput() { return m_inputs[m_input_index]; }
 	Input* nextInput();
+	int getNumInputs() { return m_inputs.size(); }
 
 	void setCurrentInput(int in_sn);
 	void addInput(Input* in) { m_inputs.push_back(in); }
@@ -146,9 +147,7 @@ public:
 private:
 	std::vector<Input*> m_inputs;
 	int m_input_index = -1;
-
 	NodePtr m_root;
-	Draw& m_draw;
 
 	static NodePtr xml_in(XMLParser& in);
 };

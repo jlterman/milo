@@ -10,12 +10,12 @@
 
 using namespace std;
 
-void Equation::asciiArt() const
+void Equation::asciiArt(Draw& draw) const
 {
 	m_root->calcTermSize();
 	m_root->calcTermOrig(0, 0);
-	m_draw.set(m_root->getTermSizeX(), m_root->getTermSizeY());
-	m_root->asciiArt(m_draw);
+	draw.set(m_root->getTermSizeX(), m_root->getTermSizeY());
+	m_root->asciiArt(draw);
 }
 
 void Equation::setCurrentInput(int in_sn)

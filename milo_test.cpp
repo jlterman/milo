@@ -55,7 +55,7 @@ void DrawString::parenthesis(int x_size, int y_size, int x0, int y0)
 int main(int argc, char* argv[])
 {
 	DrawString draw(cout);
-	Equation eqn(argv[1], draw);
+	Equation eqn(argv[1]);
 	cout << "---------" << endl;
 	cout << eqn.toString() << endl;
 	cout << "---------" << endl;
@@ -63,11 +63,11 @@ int main(int argc, char* argv[])
 	eqn.xml_out(xml);
 	cout << xml;
 	cout << "---------" << endl;
-	eqn.asciiArt();
+	eqn.asciiArt(draw);
 	draw.out();
 	cout << "---------" << endl;
 	istringstream in(xml);
-	Equation new_eqn(in, draw);
+	Equation new_eqn(in);
 	string xml2;
 	new_eqn.xml_out(xml2);
 	if (xml.compare(xml2) != 0) cout << xml2; else cout << "XML test passed" << endl; 

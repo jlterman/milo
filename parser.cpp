@@ -336,7 +336,7 @@ NodePtr Equation::xml_in(XMLParser& in)
 	return root;
 }
 
-Equation::Equation(istream& is, Draw& draw) : m_draw(draw) 
+Equation::Equation(istream& is)
 {
 	XMLParser in(is, *this);
 	m_root = xml_in(in);
@@ -673,7 +673,7 @@ void Input::xml_out(XML& xml) const
 {
 	bool fAllAlphaNum = true;
 	for ( char c : m_typed ) {  fAllAlphaNum *= (isalnum(c) || c =='.'); }
-	if (fAllAlphaNum) {
+	if (fAllAlphaNum && m_active) {
 		vector<string> attributes;
 		if (m_typed.length() > 0) {
 			attributes.emplace_back("text");
@@ -694,8 +694,7 @@ void Input::xml_out(XML& xml) const
 			xml.header("input", true, attributes);
 	}
 	else {
-		DrawNull draw;
-		Equation eqn("?", draw);
+		Equation eqn("?");
 		Parser p(m_typed, eqn);
 		while (p.peek()) {
 			NodePtr term = Expression::getTerm(p, nullptr);
@@ -724,7 +723,7 @@ void Expression::xml_out(XML& xml) const {
 	xml.footer("expression");
 }
 
-Equation::Equation(string eq, Draw& draw) : m_draw(draw)
+Equation::Equation(string eq)
 { 
 	Parser p(eq, *this); 
 	m_root = NodePtr(new Expression(p));

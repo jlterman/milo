@@ -79,16 +79,16 @@ int main(int argc, char* argv[])
 	LOG_TRACE_MSG("Starting milo_ncurses...");
 	DrawCurses& draw = DrawCurses::getInstance();
 	eqn_list.emplace_back("#");
-	Equation* eqn = new Equation("#", draw);
+	Equation* eqn = new Equation("#");
 	bool fRunning = true;
 	while (fRunning) {
-		eqn->asciiArt();
+		eqn->asciiArt(draw);
 		DrawCurses::getInstance().out();
 		Input* cur = eqn->getCurrentInput();
 
 		bool fChanged = true;
 		int ch = draw.getChar(cur->getTermOrigY(), cur->getTermOrigX() + cur->getTermSizeX() - 1);
-		LOG_TRACE_MSG("Char typed: " + string(1, (char)ch));
+		LOG_TRACE_MSG("Char typed: " + (ch<32 ? "ctrl-" + to_string(ch) : string(1, (char)ch)));
 		
 		if (isalnum(ch) || ch == '.') {
 			cur->addTyped(ch);
@@ -110,10 +110,12 @@ int main(int argc, char* argv[])
 					fChanged = false;                          LOG_TRACE_MSG("tab typed");
 					break;
 				}
-			    case 13: { // enter typed
-					if ( isalnum(cur->toString().back()) ) {
+			    case 10: { // enter typed
+					LOG_TRACE_MSG("enter typed, input: " + cur->toString());
+					if ( eqn->getNumInputs() > 1 && cur->toString().compare("?") && 
+						                            cur->toString().compare("#") ) {
 					    cur->disable();
-						eqn->nextInput();                      LOG_TRACE_MSG("enter typed, disabled input");
+						cur = eqn->nextInput();
 					}
 					else {
 						fChanged = false;
@@ -125,7 +127,7 @@ int main(int argc, char* argv[])
 					eqn_list.pop_back();
 					delete eqn;
 					istringstream in(old_eqn);
-					eqn = new Equation(in, DrawCurses::getInstance());
+					eqn = new Equation(in);
 					fChanged = false;                          LOG_TRACE_MSG("undo");
 					break;
 			    }
@@ -145,7 +147,7 @@ int main(int argc, char* argv[])
 			eqn_list.push_back(new_eqn);
 			delete eqn;
 			istringstream in(new_eqn);
-			eqn = new Equation(in, DrawCurses::getInstance()); LOG_TRACE_MSG("got new eqn");
+			eqn = new Equation(in);                            LOG_TRACE_MSG("got new eqn");
 		}
 	}
 }
