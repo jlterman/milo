@@ -90,7 +90,7 @@ int main(int argc, char* argv[])
 		int ch = draw.getChar(cur->getTermOrigY(), cur->getTermOrigX() + cur->getTermSizeX() - 1);
 		LOG_TRACE_MSG("Char typed: " + string(1, (char)ch));
 		
-		if (isalnum(ch)) {
+		if (isalnum(ch) || ch == '.') {
 			cur->addTyped(ch);
 		}
 		else {

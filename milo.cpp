@@ -38,6 +38,13 @@ bool isZero(Complex z) {
 	return isZero(z.real()) && isZero(z.imag());
 }
 
+bool isInteger(const string& s)
+{
+	bool fInteger = true;
+	for ( char c : s ) { fInteger *= isdigit(c); }
+	return fInteger;
+}
+
 void Divide::calcTermSize()
 {
 	m_first->calcTermSize();
@@ -185,11 +192,11 @@ string Number::toString() const
 
 	if (m_isInteger && !isZero(imagValue)) {
 		if (!isZero(realValue)) result += realNeg ? "-" : "+";
-		result += "\033[31mi\033[30m" + std::to_string((int) (imagValue + 0.2));
+		result += "i" + std::to_string((int) (imagValue + 0.2));
 	}
 	if (!m_isInteger && !isZero(imagValue)) {
 		if (!isZero(realValue)) result += realNeg ? "-" : "+";
-		result += "\033[31mi\033[30m" + std::to_string(imagValue);
+		result += "i" + std::to_string(imagValue);
 	}
 	return result;
 }
@@ -279,7 +286,7 @@ void Expression::asciiArt(Draw& draw) const
 	if (getParent() && getParent()->drawParenthesis()) draw.parenthesis(this);
 	for ( auto n : terms ) {
 		if (n != terms[0] || !n->getSign()) draw.at(n->getTermOrigX() - 1, 
-													n->getTermOrigY() + n->getTermSizeY()/2,
+													n->getBaseLine(),
 													n->getSign() ? '+' : '-');
 		n->asciiArt(draw); 
 	}
@@ -302,6 +309,7 @@ Input::Input(Equation& eqn, std::string txt, Node* parent, bool neg, bool curren
 {
 	eqn.addInput(this);
 	if (current) eqn.setCurrentInput(m_sn);
+	if (neg) negative();
 }
 
 void Input::calcTermSize()

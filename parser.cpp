@@ -266,6 +266,7 @@ string XMLParser::next()
 	peek(tag, m_state);
 	++m_pos;
 
+#if 0
 	string log = "XML read in: " + tag;
 	if (m_state&HEADER) log += " HEADER";
 	if (m_state&FOOTER) log += " FOOTER";
@@ -274,6 +275,7 @@ string XMLParser::next()
 	if (m_state&VALUE) log += " VALUE";
 	if (m_state&END) log += " END";
 	LOG_TRACE_MSG(log);
+#endif
 
 	return tag;
 }
@@ -478,7 +480,7 @@ NodePtr Input::xml_in(XMLParser& in, Node* parent)
 				throw logic_error("bad format");
 			fNeg = m.second.compare("true") == 0;
 		}
-		if (m.first.compare("current") == 0) {
+		else if (m.first.compare("current") == 0) {
 			if ((m.second.compare("true") && m.second.compare("false")))
 				throw logic_error("bad format");
 			fCurrent = m.second.compare("true") == 0;
@@ -661,8 +663,8 @@ void Variable::xml_out(XML& xml) const {
 
 void Number::xml_out(XML& xml) const {
 	xml.header("number", true, 
-			   { "real", to_string(m_value.real()),
-				 "imag", to_string(m_value.imag()),
+			   { "real", (m_isInteger ? to_string((int) m_value.real()) : to_string(m_value.real())),
+				 "imag", (m_isInteger ? to_string((int) m_value.imag()) : to_string(m_value.imag())),
 				 "negative", (getSign() ? "false" : "true") });
 					   
 }
@@ -670,7 +672,7 @@ void Number::xml_out(XML& xml) const {
 void Input::xml_out(XML& xml) const
 {
 	bool fAllAlphaNum = true;
-	for ( char c : m_typed ) {  fAllAlphaNum *= isalnum(c); }
+	for ( char c : m_typed ) {  fAllAlphaNum *= (isalnum(c) || c =='.'); }
 	if (fAllAlphaNum) {
 		vector<string> attributes;
 		if (m_typed.length() > 0) {
@@ -772,7 +774,7 @@ Variable::Variable(Parser& p, Node* parent) : Node(parent), m_name( p.next() ) {
 NodePtr Variable::parse(Parser& p, Node* parent)
 {
 	char c = p.peek();
-	if ( isalpha(c) && c != 'i' && c != 'e' ) {
+	if ( isalpha(c) ) {
 		return NodePtr(new Variable(p, parent));
 	}
 	else
@@ -837,8 +839,8 @@ NodePtr Term::parse(Parser& p, Node* parent)
 
 	NodePtr    node = Expression::parse(p, parent);
 	if (!node) node = Function::parse(p, parent);
-	if (!node) node = Variable::parse(p, parent);
 	if (!node) node = Number::parse(p, parent);
+	if (!node) node = Variable::parse(p, parent);
 	if (!node) node = Input::parse(p, parent);
 	if (!node) return nullptr;
 

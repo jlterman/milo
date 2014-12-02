@@ -14,6 +14,7 @@ using Complex = std::complex<double>;
 
 bool isZero(double x);
 bool isZero(Complex z);
+bool isInteger(const std::string& n);
 
 class Draw;
 class XML;

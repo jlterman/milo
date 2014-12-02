@@ -111,7 +111,8 @@ class Number : public Node
 public:
 	Number(Parser& p, Node* parent) : Node(parent), m_isInteger(true) { getNumber(p); }
 	Number(std::string real, std::string imag, Node* parent, bool neg) : 
-		Node(parent), m_value(Complex(stod(real), stod(imag))), m_isInteger(isZero(m_value))
+	    Node(parent), m_value(Complex(stod(real), stod(imag))), 
+		m_isInteger(isInteger(real) && isInteger(imag))
 	{ 
 		if (neg) negative();
 	}
