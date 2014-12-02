@@ -286,7 +286,7 @@ void Expression::asciiArt(Draw& draw) const
 	if (getParent() && getParent()->drawParenthesis()) draw.parenthesis(this);
 	for ( auto n : terms ) {
 		if (n != terms[0] || !n->getSign()) draw.at(n->getTermOrigX() - 1, 
-													n->getBaseLine(),
+													n->getTermOrigY() + n->getBaseLine(),
 													n->getSign() ? '+' : '-');
 		n->asciiArt(draw); 
 	}
@@ -350,16 +350,25 @@ void Input::handleChar(int ch)
 	string op(1, (char)ch);
 	switch (ch) {
 	    case '+':
-	    case '-': m_typed += op + "#";
+	    case '-': if (m_typed.empty()) m_typed = "?";
+                  m_typed += op + "#";
 		          break;
         case '/':
-	    case '^': m_typed = "(" + m_typed + ")" + op + "(#)";
+	    case '^': if (m_typed.empty()) m_typed = "?";
+                  m_typed = "(" + m_typed + ")" + op + "(#)";
 			      break;
         case '(': m_typed += "(#)";
 			      break;
     	default:  throw logic_error("bad character");
 		 	      break;
 	}
+}
+Input* Equation::nextInput() 
+{ 
+	m_inputs[m_input_index]->setCurrent(false);
+	m_input_index = (++m_input_index)%m_inputs.size();
+	m_inputs[m_input_index]->setCurrent(true);
+	return m_inputs[m_input_index];
 }
 
 namespace Log

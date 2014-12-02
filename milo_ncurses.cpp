@@ -105,8 +105,8 @@ int main(int argc, char* argv[])
 					fChanged = false;
 				}
 				case 9: { // tab typed
-					draw.at(cur->getTermOrigY(), cur->getTermOrigX(), '?');
-					eqn->nextInput();
+					draw.at(cur->getTermOrigY(), cur->getTermOrigX() + cur->getTermSizeX() - 1, '?');
+					cur = eqn->nextInput();
 					fChanged = false;                          LOG_TRACE_MSG("tab typed");
 					break;
 				}

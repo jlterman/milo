@@ -106,6 +106,7 @@ public:
 	void asciiArt(Draw& draw) const;
 
 	void disable() { m_active = false; }
+	void setCurrent(bool current) { m_current = current; }
 	void addTyped(char c) { m_typed += c; }
 	void delTyped() { m_typed.pop_back(); }
 
@@ -137,7 +138,7 @@ public:
 	NodePtr getRoot() { return m_root; }
 
 	Input* getCurrentInput() { return m_inputs[m_input_index]; }
-	void nextInput() { m_input_index = (++m_input_index)%m_inputs.size(); }
+	Input* nextInput();
 
 	void setCurrentInput(int in_sn);
 	void addInput(Input* in) { m_inputs.push_back(in); }
