@@ -12,7 +12,8 @@ public:
 	~DrawString() { }
 
 	void parenthesis(int x_size, int y_size, int x0, int y0);
-	void at(int x, int y, char c, Color color = BLACK) { m_field[y][x] = c; m_colors[y][x] = color; }
+	void horiz_line(int x_size, int x0, int y0) { for (int i = 0; i < x_size; ++i) at(x0 + i, y0, '-'); }
+	void at(int x, int y, int c, Color color = BLACK) { m_field[y][x] = c; m_colors[y][x] = color; }
 	void at(int x, int y, const string& s, Color color = BLACK);
 
 	void out();

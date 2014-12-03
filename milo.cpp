@@ -67,10 +67,8 @@ void Divide::calcTermOrig(int x, int y)
 
 void Divide::asciiArt(Draw& draw) const
 {
+	draw.horiz_line(getTermSizeX(), getTermOrigX(), getTermOrigY() + getBaseLine());
 	m_first->asciiArt(draw);
-	for (int x = 0; x < getTermSizeX(); ++x) {
-		draw.at(x + getTermOrigX(), getTermOrigY() + getBaseLine(), '-');
-	}
 	m_second->asciiArt(draw);
 }
 

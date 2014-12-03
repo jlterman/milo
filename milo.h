@@ -69,7 +69,8 @@ public:
 	virtual ~Draw() {}
 
 	virtual void parenthesis(int x_size, int y_size, int x0, int y0)=0;
-	virtual void at(int x, int y, char c, Color color = BLACK)=0;
+	virtual void horiz_line(int x_size, int x0, int y0)=0;
+	virtual void at(int x, int y, int c, Color color = BLACK)=0;
 	virtual void at(int x, int y, const std::string& s, Color color = BLACK)=0;
 	virtual void out()=0;
    

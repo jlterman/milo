@@ -24,7 +24,7 @@ public:
 	}
 	~DrawCurses() { endwin(); }
 
-	void at(int x, int y, char c, Color color = BLACK) {
+	void at(int x, int y, int c, Color color = BLACK) {
 		if (color != BLACK && m_has_colors) attron(COLOR_PAIR(color));
 		mvaddch(y + m_yOrig, x + m_xOrig, c);
 		if (color != BLACK && m_has_colors) attroff(COLOR_PAIR(color));
@@ -45,7 +45,15 @@ public:
 		clear();
 	}
 
+	void horiz_line(int x_size, int x0, int y0) { 
+		for (int i = 0; i < x_size; ++i) at(x0 + i, y0, ACS_HLINE);
+	}
+
 	void parenthesis(int x_size, int y_size, int x0, int y0);
+
+	int ins(int x, int y) {
+		return mvinch(y + m_yOrig, x + m_xOrig);
+	}
 
 	int getChar(int y, int x) {
 		mvaddch(y + m_yOrig, x + m_xOrig, ' '); 
@@ -70,17 +78,18 @@ bool DrawCurses::m_has_colors = false;
 void DrawCurses::parenthesis(int x_size, int y_size, int x0, int y0)
 {
 	if (y_size == 1) {
-		at(x0, y0, '(');
-		at(x0 + x_size - 1, y0, ')');
+		at(x0, y0, '[');
+		at(x0 + x_size - 1, y0, ']');
 	}
 	else {
-		at(x0, y0, '/');
-		at(x0, y0 + y_size - 1, '\\');
-		at(x0 + x_size - 1, y0, '\\');
-		at(x0 + x_size - 1, y0 + y_size - 1, '/');
-		for (int y = 1; y < y_size - 1; ++y) {
-			at(x0, y + y0, '|');
-			at(x0 + x_size - 1, y + y0, '|');
+		at(x0, y0 - 1, ins(x0, y0 - 1) == ACS_HLINE ? ACS_TTEE : ACS_ULCORNER);
+		at(x0, y0 + y_size, ins(x0, y0 + y_size) == ACS_HLINE ? ACS_BTEE : ACS_LLCORNER);
+		at(x0 + x_size - 1, y0 - 1, ins(x0 + x_size - 1, y0 - 1) == ACS_HLINE ? ACS_TTEE : ACS_URCORNER);
+		at(x0 + x_size - 1, y0 + y_size, ins(x0 + x_size - 1, y0 + y_size) == ACS_HLINE ? ACS_BTEE : ACS_LRCORNER);
+
+		for (int y = 0; y < y_size; ++y) {
+			at(x0, y + y0, ACS_VLINE);
+			at(x0 + x_size - 1, y + y0, ACS_VLINE);
 			
 		}
 	}
