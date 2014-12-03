@@ -78,63 +78,46 @@ int main(int argc, char* argv[])
 {
 	LOG_TRACE_MSG("Starting milo_ncurses...");
 	DrawCurses& draw = DrawCurses::getInstance();
-	eqn_list.emplace_back("#");
+	EqnUndoList eqns;
 	Equation* eqn = new Equation("#");
+	eqns.save(eqn);
+
 	bool fRunning = true;
 	while (fRunning) {
 		eqn->asciiArt(draw);
 		DrawCurses::getInstance().out();
 		Input* cur = eqn->getCurrentInput();
 
-		bool fChanged = true;
 		int ch = draw.getChar(cur->getTermOrigY(), cur->getTermOrigX() + cur->getTermSizeX() - 1);
 		LOG_TRACE_MSG("Char typed: " + (ch<32 ? "ctrl-" + to_string(ch) : string(1, (char)ch)));
-		
-		if (isalnum(ch) || ch == '.') {
-			cur->addTyped(ch);
-		}
-		else {
+
+		bool fChanged = true;
+		if (!cur->handleChar(ch)) {
 			switch (ch) 
 			{
-				case KEY_BACKSPACE: {
-					cur->delTyped();                           LOG_TRACE_MSG("Delete typed char");
-					break;
-				}
 			    case 3: { // ctrl-c typed
 					fRunning = false;                          LOG_TRACE_MSG("ctrl-c typed");
 					fChanged = false;
 				}
 				case 9: { // tab typed
 					draw.at(cur->getTermOrigY(), cur->getTermOrigX() + cur->getTermSizeX() - 1, '?');
-					cur = eqn->nextInput();
+					eqn->nextInput();
 					fChanged = false;                          LOG_TRACE_MSG("tab typed");
 					break;
 				}
 			    case 10: { // enter typed
-					LOG_TRACE_MSG("enter typed, input: " + cur->toString());
-					if ( eqn->getNumInputs() > 1 && cur->toString().compare("?") && 
-						                            cur->toString().compare("#") ) {
-					    cur->disable();
-						cur = eqn->nextInput();
-					}
-					else {
-						fChanged = false;
-					}
+					fChanged = eqn->disableCurrentInput();
 					break;
 				}
 			    case 26: { // ctrl-z typed
-					string old_eqn = eqn_list.back();
-					eqn_list.pop_back();
-					delete eqn;
-					istringstream in(old_eqn);
-					eqn = new Equation(in);
-					fChanged = false;                          LOG_TRACE_MSG("undo");
+					Equation* undo_eqn = eqns.undo();
+					if (undo_eqn) {
+						delete eqn;
+						eqn = undo_eqn;
+						fChanged = false;                      LOG_TRACE_MSG("undo to " + eqn->toString());
+					}
 					break;
 			    }
-			    case '+': case '-':	case '^': case '/':	case '(': {
-					cur->handleChar(ch);                       LOG_TRACE_MSG("handle operator chr");
-					break;
-				}
 				default: {
 					fChanged = false;                          LOG_TRACE_MSG("char not handled");
 					break;
@@ -142,12 +125,9 @@ int main(int argc, char* argv[])
 			}
 		}
 		if (fChanged) {
-			string new_eqn;
-			eqn->xml_out(new_eqn);                             LOG_TRACE_MSG("wrote xml");
-			eqn_list.push_back(new_eqn);
+			eqns.save(eqn);
 			delete eqn;
-			istringstream in(new_eqn);
-			eqn = new Equation(in);                            LOG_TRACE_MSG("got new eqn");
+			eqn = eqns.top();                                  LOG_TRACE_MSG("got new eqn");
 		}
 	}
 }

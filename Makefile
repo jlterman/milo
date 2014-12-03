@@ -15,8 +15,11 @@ milo_test.o: milo_test.cpp milo.h
 parser.o: parser.cpp milo.h nodes.h
 	g++ -g -std=c++11 parser.cpp -c
 
-milo.o: milo.cpp milo.h nodes.h
+milo.o: milo.cpp milo.h nodes.h milo_key.h
 	g++ -g -std=c++11 milo.cpp -c
+
+milo_key.h: genkey.sh
+	sh genkey.sh
 
 test: test.o
 	g++ -g -std=c++11 test.o -o test
@@ -25,4 +28,4 @@ test.o: test.cpp
 	g++ -g -std=c++11 test.cpp -c
 
 clean:
-	rm -f test milo_test *.o
+	rm -f test milo_test milo_ncurses milo_key.h *.o

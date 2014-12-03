@@ -110,7 +110,7 @@ public:
 	void addTyped(char c) { m_typed += c; }
 	void delTyped() { m_typed.pop_back(); }
 
-	void handleChar(int ch);
+	bool handleChar(int ch);
 
 	static NodePtr parse(Parser& p, Node* parent = nullptr);
 	static NodePtr xml_in(XMLParser& in, Node* parent);
@@ -138,8 +138,8 @@ public:
 	NodePtr getRoot() { return m_root; }
 
 	Input* getCurrentInput() { return m_inputs[m_input_index]; }
-	Input* nextInput();
-	int getNumInputs() { return m_inputs.size(); }
+	void nextInput();
+	bool disableCurrentInput();
 
 	void setCurrentInput(int in_sn);
 	void addInput(Input* in) { m_inputs.push_back(in); }
@@ -150,6 +150,19 @@ private:
 	NodePtr m_root;
 
 	static NodePtr xml_in(XMLParser& in);
+};
+
+class EqnUndoList
+{
+public:
+	EqnUndoList() {}
+
+	void save(Equation* eqn);
+	Equation* undo();
+	Equation* top();
+
+private:
+	std::vector<std::string> m_eqns;
 };
 
 namespace Log

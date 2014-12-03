@@ -5,7 +5,9 @@
 #include <map>
 #include <limits>
 #include <initializer_list>
+
 #include "milo.h"
+#include "milo_key.h"
 #include "nodes.h"
 
 using namespace std;
@@ -347,10 +349,19 @@ string Input::toString() const
 		return m_typed;
 }
 
-void Input::handleChar(int ch)
+bool Input::handleChar(int ch)
 {
+	if (isalnum(ch) || ch == '.') {
+		addTyped(ch);
+		return true;
+	}
+	bool fResult = true;
 	string op(1, (char)ch);
 	switch (ch) {
+	    case Key::BACKSPACE: {
+			delTyped();
+			break;
+		}
 	    case '+':
 	    case '-': if (m_typed.empty()) m_typed = "?";
                   m_typed += op + "#";
@@ -361,16 +372,50 @@ void Input::handleChar(int ch)
 			      break;
         case '(': m_typed += "(#)";
 			      break;
-    	default:  throw logic_error("bad character");
+	    default:  fResult = false;
 		 	      break;
 	}
+	return fResult;
 }
-Input* Equation::nextInput() 
+
+void Equation::nextInput() 
 { 
 	m_inputs[m_input_index]->setCurrent(false);
 	m_input_index = (++m_input_index)%m_inputs.size();
 	m_inputs[m_input_index]->setCurrent(true);
-	return m_inputs[m_input_index];
+}
+
+bool Equation::disableCurrentInput()
+{
+	bool fResult = false;
+	Input* current = m_inputs[m_input_index];
+	if ( m_inputs.size() > 1 && !current->m_typed.empty() ) {
+		current->disable();
+		nextInput();
+		fResult = true;
+	}
+	return fResult;
+}
+
+void EqnUndoList::save(Equation* eqn)
+{ 
+	string store;
+	eqn->xml_out(store);
+	m_eqns.push_back(store);
+}
+
+Equation* EqnUndoList::undo()
+{
+	if (m_eqns.size() <= 1) return nullptr;
+	m_eqns.pop_back();
+	return top();
+}
+
+Equation* EqnUndoList::top()
+{
+	if (m_eqns.empty()) return nullptr;
+	istringstream in(m_eqns.back());
+	return new Equation(in);
 }
 
 namespace Log
