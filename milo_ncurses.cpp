@@ -11,17 +11,29 @@ public:
 		if (!init) {
 			initscr(); raw(); noecho();
 			keypad(stdscr, TRUE);
+			m_has_colors = (has_colors() == TRUE);
+			if (m_has_colors) {
+				start_color();/* Start color */
+				init_color(COLOR_WHITE, 1000, 1000, 1000);
+				assume_default_colors(COLOR_BLACK, COLOR_WHITE);
+				for (int i = Color::RED; i <= Color::WHITE; ++i)
+					init_pair(i, COLOR_BLACK + i, COLOR_WHITE);
+			}
 			init = true;
 		}
 	}
 	~DrawCurses() { endwin(); }
 
-	void at(int x, int y, char c) {
+	void at(int x, int y, char c, Color color = BLACK) {
+		if (color != BLACK && m_has_colors) attron(COLOR_PAIR(color));
 		mvaddch(y + m_yOrig, x + m_xOrig, c);
+		if (color != BLACK && m_has_colors) attroff(COLOR_PAIR(color));
 	}
 
-	void at(int x, int y, const string& s) {
+	void at(int x, int y, const string& s, Color color = BLACK) {
+		if (color != BLACK && m_has_colors) attron(COLOR_PAIR(color));
 		move(y + m_yOrig, x + m_xOrig); printw(s.c_str());
+		if (color != BLACK && m_has_colors) attroff(COLOR_PAIR(color));
 	}
 
 	void out() { refresh(); }
@@ -49,9 +61,11 @@ public:
 
 private:
 	static bool init;
+	static bool m_has_colors;
 };
 
 bool DrawCurses::init = false;
+bool DrawCurses::m_has_colors = false;
 
 void DrawCurses::parenthesis(int x_size, int y_size, int x0, int y0)
 {

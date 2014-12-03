@@ -12,26 +12,40 @@ public:
 	~DrawString() { }
 
 	void parenthesis(int x_size, int y_size, int x0, int y0);
-	void at(int x, int y, char c) { m_field[y][x] = c; }
-	void at(int x, int y, const string& s);
+	void at(int x, int y, char c, Color color = BLACK) { m_field[y][x] = c; m_colors[y][x] = color; }
+	void at(int x, int y, const string& s, Color color = BLACK);
 
-	void out() { for (int i = 0; i < m_field.size(); ++i ) m_os << m_field[i] << endl; }
+	void out();
 
 	virtual void set(int x, int y, int x0 = 0, int y0 = 0) { 
 		Draw::set(x, y, x0, y0);
-		string line;
-		for (int i = 0; i < x; ++i) line += ' ';
-		for (int i = 0; i < y; ++i) m_field.push_back(line);
+		for (int i = 0; i < y; ++i) {
+			m_field.emplace_back(x, ' ');
+			m_colors.emplace_back(x, Color::BLACK);
+		}
 	}
 private:
 	vector<string> m_field;
+	vector< vector<Color> > m_colors;
 	ostream& m_os;
 };
 
-void DrawString::at(int x, int y, const string& s)
+void DrawString::at(int x, int y, const string& s, Color color)
 {
-	for (int n = 0; n < s.length(); ++n) { m_field[y][x + n] = s[n]; }
+	for (int n = 0; n < s.length(); ++n) { m_field[y][x + n] = s[n]; m_colors[y][x + n] = color; }
 }
+
+void DrawString::out()
+{ 
+	for (int i = 0; i < m_ySize; ++i ) {
+		for (int j = 0; j < m_xSize; ++j) {
+			if (m_colors[i][j]) m_os << "\033[3" + to_string(m_colors[i][j]) + "m";
+			m_os << m_field[i][j];
+			if (m_colors[i][j]) m_os << "\033[30m";
+		}
+		m_os << endl;
+	}
+ }
 
 void DrawString::parenthesis(int x_size, int y_size, int x0, int y0)
 {

@@ -156,7 +156,7 @@ void Function::calcTermOrig(int x, int y)
 
 void Function::asciiArt(Draw & draw) const
 {
-	draw.at(getTermOrigX(), getTermOrigY() + getBaseLine(), m_name);
+	draw.at(getTermOrigX(), getTermOrigY() + getBaseLine(), m_name, Color::GREEN);
 	m_arg->asciiArt(draw);
 }
 
@@ -176,38 +176,48 @@ void Variable::asciiArt(Draw& draw) const
 	draw.at(getTermOrigX(), getTermOrigY(), m_name);
 }
 
+string Number::toString(double value, bool real) const
+{
+	double mag = abs(value);
+	bool neg = signbit(value);
+
+	if (isZero(value)) return (real ? "0" : "i0" );
+
+	if (!m_isInteger) {
+		string result;
+		if (real && neg) result += "-";
+		if (!real) result += (neg ? "-i" : "i");
+		result += std::to_string(mag);
+		while (result.back() == '0') result.erase(result.end() - 1);
+		return result;
+	}
+	else {
+		string result = to_string((int) (mag + 0.5));
+		if (real) return string(neg ? "-" : "") + result;
+		     else return string(neg ? "-i" : "i") + result;
+	}
+}
+
 string Number::toString() const
 {
-	double realValue = abs(m_value.real());
-	bool realNeg = signbit(m_value.real());
-	double imagValue = abs(m_value.imag());
-	bool imagNeg = signbit(m_value.imag());
-
-	if (isZero(realValue) && isZero(imagValue)) return "0";
-
-	string result = "";
-	if (m_isInteger && !isZero(realValue)) 
-		result += std::to_string((int) (realValue + 0.2));
-
-	if (!m_isInteger && !isZero(realValue)) {
-		result += std::to_string(realValue);
-		while (result.back() == '0') result.erase(result.end() - 1);
+	if (isZero(m_value)) {
+		return "0";
 	}
-	if (m_isInteger && !isZero(imagValue)) {
-		if (!isZero(realValue)) result += realNeg ? "-" : "+";
-		result += "i" + std::to_string((int) (imagValue + 0.2));
+	else if ( !isZero(m_value.real()) ) {
+		string result = toString(m_value.real(), true);
+		if ( isZero(m_value.imag()) ) return result;
+
+		if (m_value.imag() > 0) result += "+";
+		return result + toString(m_value.imag(), false);
 	}
-	if (!m_isInteger && !isZero(imagValue)) {
-		if (!isZero(realValue)) result += realNeg ? "-" : "+";
-		result += "i" + std::to_string(imagValue);
-		while (result.back() == '0') result.erase(result.end() - 1);
-	}
-	return result;
+	else
+		return toString(m_value.imag(), false);
 }
 
 void Number::calcTermSize() 
 {
 	string n = toString();
+	m_imag_pos = n.find('i');
 	setTermSize(n.length(), 1);
 	setBaseLine(0);
 }
@@ -220,6 +230,9 @@ void Number::calcTermOrig(int x, int y)
 void Number::asciiArt(Draw& draw) const
 {
 	draw.at(getTermOrigX(), getTermOrigY(), toString());
+
+	if (m_imag_pos != string::npos) 
+		draw.at(getTermOrigX() + m_imag_pos, getTermOrigY(), 'i', Color::RED);
 }
 
 void Term::calcTermSize() 

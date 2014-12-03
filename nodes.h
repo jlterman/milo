@@ -59,7 +59,7 @@ public:
 	static NodePtr parse(Parser& p, Node* parent);
 	static NodePtr xml_in(XMLParser& in, Node* parent);
 
-	std::string toString() const { return "\033[32m" + m_name + "\033[30m" + m_arg->toString(); }
+	std::string toString() const { return m_name + m_arg->toString(); }
 	void xml_out(XML& xml) const;
 	void calcTermSize();
 	void calcTermOrig(int x, int y);
@@ -110,9 +110,9 @@ class Number : public Node
 {
 public:
 	Number(Parser& p, Node* parent) : Node(parent), m_isInteger(true) { getNumber(p); }
-	Number(std::string real, std::string imag, Node* parent, bool neg) : 
-	    Node(parent), m_value(Complex(stod(real), stod(imag))), 
-		m_isInteger(isInteger(real) && isInteger(imag))
+	Number(std::string real, std::string imaginary, Node* parent, bool neg) : 
+	    Node(parent), m_value(Complex(stod(real), stod(imaginary))), m_imag_pos(-1),
+		m_isInteger(isInteger(real) && isInteger(imaginary))
 	{ 
 		if (neg) negative();
 	}
@@ -121,6 +121,7 @@ public:
 	double getReal(Parser& p);
 	void getNumber(Parser& p);
 
+	std::string toString(double value, bool real = true) const;
 	std::string toString() const;
 	void xml_out(XML& xml) const;
 	void calcTermSize();
@@ -135,6 +136,7 @@ private:
 
 	Complex m_value;
 	bool m_isInteger;
+	size_t m_imag_pos;
 };
 
 class Term : public Node
