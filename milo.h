@@ -22,6 +22,8 @@ class XMLParser;
 class Node;
 using NodePtr = std::shared_ptr<Node>;
 
+inline bool operator==(NodePtr& a, Node*& b) { return a.get() == b; }
+
 class Node
 {
 public:
@@ -30,27 +32,37 @@ public:
 
 	virtual void xml_out(XML& xml) const=0;
 	virtual std::string toString() const=0;
-	virtual void calcTermSize()=0;
-	virtual void calcTermOrig(int x, int y)=0;
+	virtual void calcSize()=0;
+	virtual void calcOrig(int x, int y)=0;
 	virtual void asciiArt(Draw& draw) const=0;
 	virtual bool drawParenthesis() { return false; }
 
+	Node* begin();
+	Node* end();
+	Node* getNextLeft();
+	Node* getNextRight();
 	void negative() { m_sign = !m_sign; }
 	bool getSign() const { return m_sign; }
 
-	int getTermSizeX() const { return termSize_x; }
-	int getTermSizeY() const { return termSize_y; }
-	int getTermOrigX() const { return termOrig_x; }
-	int getTermOrigY() const { return termOrig_y; }
+	int getSizeX() const { return termSize_x; }
+	int getSizeY() const { return termSize_y; }
+	int getOrigX() const { return termOrig_x; }
+	int getOrigY() const { return termOrig_y; }
 	int  getBaseLine() const { return m_base; }
 
-	void setTermSize(int x, int y) { termSize_x = x; termSize_y = y; }
-	void setTermOrig(int x, int y) { termOrig_x = x; termOrig_y = y; }
+	void setSize(int x, int y) { termSize_x = x; termSize_y = y; }
+	void setOrig(int x, int y) { termOrig_x = x; termOrig_y = y; }
 	void setBaseLine(int base) { m_base = base; }
 
 	void setParent(Node* parent) { m_parent = parent; }
 	Node* getParent() const { return m_parent; }
+
 private:
+	virtual Node* downLeft() { return nullptr; }
+	virtual Node* downRight() { return nullptr; }
+	virtual Node* getLeftSibling(Node* node) { return nullptr; }
+	virtual Node* getRightSibling(Node* node) { return nullptr; }
+
 	int termSize_x;
 	int termSize_y;
 	int termOrig_x;
@@ -79,8 +91,8 @@ public:
 	}
 
 	void parenthesis(const Node* node) { 
-		parenthesis(node->getTermSizeX(), node->getTermSizeY(), 
-					node->getTermOrigX(), node->getTermOrigY());
+		parenthesis(node->getSizeX(), node->getSizeY(), 
+					node->getOrigX(), node->getOrigY());
 	}
 
 protected:
@@ -104,8 +116,8 @@ public:
 
 	std::string toString() const;
 	void xml_out(XML& xml) const;
-	void calcTermSize();
-	void calcTermOrig(int x, int y);
+	void calcSize();
+	void calcOrig(int x, int y);
 	void asciiArt(Draw& draw) const;
 
 	void disable() { m_active = false; }

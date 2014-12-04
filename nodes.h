@@ -15,38 +15,50 @@ public:
 
 	static NodePtr parse(Parser& p, NodePtr one, Node* parent);
 	static NodePtr xml_in(XMLParser& in, char op, const std::string& name, Node* parent);
-
 	void xml_out(const std::string& tag, XML& xml) const;
 
 protected:
 	NodePtr m_first;
 	NodePtr m_second;
 	char m_op;
+
+private:
+	Node* downLeft() { return m_first.get(); }
+	Node* downRight() { return m_second.get(); }
+	Node* getLeftSibling(Node* node)  { return (m_second == node) ? m_first.get() : nullptr; }
+	Node* getRightSibling(Node* node) { return (m_first == node) ? m_second.get() : nullptr; }
+
 };
 
 class Divide : public Binary
 {
 public:
-	Divide(NodePtr one, NodePtr two, bool fNeg = false, Node* parent = nullptr) : 
-		Binary('/', one, two, parent) { if (fNeg) negative(); }
+    Divide(NodePtr one, NodePtr two, Node* parent, bool neg = false) : 
+	    Binary('/', one, two, parent) 
+	{ 
+		one->setParent(this); two->setParent(this); 
+	}
 	~Divide() {}
 
 	void xml_out(XML& xml) const { Binary::xml_out("divide", xml); }
-	void calcTermSize();
-	void calcTermOrig(int x, int y);
+	void calcSize();
+	void calcOrig(int x, int y);
 	void asciiArt(Draw& draw) const;
 };
 
 class Power : public Binary
 {
 public:
-	Power(NodePtr one, NodePtr two, bool fNeg = false, Node* parent = nullptr) : 
-		Binary('^', one, two, parent) { if (fNeg) negative(); }
+    Power(NodePtr one, NodePtr two, Node* parent, bool neg = false) : 
+		Binary('^', one, two, parent) 
+	{ 
+		if (neg) negative(); one->setParent(this); two->setParent(this);
+	}
 	~Power() {}
 
 	void xml_out(XML& xml) const { Binary::xml_out("power", xml); }
-	void calcTermSize();
-	void calcTermOrig(int x, int y);
+	void calcSize();
+	void calcOrig(int x, int y);
 	void asciiArt(Draw& draw) const;
 };
 
@@ -61,15 +73,25 @@ public:
 
 	std::string toString() const { return m_name + m_arg->toString(); }
 	void xml_out(XML& xml) const;
-	void calcTermSize();
-	void calcTermOrig(int x, int y);
+	void calcSize();
+	void calcOrig(int x, int y);
 	void asciiArt(Draw& draw) const;
 	bool drawParenthesis() { return true; }
 
 	Function(const std::string& name, func_ptr fp, NodePtr node, Node* parent, bool neg = false) : 
-		Node(parent), m_name(name), m_func(fp), m_arg(node) { if (neg) negative(); }
+	    Node(parent), m_name(name), m_func(fp), m_arg(node) 
+	{ 
+		if (neg) negative();
+		m_arg->setParent(this); 
+	}
+
 	Function()=delete;
 	~Function() {}
+
+private:
+	Node* downLeft()  { return m_arg.get(); }
+	Node* downRight() { return m_arg.get(); }
+
 private:
 	std::string m_name;
 	func_ptr m_func;
@@ -96,8 +118,8 @@ public:
 
 	std::string toString() const { return std::string() + m_name; }
 	void xml_out(XML& xml) const;
-	void calcTermSize();
-	void calcTermOrig(int x, int y);
+	void calcSize();
+	void calcOrig(int x, int y);
 	void asciiArt(Draw& draw) const;
 
 	static NodePtr parse(Parser& p, Node* parent);
@@ -121,8 +143,8 @@ public:
 
 	std::string toString() const { return std::string() + m_name; }
 	void xml_out(XML& xml) const;
-	void calcTermSize();
-	void calcTermOrig(int x, int y);
+	void calcSize();
+	void calcOrig(int x, int y);
 	void asciiArt(Draw& draw) const;
 
 	static NodePtr parse(Parser& p, Node* parent);
@@ -150,8 +172,8 @@ public:
 	std::string toString(double value, bool real = true) const;
 	std::string toString() const;
 	void xml_out(XML& xml) const;
-	void calcTermSize();
-	void calcTermOrig(int x, int y);
+	void calcSize();
+	void calcOrig(int x, int y);
 	void asciiArt(Draw& draw) const;
 
 	static NodePtr parse(Parser& p, Node* parent);
@@ -176,12 +198,17 @@ public:
 
 	std::string toString() const;
 	void xml_out(XML& xml) const;
-	void calcTermSize();
-	void calcTermOrig(int x, int y);
+	void calcSize();
+	void calcOrig(int x, int y);
 	void asciiArt(Draw& draw) const;
 	bool drawParenthesis() { return true; }
 
 private:
+	Node* downLeft()  { return factors.front().get(); }
+	Node* downRight() { return factors.back().get(); }
+	Node* getLeftSibling(Node* node);
+	Node* getRightSibling(Node* node);
+
 	std::vector<NodePtr> factors;
 
 	bool add(Parser& p);
@@ -197,8 +224,8 @@ public:
 
 	std::string toString() const;
 	void xml_out(XML& xml) const;
-	void calcTermSize();
-	void calcTermOrig(int x, int y);
+	void calcSize();
+	void calcOrig(int x, int y);
 	void asciiArt(Draw& draw) const;
 
 	bool firstTerm(const NodePtr n) const { return (terms.size() > 1) && (terms[0] == n); }
@@ -206,6 +233,12 @@ public:
 	static NodePtr getTerm(Parser& p, Node* parent);
 	static NodePtr parse(Parser& p, Node* parent);
 	static NodePtr xml_in(XMLParser& in, Node* parent);
+
+protected:
+	Node* downLeft()  { return terms.front().get(); }
+	Node* downRight() { return terms.back().get(); }
+	Node* getLeftSibling(Node* node);
+	Node* getRightSibling(Node* node);
 
 private:
 	std::vector<NodePtr> terms;	

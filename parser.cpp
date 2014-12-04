@@ -327,7 +327,7 @@ NodePtr Equation::xml_in(XMLParser& in)
 {
 	NodePtr root;
 	if (in.next(XMLParser::HEADER|XMLParser::END, "equation")) {
-		root = NodePtr(new Expression(in));
+		root = make_shared<Expression>(in);
 	}
 	else
 		throw logic_error("bad format");
@@ -372,14 +372,12 @@ NodePtr Function::xml_in(XMLParser& in, Node* parent)
 		else
 			throw logic_error("bad format");
 	}
-	NodePtr arg = NodePtr(new Expression(in));
+	NodePtr arg = make_shared<Expression>(in);
 	
 	if (!in.next(XMLParser::FOOTER|XMLParser::END, "function"))
 		throw logic_error("bad format");
 
-	Node* node = new Function(fname, fp, arg, parent, fNeg);
-	arg->setParent(node);
-	return NodePtr(node);
+	return make_shared<Function>(fname, fp, arg, parent, fNeg);
 }
 
 NodePtr Binary::xml_in(XMLParser& in, char op, const string& name, Node* parent)
@@ -403,18 +401,12 @@ NodePtr Binary::xml_in(XMLParser& in, char op, const string& name, Node* parent)
 	if (!in.next(XMLParser::FOOTER|XMLParser::END, name))
 		throw logic_error("bad format");
 
-	Node* binary = nullptr;
 	if (name.compare("divide") == 0) 
-		binary = new Divide(one, two, fNeg);
+		return make_shared<Divide>(one, two, parent, fNeg);
 	else if (name.compare("power") == 0)
-		binary = new  Power(one, two, fNeg);
+		return make_shared<Power>(one, two, parent, fNeg);
 	else
 		throw logic_error("bad format");
-
-	one->setParent(binary);
-	two->setParent(binary);
-	binary->setParent(parent);
-	return NodePtr(binary);
 }
 
 NodePtr Variable::xml_in(XMLParser& in, Node* parent)
@@ -438,7 +430,7 @@ NodePtr Variable::xml_in(XMLParser& in, Node* parent)
 			throw logic_error("bad format");
 	}
 	if (!in.getState(XMLParser::ATOM|XMLParser::END)) throw logic_error("bad format");
-	return NodePtr(new Variable(var_name, parent, fNeg));
+	return make_shared<Variable>(var_name, parent, fNeg);
 }
 
 NodePtr Constant::xml_in(XMLParser& in, Node* parent)
@@ -464,7 +456,7 @@ NodePtr Constant::xml_in(XMLParser& in, Node* parent)
 			throw logic_error("bad format");
 	}
 	if (!in.getState(XMLParser::ATOM|XMLParser::END))  throw logic_error("bad format");
-	return NodePtr(new Constant(cname, value, parent));
+	return make_shared<Constant>(cname, value, parent);
 }
 
 NodePtr Number::xml_in(XMLParser& in, Node* parent)
@@ -490,7 +482,7 @@ NodePtr Number::xml_in(XMLParser& in, Node* parent)
 			throw logic_error("bad format");
 	}
 	if (!in.getState(XMLParser::ATOM|XMLParser::END))  throw logic_error("bad format");
-	return NodePtr(new Number(real, imag, parent, fNeg));
+	return make_shared<Number>(real, imag, parent, fNeg);
 }
 
 NodePtr Input::xml_in(XMLParser& in, Node* parent)
@@ -520,7 +512,7 @@ NodePtr Input::xml_in(XMLParser& in, Node* parent)
 			throw logic_error("bad format");
 	}
 	if (!in.getState(XMLParser::ATOM|XMLParser::END)) throw logic_error("bad format");
-	return NodePtr(new Input(in.getEqn(), text, parent, fNeg, fCurrent));
+	return make_shared<Input>(in.getEqn(), text, parent, fNeg, fCurrent);
 }
 
 Term::Term(XMLParser& in, Node* parent) : Node(parent)
@@ -547,7 +539,7 @@ NodePtr Term::xml_in(XMLParser& in, Node* parent)
 {
 	if (!in.peek(XMLParser::HEADER, "term")) return nullptr;
 
-	return NodePtr(new  Term(in, parent));
+	return make_shared<Term>(in, parent);
 }
 
 bool Term::add(XMLParser& in)
@@ -563,10 +555,10 @@ bool Expression::add(XMLParser& in)
 {
 	NodePtr node = nullptr;
 	if (in.peek(XMLParser::HEADER, "term")) {
-		node = NodePtr( new Term(in, this) );
+		node = make_shared<Term>(in, this);
 	}
 	else if (in.peek(XMLParser::HEADER, "input")) {
-		node = NodePtr( Input::xml_in(in, this) );
+		node = Input::xml_in(in, this);
 	}
 	if (!node) return false;
 
@@ -583,7 +575,7 @@ NodePtr Expression::getTerm(Parser& p, Node* parent)
 		neg = (c == '-') ? true : false;
 	}
 	node = Input::parse(p, parent);
-	if (!node) node = NodePtr( new Term(p, parent) );
+	if (!node) node = make_shared<Term>(p, parent);
 
 	if (neg) node->negative();
 	return node;
@@ -608,8 +600,7 @@ NodePtr Expression::parse(Parser& p, Node* parent) {
 	NodePtr node = nullptr;
 	if ( (node = Input::parse(p, parent)) ) return node;
 	char c = p.next();
-	node = NodePtr(new Expression(p, parent));
-	return node;
+	return make_shared<Expression>(p, parent);
 }
 
 Expression::Expression(XMLParser& in, Node* parent) : Node(parent)
@@ -636,7 +627,7 @@ NodePtr Expression::xml_in(XMLParser& in, Node* parent)
 {
 	if (!in.peek(XMLParser::HEADER, "expression")) return nullptr;
 
-	return NodePtr(new Expression(in, parent));
+	return make_shared<Expression>(in, parent);
 }
 
 void Equation::xml_out(XML& xml) const
@@ -757,7 +748,7 @@ void Expression::xml_out(XML& xml) const {
 Equation::Equation(string eq)
 { 
 	Parser p(eq, *this); 
-	m_root = NodePtr(new Expression(p));
+	m_root = make_shared<Expression>(p);
 }
 
 NodePtr Function::parse(Parser& p, Node* parent) {
@@ -767,12 +758,10 @@ NodePtr Function::parse(Parser& p, Node* parent) {
 
 	for ( auto m : functions ) { 
 		if (p.match(m.first + "(")) {
-			NodePtr arg = NodePtr(new Expression(p, parent));
+			NodePtr arg = make_shared<Expression>(p, parent);
 			if (!arg) throw logic_error("bad format");
 
-			Node* node = new Function(m.first, m.second, arg, parent);
-			arg->setParent(node);
-			return NodePtr(node);
+			return make_shared<Function>(m.first, m.second, arg, parent);
 		}
 	}
 	return nullptr;
@@ -787,16 +776,13 @@ NodePtr Binary::parse(Parser& p, NodePtr one, Node* parent)
 	NodePtr two = Term::parse(p);
 	if (!two) throw logic_error("bad format");
 
-	Node* binary;
+	NodePtr binary;
 	if ( c == '/' ) 
-		binary = new Divide(one, two); 
-	else 
-		binary = new Power(one, two);
-
-	one->setParent(binary);
-	two->setParent(binary);
-	binary->setParent(parent);
-	return NodePtr(binary);
+		return make_shared<Divide>(one, two, parent); 
+	else if ( c == '^' ) 
+		return make_shared<Power>(one, two, parent);
+	else
+		return nullptr;
 }
 	
 Variable::Variable(Parser& p, Node* parent) : Node(parent), m_name( p.next() ) {}
@@ -805,7 +791,7 @@ NodePtr Variable::parse(Parser& p, Node* parent)
 {
 	char c = p.peek();
 	if ( isalpha(c) ) {
-		return NodePtr(new Variable(p, parent));
+		return make_shared<Variable>(p, parent);
 	}
 	else
 		return nullptr;
@@ -820,7 +806,7 @@ NodePtr Constant::parse(Parser& p, Node* parent)
 
 	char c = p.peek();
 	if ( constants.find(c) != constants.end() ) {
-		return NodePtr(new Constant(p, parent));
+		return make_shared<Constant>(p, parent);
 	}
 	else
 		return nullptr;			
@@ -830,7 +816,7 @@ NodePtr Number::parse(Parser& p, Node* parent)
 {
 	char c = p.peek();
 	if (isdigit(c) || c == 'i' ) {
-		return NodePtr(new Number(p, parent));
+		return make_shared<Number>(p, parent);
 	}
 	else
 		return nullptr;
@@ -919,7 +905,7 @@ NodePtr Input::parse(Parser& p, Node* parent)
 {
 	char c = p.peek();
 	if ( c == '?' || c == '#' || c == '[' ) {
-		return NodePtr(new Input(p, parent));
+		return make_shared<Input>(p, parent);
 	}
 	else
 		return nullptr;

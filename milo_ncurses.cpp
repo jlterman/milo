@@ -112,7 +112,7 @@ int main(int argc, char* argv[])
 		DrawCurses::getInstance().out();
 		Input* cur = eqn->getCurrentInput();
 
-		int ch = draw.getChar(cur->getTermOrigY(), cur->getTermOrigX() + cur->getTermSizeX() - 1);
+		int ch = draw.getChar(cur->getOrigY(), cur->getOrigX() + cur->getSizeX() - 1);
 		LOG_TRACE_MSG("Char typed: " + (ch<32 ? "ctrl-" + to_string(ch) : string(1, (char)ch)));
 
 		bool fChanged = true;
@@ -124,7 +124,7 @@ int main(int argc, char* argv[])
 					fChanged = false;
 				}
 				case 9: { // tab typed
-					draw.at(cur->getTermOrigY(), cur->getTermOrigX() + cur->getTermSizeX() - 1, '?');
+					draw.at(cur->getOrigY(), cur->getOrigX() + cur->getSizeX() - 1, '?');
 					eqn->nextInput();
 					fChanged = false;                          LOG_TRACE_MSG("tab typed");
 					break;
