@@ -77,12 +77,38 @@ private:
 
 	static func_map functions;
 
-	static void init_functions(func_map& fmap);
+	static void init_functions();
 	static Complex sinZ(Complex z);
 	static Complex cosZ(Complex z);
 	static Complex tanZ(Complex z);
 	static Complex logZ(Complex z);
 	static Complex expZ(Complex z);
+};
+
+class Constant : public Node
+{
+public:
+	Constant(Parser& p, Node* parent);
+    Constant(char name, Complex value, Node* parent) : Node(parent), m_name(name), m_value(value) {}
+	~Constant() {}
+
+	using const_map = std::map<char, Complex>;
+
+	std::string toString() const { return std::string() + m_name; }
+	void xml_out(XML& xml) const;
+	void calcTermSize();
+	void calcTermOrig(int x, int y);
+	void asciiArt(Draw& draw) const;
+
+	static NodePtr parse(Parser& p, Node* parent);
+	static NodePtr xml_in(XMLParser& in, Node* parent);
+
+private:
+	char m_name;
+	Complex m_value;
+	static const_map constants;
+
+	static void init_constants();
 };
 
 class Variable : public Node

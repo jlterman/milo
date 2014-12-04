@@ -131,12 +131,13 @@ Complex Function::expZ(Complex z) {
 	return Complex(exp(x)*cos(y), exp(x)*sin(y));
 }
 
-void Function::init_functions(func_map& fmap) {
-	fmap.emplace("sin", &sinZ);
-	fmap.emplace("cos", &cosZ);
-	fmap.emplace("tan", &tanZ);
-	fmap.emplace("log", &logZ);
-	fmap.emplace("exp", &expZ);
+void Function::init_functions()
+{
+	functions.emplace("sin", &sinZ);
+	functions.emplace("cos", &cosZ);
+	functions.emplace("tan", &tanZ);
+	functions.emplace("log", &logZ);
+	functions.emplace("exp", &expZ);
 }
 
 void Function::calcTermSize() 
@@ -156,6 +157,31 @@ void Function::asciiArt(Draw & draw) const
 {
 	draw.at(getTermOrigX(), getTermOrigY() + getBaseLine(), m_name, Color::GREEN);
 	m_arg->asciiArt(draw);
+}
+
+Constant::const_map Constant::constants;
+
+void Constant::init_constants()
+{
+	constants.emplace('e', Complex(exp(1.0), 0));
+	constants.emplace('P', Complex(4*atan(1.0), 0));
+	constants.emplace('i', Complex(0, 1));
+}
+
+void Constant::calcTermSize() 
+{
+	setTermSize(1, 1);
+	setBaseLine(0);
+}
+
+void Constant::calcTermOrig(int x, int y)
+{
+	setTermOrig(x, y);
+}
+
+void Constant::asciiArt(Draw& draw) const
+{
+	draw.at(getTermOrigX(), getTermOrigY(), m_name);
 }
 
 void Variable::calcTermSize() 

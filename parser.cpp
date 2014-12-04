@@ -314,6 +314,7 @@ NodePtr XMLParser::parse(XMLParser& in, Node* parent)
 {
 	NodePtr    node = Expression::xml_in(in, parent);
 	if (!node) node = Function::xml_in(in, parent);
+	if (!node) node = Constant::xml_in(in, parent);
 	if (!node) node = Variable::xml_in(in, parent);
 	if (!node) node = Number::xml_in(in, parent);
 	if (!node) node = Binary::xml_in(in, '/', "divide", parent);
@@ -344,7 +345,7 @@ Equation::Equation(istream& is)
 
 NodePtr Function::xml_in(XMLParser& in, Node* parent)
 {
-	if (functions.empty()) { init_functions(functions);	}
+	if (functions.empty()) { init_functions();	}
 
 	if (!in.peek(XMLParser::HEADER, "function")) return nullptr;
 	if (in.next(XMLParser::END, "function")) throw logic_error("bad format");
@@ -438,6 +439,32 @@ NodePtr Variable::xml_in(XMLParser& in, Node* parent)
 	}
 	if (!in.getState(XMLParser::ATOM|XMLParser::END)) throw logic_error("bad format");
 	return NodePtr(new Variable(var_name, parent, fNeg));
+}
+
+NodePtr Constant::xml_in(XMLParser& in, Node* parent)
+{
+	if (constants.empty()) { init_constants();	}
+
+	if (!in.peek(XMLParser::HEADER, "constant")) return nullptr;
+	if (in.next(XMLParser::END, "constant")) throw logic_error("bad format");
+	
+	char cname;
+	Complex value;
+
+	for ( auto m : in.getAttributes() ) {
+		if (m.first.compare("name") == 0 && m.second.length() == 1) {
+			auto it = constants.find(m.second[0]);
+			if (it != constants.end()) {
+				cname = m.second[0];
+				value = it->second;
+			}
+			if (!cname || isZero(value)) throw logic_error("bad format");
+		}
+		else
+			throw logic_error("bad format");
+	}
+	if (!in.getState(XMLParser::ATOM|XMLParser::END))  throw logic_error("bad format");
+	return NodePtr(new Constant(cname, value, parent));
 }
 
 NodePtr Number::xml_in(XMLParser& in, Node* parent)
@@ -661,6 +688,10 @@ void Variable::xml_out(XML& xml) const {
 		xml.header("variable", true, {"name", name, "negative", "true"});
 }
 
+void Constant::xml_out(XML& xml) const {
+	xml.header("constant", true, { "name", string(1, m_name) });
+}
+
 void Number::xml_out(XML& xml) const {
 	xml.header("number", true, 
 			   { "real", (m_isInteger ? to_string((int) m_value.real()) : to_string(m_value.real())),
@@ -730,7 +761,7 @@ Equation::Equation(string eq)
 }
 
 NodePtr Function::parse(Parser& p, Node* parent) {
-	if (functions.empty()) { init_functions(functions);	}
+	if (functions.empty()) { init_functions();	}
 
 	if (!isalpha(p.peek()) ) return nullptr;
 
@@ -778,6 +809,21 @@ NodePtr Variable::parse(Parser& p, Node* parent)
 	}
 	else
 		return nullptr;
+}
+
+Constant::Constant(Parser& p, Node* parent) : 
+	Node(parent), m_name(p.next()), m_value(constants.find(m_name)->second) {}
+
+NodePtr Constant::parse(Parser& p, Node* parent)
+{
+	if (constants.empty()) init_constants();
+
+	char c = p.peek();
+	if ( constants.find(c) != constants.end() ) {
+		return NodePtr(new Constant(p, parent));
+	}
+	else
+		return nullptr;			
 }
 
 NodePtr Number::parse(Parser& p, Node* parent)
@@ -838,6 +884,7 @@ NodePtr Term::parse(Parser& p, Node* parent)
 
 	NodePtr    node = Expression::parse(p, parent);
 	if (!node) node = Function::parse(p, parent);
+	if (!node) node = Constant::parse(p, parent);
 	if (!node) node = Number::parse(p, parent);
 	if (!node) node = Variable::parse(p, parent);
 	if (!node) node = Input::parse(p, parent);

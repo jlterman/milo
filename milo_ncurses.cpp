@@ -25,6 +25,7 @@ public:
 	~DrawCurses() { endwin(); }
 
 	void at(int x, int y, int c, Color color = BLACK) {
+		if (c == 'P') c = ACS_PI;
 		if (color != BLACK && m_has_colors) attron(COLOR_PAIR(color));
 		mvaddch(y + m_yOrig, x + m_xOrig, c);
 		if (color != BLACK && m_has_colors) attroff(COLOR_PAIR(color));
