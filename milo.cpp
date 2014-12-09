@@ -4,7 +4,7 @@
 #include <exception>
 #include <map>
 #include <limits>
-#include <initializer_list>
+#include <typeinfo>
 
 #include "milo.h"
 #include "milo_key.h"
@@ -23,6 +23,10 @@ void Equation::asciiArt(Draw& draw) const
 void Equation::setCurrentInput(int in_sn)
 {
 	if (m_input_index >= 0) m_inputs[m_input_index]->m_current = false;
+	if (in_sn < 0) {
+		m_input_index = -1;
+		return;
+	}
 	for (int i = 0; i < m_inputs.size(); ++i) {
 		if (m_inputs[i]->m_sn == in_sn) {
 			m_input_index = i;
@@ -46,6 +50,8 @@ bool isInteger(const string& s)
 	for ( char c : s ) { fInteger *= isdigit(c); }
 	return fInteger;
 }
+
+const vector<string> Node::select_tags = { "NONE", "START", "END", "ALL" };
 
 Node* Node::begin()
 {
@@ -193,7 +199,7 @@ void Function::calcOrig(int x, int y)
 
 void Function::asciiArt(Draw & draw) const
 {
-	draw.at(getOrigX(), getOrigY() + getBaseLine(), m_name, Color::GREEN);
+	draw.at(getOrigX(), getOrigY() + getBaseLine(), m_name, Draw::Color::GREEN);
 	m_arg->asciiArt(draw);
 }
 
@@ -294,7 +300,7 @@ void Number::asciiArt(Draw& draw) const
 	draw.at(getOrigX(), getOrigY(), toString());
 
 	if (m_imag_pos != string::npos) 
-		draw.at(getOrigX() + m_imag_pos, getOrigY(), 'i', Color::RED);
+		draw.at(getOrigX() + m_imag_pos, getOrigY(), 'i', Draw::Color::RED);
 }
 
 void Term::calcSize() 
@@ -337,7 +343,7 @@ Node* Term::getLeftSibling(Node* node)
 {
 	for (int i = 1; i < factors.size(); ++i) {
 		if (factors[i] == node)
-			return factors[i - 1].get();
+			return factors[i - 1];
 	}
 	return nullptr;
 }
@@ -346,7 +352,7 @@ Node* Term::getRightSibling(Node* node)
 {
 	for (int i = 0; i < factors.size() - 2; ++i) {
 		if (factors[i] == node) 
-			return factors[i + 1].get();
+			return factors[i + 1];
 	}
 	return nullptr;
 }
@@ -403,7 +409,7 @@ Node* Expression::getLeftSibling(Node* node)
 {
 	for (int i = 1; i < terms.size(); ++i) {
 		if (terms[i] == node)
-			return terms[i - 1].get();
+			return terms[i - 1];
 	}
 	return nullptr;
 }
@@ -412,19 +418,25 @@ Node* Expression::getRightSibling(Node* node)
 {
 	for (int i = 0; i < terms.size() - 2; ++i) {
 		if (terms[i] == node) 
-			return terms[i + 1].get();
+			return terms[i + 1];
 	}
 	return nullptr;
 }
 
+void Expression::deleteNode(Node* node)
+{
+	for (auto pos = terms.begin(); pos != terms.end(); ++pos) {
+		if ( *pos == node ) terms.erase(pos);
+	}
+}
+
 int Input::input_sn = -1;
 
-Input::Input(Equation& eqn, std::string txt, Node* parent, bool neg, bool current) :
-	Node(parent), m_typed(txt), m_sn(++input_sn), m_active(true), m_current(current)
+Input::Input(Equation& eqn, std::string txt, bool current, Node* parent, bool neg, Node::Select s) :
+	Node(parent, neg, s), m_typed(txt), m_sn(++input_sn), m_active(true), m_current(current), m_eqn(eqn)
 {
 	eqn.addInput(this);
 	if (current) eqn.setCurrentInput(m_sn);
-	if (neg) negative();
 }
 
 void Input::calcSize()
@@ -460,6 +472,19 @@ string Input::toString() const
 		return m_typed;
 }
 
+bool Input::handleBackspace() 
+{ 
+	if (!m_typed.empty()) {
+		m_typed.pop_back();    
+		return true;
+	}
+	if (!m_left.empty() && m_left.back()->isLeaf()) {
+		m_left.pop_back();
+		return true;
+	}
+	return false;
+}
+
 bool Input::handleChar(int ch)
 {
 	if (isalnum(ch) || ch == '.') {
@@ -469,10 +494,9 @@ bool Input::handleChar(int ch)
 	bool fResult = true;
 	string op(1, (char)ch);
 	switch (ch) {
-	    case Key::BACKSPACE: {
-			delTyped();
-			break;
-		}
+	    case Key::BACKSPACE:
+			      if (!handleBackspace()) fResult = m_eqn.handleBackspace();
+			      break;
 	    case '+':
 	    case '-': if (m_typed.empty()) m_typed = "?";
                   m_typed += op + "#";
@@ -487,6 +511,36 @@ bool Input::handleChar(int ch)
 		 	      break;
 	}
 	return fResult;
+}
+
+void Input::swapLeftTerm(Node* node)
+{ 
+	Term* term = dynamic_cast<Term*>(node);
+	m_left.swap(term->factors); 
+}
+
+bool Equation::handleChar(int ch)
+{
+	bool fResult = true;
+	switch(ch) {
+ 	    case ' ': if (m_selectStart != nullptr) {
+			          m_selectStart->setSelect(Node::Select::NONE);
+			          m_selectStart = m_selectStart->getParent();
+					  m_selectEnd->setSelect(Node::Select::NONE);
+			          m_selectEnd = m_selectStart;
+					  m_selectStart->setSelect(Node::Select::ALL);
+					  
+				  }
+		          else {
+					  m_selectStart = getCurrentInput();
+					  getCurrentInput()->disable();
+			          m_selectEnd = m_selectStart;
+					  m_selectStart->setSelect(Node::Select::ALL);
+				  }
+			      break;
+	    default:  fResult = false;
+		 	      break;
+	}
 }
 
 void Equation::nextInput() 
@@ -506,6 +560,46 @@ bool Equation::disableCurrentInput()
 		fResult = true;
 	}
 	return fResult;
+}
+
+bool Equation::handleBackspace()
+{
+	Input* in = getCurrentInput();
+	Expression* parent = dynamic_cast<Expression*>(in->getParent());
+
+	Node* leftNode = in->getNextLeft();
+	if (!leftNode && leftNode->getParent() != in->getParent()) leftNode = nullptr;
+
+	if (in->m_left.empty() && leftNode == nullptr) return false;
+		
+	if (in->m_left.empty()) {
+		if (typeid(leftNode) == typeid(in)) { // left is Input*
+			Input* left_in = dynamic_cast<Input*>(leftNode);
+			if (left_in->m_right.empty()) {
+				in->m_left.swap(left_in->m_left);
+				left_in->disable();
+			}
+			else {
+				in->m_left.swap(left_in->m_right);
+			}
+		}
+		else { // left is Term*
+			in->swapLeftTerm(leftNode);
+			parent->deleteNode(leftNode);
+		}
+		return true;
+	}
+	else {
+		setCurrentInput(-1);
+		Node* sel = in->m_left.back();
+		in->m_left.reserve(in->m_left.size() + in->m_right.size());
+		in->m_left.insert(in->m_left.end(), in->m_right.begin(), in->m_right.end());
+		Node* new_term = new Term(in->m_left, in->getParent());
+		parent->replaceNode(in, new_term);
+		setSelectStart(sel);
+		setSelectEnd(sel);
+	}
+	return false;
 }
 
 void EqnUndoList::save(Equation* eqn)

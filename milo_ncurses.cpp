@@ -16,7 +16,7 @@ public:
 				start_color();/* Start color */
 				init_color(COLOR_WHITE, 1000, 1000, 1000);
 				assume_default_colors(COLOR_BLACK, COLOR_WHITE);
-				for (int i = Color::RED; i <= Color::WHITE; ++i)
+				for (int i = Draw::Color::RED; i <= Draw::Color::WHITE; ++i)
 					init_pair(i, COLOR_BLACK + i, COLOR_WHITE);
 			}
 			init = true;
@@ -111,12 +111,15 @@ int main(int argc, char* argv[])
 		eqn->asciiArt(draw);
 		DrawCurses::getInstance().out();
 		Input* cur = eqn->getCurrentInput();
-
-		int ch = draw.getChar(cur->getOrigY(), cur->getOrigX() + cur->getSizeX() - 1);
+		int ch = (cur) ? 
+			draw.getChar(cur->getOrigY(), cur->getOrigX() + cur->getSizeX() - 1) : getchar();
 		LOG_TRACE_MSG("Char typed: " + (ch<32 ? "ctrl-" + to_string(ch) : string(1, (char)ch)));
 
 		bool fChanged = true;
-		if (!cur->handleChar(ch)) {
+		if (eqn->handleChar(ch)) {
+				fChanged = false;
+		}
+		else if (!cur || !cur->handleChar(ch)) {
 			switch (ch) 
 			{
 			    case 3: { // ctrl-c typed
@@ -124,9 +127,10 @@ int main(int argc, char* argv[])
 					fChanged = false;
 				}
 				case 9: { // tab typed
+					fChanged = false;                          LOG_TRACE_MSG("tab typed");
+					if (!cur) break;
 					draw.at(cur->getOrigY(), cur->getOrigX() + cur->getSizeX() - 1, '?');
 					eqn->nextInput();
-					fChanged = false;                          LOG_TRACE_MSG("tab typed");
 					break;
 				}
 			    case 10: { // enter typed

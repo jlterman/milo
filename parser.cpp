@@ -43,12 +43,11 @@ public:
 	    m_os(os), m_indent(1) { m_os << "<document>" << endl; }
 	~XML() { m_os << "</document>" << endl; }
 
-	void header(const string& tag, bool atomic, 
-				initializer_list<string>);
+	void header(const Node* node, const string& tag, bool atomic, initializer_list<string>);
 
-	void header(const string& tag, bool atomic, const vector<string>& att);
+	void header(const Node* node, const string& tag, bool atomic, const vector<string>& att);
 
-	void header(const string& tag, bool atomic = false);
+	void header(const Node* node, const string& tag, bool atomic = false);
 
 	void footer(const string& tag);
 private:
@@ -56,9 +55,10 @@ private:
 	int m_indent;
 	ostream& m_os;
 
-	void print_indent(ostream& os) {
+	void print_indent() {
 		for (int i = 0; i < m_indent; ++i) m_os << ' ';
 	}
+	void header_start(const Node* node, const string& tag);
 };
 
 class XMLParser
@@ -79,10 +79,10 @@ public:
 	bool getState(int state, const string& tag = string()) const;
 	const string& getTag() const { return m_tags[m_pos]; }
 	bool EOL() const { return m_pos == m_tags.size(); }
-	const map<string, string> getAttributes();
+	const map<string, string> getAttributes(bool& fNeg, Node::Select& select);
 	Equation& getEqn() const { return m_eqn; }
 	
-	static NodePtr parse(XMLParser& in, Node* parent = nullptr);
+	static Node* parse(XMLParser& in, Node* parent = nullptr);
 private:
 	Equation& m_eqn;
 	vector<string> m_tags;
@@ -110,21 +110,28 @@ bool Parser::match(const string& s)
 		return false;
 }
 
-void XML::header(const string& tag, bool atomic)
+void XML::header_start(const Node* node, const string& tag)
 {
-	print_indent(m_os);
-	m_os << "<" << tag << (atomic ? "/>" : ">") << endl;
+	m_os << "<" << tag;
+	if (!node->getSign()) m_os << " negative=\"true\"";
+	if (node->getSelect()) m_os << " select=\"" << Node::select_tags[node->getSelect()] << "\"";
+}
+
+void XML::header(const Node* node, const string& tag, bool atomic)
+{
+	print_indent();
+	header_start(node, tag);
+	m_os << (atomic ? "/>" : ">") << endl;
 	if (!atomic) {
 		m_indent += 1;
 		m_tags.push_back(tag);
 	}
 }
 
-void XML::header(const string& tag, bool atomic, 
-				 initializer_list<string> children)
+void XML::header(const Node* node, const string& tag, bool atomic, initializer_list<string> children)
 {
-	print_indent(m_os);
-	m_os << "<" << tag;
+	print_indent();
+	header_start(node, tag);
 	if (children.size()%2 == 1) throw invalid_argument("odd xml tag pairs");
 	auto it = children.begin();
 	while ( it != children.end() ) {
@@ -141,10 +148,10 @@ void XML::header(const string& tag, bool atomic,
 	m_tags.push_back(tag);
 }
 
-void XML::header(const std::string& tag, bool atomic, const vector<string>& children)
+void XML::header(const Node* node, const std::string& tag, bool atomic, const vector<string>& children)
 {
-	print_indent(m_os);
-	m_os << "<" << tag;
+	print_indent();
+	header_start(node, tag);
 	if (children.size()%2 == 1) throw invalid_argument("odd xml tag pairs");
 	auto it = children.begin();
 	while ( it != children.end() ) {
@@ -169,7 +176,7 @@ void XML::footer(const string& tag)
 		close_tag = m_tags.back(); m_tags.pop_back();
 
 		m_indent -= 1;
-		print_indent(m_os);
+		print_indent();
 		m_os << "</" << close_tag << ">" << endl;
 
 	}
@@ -187,15 +194,30 @@ XMLParser::~XMLParser()
 	if (!next(FOOTER|END, "document")) throw logic_error("bad format");
 }
 
-const map<string, string> XMLParser::getAttributes()
+const map<string, string> XMLParser::getAttributes(bool& fNeg, Node::Select& select)
 {
 	map<string, string> attributes;
+	fNeg = false;
+	select = Node::Select::NONE;
+
 	if (getState(END)) return attributes;
 
 	do {
 		string name, value;
 		next(name, value);
-		attributes.emplace(name, value);
+		
+		if (name.compare("negative") == 0) {
+			if (value.compare("true") && value.compare("false"))
+				throw logic_error("bad format");
+			fNeg = (value.compare("true") == 0);
+		}
+		else if (name.compare("select") == 0) {
+			auto pos = find(Node::select_tags, value);
+			if (pos == Node::select_tags.end()) throw logic_error("bad format");
+			select = (Node::Select) distance(Node::select_tags.begin(), pos);
+		}
+		else 
+			attributes.emplace(name, value);
 	}
 	while (!peek(END));
 	next();
@@ -310,24 +332,34 @@ void XMLParser::parse(istream& in)
 	}
 }
 
-NodePtr XMLParser::parse(XMLParser& in, Node* parent)
+Node* XMLParser::parse(XMLParser& in, Node* parent)
 {
-	NodePtr    node = Expression::xml_in(in, parent);
+	Node*    node = Expression::xml_in(in, parent);
 	if (!node) node = Function::xml_in(in, parent);
 	if (!node) node = Constant::xml_in(in, parent);
 	if (!node) node = Variable::xml_in(in, parent);
 	if (!node) node = Number::xml_in(in, parent);
 	if (!node) node = Binary::xml_in(in, '/', "divide", parent);
 	if (!node) node = Binary::xml_in(in, '^', "power", parent);
+	if (!node) return nullptr;
 
+	switch (node->getSelect()) {
+	    case Node::Select::START: in.m_eqn.setSelectStart(node); break;
+	    case Node::Select::END  : in.m_eqn.setSelectEnd(node);   break;
+	    case Node::Select::ALL  : in.m_eqn.setSelectStart(node);
+                     		      in.m_eqn.setSelectEnd(node);
+						          break;
+	    case Node::Select::NONE:
+	                    default: break;
+	}
 	return node;
 }
 
-NodePtr Equation::xml_in(XMLParser& in)
+Node* Equation::xml_in(XMLParser& in)
 {
-	NodePtr root;
+	Node* root;
 	if (in.next(XMLParser::HEADER|XMLParser::END, "equation")) {
-		root = make_shared<Expression>(in);
+		root = new Expression(in);
 	}
 	else
 		throw logic_error("bad format");
@@ -343,7 +375,7 @@ Equation::Equation(istream& is)
 	m_root = xml_in(in);
 }
 
-NodePtr Function::xml_in(XMLParser& in, Node* parent)
+Node* Function::xml_in(XMLParser& in, Node* parent)
 {
 	if (functions.empty()) { init_functions();	}
 
@@ -351,16 +383,12 @@ NodePtr Function::xml_in(XMLParser& in, Node* parent)
 	if (in.next(XMLParser::END, "function")) throw logic_error("bad format");
 	
 	bool fNeg = false;
+	Node::Select select;
 	string fname;
 	func_ptr fp = nullptr;
 
-	for ( auto m : in.getAttributes() ) {
-		if (m.first.compare("negative") == 0) {
-			if ((m.second.compare("true") && m.second.compare("false")))
-				throw logic_error("bad format");
-			fNeg = m.second.compare("true") == 0;
-		}
-		else if (m.first.compare("name") == 0) {
+	for ( auto m : in.getAttributes(fNeg, select) ) {
+		if (m.first.compare("name") == 0) {
 			for ( auto f : functions ) {
 				if (f.first.compare(m.second) == 0) {
 					fname = f.first;
@@ -372,57 +400,46 @@ NodePtr Function::xml_in(XMLParser& in, Node* parent)
 		else
 			throw logic_error("bad format");
 	}
-	NodePtr arg = make_shared<Expression>(in);
+	Node* arg = new Expression(in);
 	
 	if (!in.next(XMLParser::FOOTER|XMLParser::END, "function"))
 		throw logic_error("bad format");
 
-	return make_shared<Function>(fname, fp, arg, parent, fNeg);
+	return new Function(fname, fp, arg, parent, fNeg, select);
 }
 
-NodePtr Binary::xml_in(XMLParser& in, char op, const string& name, Node* parent)
+Node* Binary::xml_in(XMLParser& in, char op, const string& name, Node* parent)
 {
 	if (!in.peek(XMLParser::HEADER, name)) return nullptr;
 	in.next();
 	bool fNeg = false;
-	for ( auto m : in.getAttributes() ) {
-		if (m.first.compare("negative") == 0) {
-			if ((m.second.compare("true") && m.second.compare("false")))
-				throw logic_error("bad format");
-			fNeg = m.second.compare("true") == 0;
-		}
-		else
-			throw logic_error("bad format");
-	}
+	Node::Select select;
+	if (!in.getAttributes(fNeg, select).empty()) throw logic_error("bad format");
 
-	NodePtr one = XMLParser::parse(in);
-	NodePtr two = XMLParser::parse(in);
+	Node* one = XMLParser::parse(in);
+	Node* two = XMLParser::parse(in);
 	
 	if (!in.next(XMLParser::FOOTER|XMLParser::END, name))
 		throw logic_error("bad format");
 
 	if (name.compare("divide") == 0) 
-		return make_shared<Divide>(one, two, parent, fNeg);
+		return new Divide(one, two, parent, fNeg, select);
 	else if (name.compare("power") == 0)
-		return make_shared<Power>(one, two, parent, fNeg);
+		return new Power(one, two, parent, fNeg, select);
 	else
 		throw logic_error("bad format");
 }
 
-NodePtr Variable::xml_in(XMLParser& in, Node* parent)
+Node* Variable::xml_in(XMLParser& in, Node* parent)
 {
 	if (!in.peek(XMLParser::HEADER, "variable")) return nullptr;
 	if (in.next(XMLParser::END, "variable")) throw logic_error("bad format");
 
 	bool fNeg = false;
+	Node::Select select;
 	char var_name;
-	for ( auto m : in.getAttributes() ) {
-		if (m.first.compare("negative") == 0) {
-			if ((m.second.compare("true") && m.second.compare("false")))
-				throw logic_error("bad format");
-			fNeg = m.second.compare("true") == 0;
-		}
-		else if (m.first.compare("name") == 0) {
+	for ( auto m : in.getAttributes(fNeg, select) ) {
+		if (m.first.compare("name") == 0) {
 			if (m.second.empty()) throw logic_error("bad format");
 			var_name = m.second[0];
 		}
@@ -430,10 +447,10 @@ NodePtr Variable::xml_in(XMLParser& in, Node* parent)
 			throw logic_error("bad format");
 	}
 	if (!in.getState(XMLParser::ATOM|XMLParser::END)) throw logic_error("bad format");
-	return make_shared<Variable>(var_name, parent, fNeg);
+	return new Variable(var_name, parent, fNeg, select);
 }
 
-NodePtr Constant::xml_in(XMLParser& in, Node* parent)
+Node* Constant::xml_in(XMLParser& in, Node* parent)
 {
 	if (constants.empty()) { init_constants();	}
 
@@ -443,7 +460,9 @@ NodePtr Constant::xml_in(XMLParser& in, Node* parent)
 	char cname;
 	Complex value;
 
-	for ( auto m : in.getAttributes() ) {
+	bool fNeg = false;
+	Node::Select select;
+	for ( auto m : in.getAttributes(fNeg, select) ) {
 		if (m.first.compare("name") == 0 && m.second.length() == 1) {
 			auto it = constants.find(m.second[0]);
 			if (it != constants.end()) {
@@ -456,23 +475,19 @@ NodePtr Constant::xml_in(XMLParser& in, Node* parent)
 			throw logic_error("bad format");
 	}
 	if (!in.getState(XMLParser::ATOM|XMLParser::END))  throw logic_error("bad format");
-	return make_shared<Constant>(cname, value, parent);
+	return new Constant(cname, value, parent, fNeg, select);
 }
 
-NodePtr Number::xml_in(XMLParser& in, Node* parent)
+Node* Number::xml_in(XMLParser& in, Node* parent)
 {
 	if (!in.peek(XMLParser::HEADER, "number")) return nullptr;
 	if (in.next(XMLParser::END, "number")) throw logic_error("bad format");
 	
 	bool fNeg = false;
+	Node::Select select;
 	string real = "0", imag = "0";
-	for ( auto m : in.getAttributes() ) {
-		if (m.first.compare("negative") == 0) {
-			if ((m.second.compare("true") && m.second.compare("false")))
-				throw logic_error("bad format");
-			fNeg = m.second.compare("true") == 0;
-		}
-		else if (m.first.compare("real") == 0) {
+	for ( auto m : in.getAttributes(fNeg, select) ) {
+		if (m.first.compare("real") == 0) {
 			real = m.second;
 		}
 		else if (m.first.compare("imag") == 0) {
@@ -482,24 +497,20 @@ NodePtr Number::xml_in(XMLParser& in, Node* parent)
 			throw logic_error("bad format");
 	}
 	if (!in.getState(XMLParser::ATOM|XMLParser::END))  throw logic_error("bad format");
-	return make_shared<Number>(real, imag, parent, fNeg);
+	return new Number(real, imag, parent, fNeg, select);
 }
 
-NodePtr Input::xml_in(XMLParser& in, Node* parent)
+Node* Input::xml_in(XMLParser& in, Node* parent)
 {
 	if (!in.peek(XMLParser::HEADER, "input")) return nullptr;
 	in.next();
 
 	bool fNeg = false;
+	Node::Select select;
 	bool fCurrent = false;
 	string text;
-	for ( auto m : in.getAttributes() ) {
-		if (m.first.compare("negative") == 0) {
-			if ((m.second.compare("true") && m.second.compare("false")))
-				throw logic_error("bad format");
-			fNeg = m.second.compare("true") == 0;
-		}
-		else if (m.first.compare("current") == 0) {
+	for ( auto m : in.getAttributes(fNeg, select) ) {
+		if (m.first.compare("current") == 0) {
 			if ((m.second.compare("true") && m.second.compare("false")))
 				throw logic_error("bad format");
 			fCurrent = m.second.compare("true") == 0;
@@ -512,7 +523,7 @@ NodePtr Input::xml_in(XMLParser& in, Node* parent)
 			throw logic_error("bad format");
 	}
 	if (!in.getState(XMLParser::ATOM|XMLParser::END)) throw logic_error("bad format");
-	return make_shared<Input>(in.getEqn(), text, parent, fNeg, fCurrent);
+	return new Input(in.getEqn(), text, fCurrent, parent, fNeg, select);
 }
 
 Term::Term(XMLParser& in, Node* parent) : Node(parent)
@@ -520,31 +531,25 @@ Term::Term(XMLParser& in, Node* parent) : Node(parent)
 	if (!in.next(XMLParser::HEADER, "term")) throw logic_error("bad format");
 
 	bool fNeg = false;
-	for ( auto m : in.getAttributes() ) {
-		if (m.first.compare("negative") == 0) {
-			if ((m.second.compare("true") && m.second.compare("false")))
-				throw logic_error("bad format");
-			fNeg = m.second.compare("true") == 0;
-		}
-		else
-			throw logic_error("bad format");
-	}
+	Node::Select select;
+	if ( !in.getAttributes(fNeg, select).empty() ) throw logic_error("bad format");
 	if (fNeg) negative();
+	if (select) setSelect(select);
 	while (add(in));
 
 	if (!in.next(XMLParser::FOOTER|XMLParser::END, "term")) throw logic_error("bad format");
 }
 
-NodePtr Term::xml_in(XMLParser& in, Node* parent)
+Node* Term::xml_in(XMLParser& in, Node* parent)
 {
 	if (!in.peek(XMLParser::HEADER, "term")) return nullptr;
 
-	return make_shared<Term>(in, parent);
+	return new Term(in, parent);
 }
 
 bool Term::add(XMLParser& in)
 {
-	NodePtr node = XMLParser::parse(in, this);
+	Node* node = XMLParser::parse(in, this);
 	if (!node) return false;
 
 	factors.push_back(node);
@@ -553,9 +558,9 @@ bool Term::add(XMLParser& in)
 
 bool Expression::add(XMLParser& in)
 {
-	NodePtr node = nullptr;
+	Node* node = nullptr;
 	if (in.peek(XMLParser::HEADER, "term")) {
-		node = make_shared<Term>(in, this);
+		node = new Term(in, this);
 	}
 	else if (in.peek(XMLParser::HEADER, "input")) {
 		node = Input::xml_in(in, this);
@@ -566,16 +571,16 @@ bool Expression::add(XMLParser& in)
 	return true;
 }
 
-NodePtr Expression::getTerm(Parser& p, Node* parent)
+Node* Expression::getTerm(Parser& p, Node* parent)
 {
-	NodePtr node = nullptr;
+	Node* node = nullptr;
 	bool neg = false;
 	if (p.peek() == '+' || p.peek() == '-') {
 		char c = p.next();
 		neg = (c == '-') ? true : false;
 	}
 	node = Input::parse(p, parent);
-	if (!node) node = make_shared<Term>(p, parent);
+	if (!node) node = new Term(p, parent);
 
 	if (neg) node->negative();
 	return node;
@@ -583,7 +588,7 @@ NodePtr Expression::getTerm(Parser& p, Node* parent)
 
 bool Expression::add(Parser& p)
 {
-	NodePtr node = getTerm(p, this);
+	Node* node = getTerm(p, this);
 	terms.push_back(node);
 	
 	if ( p.peek() == '\0' || p.peek() == ')' ) {
@@ -594,13 +599,13 @@ bool Expression::add(Parser& p)
 		return true;
 }
 
-NodePtr Expression::parse(Parser& p, Node* parent) {
+Node* Expression::parse(Parser& p, Node* parent) {
 	if (p.peek() != '(') return nullptr;
 	
-	NodePtr node = nullptr;
+	Node* node = nullptr;
 	if ( (node = Input::parse(p, parent)) ) return node;
 	char c = p.next();
-	return make_shared<Expression>(p, parent);
+	return new Expression(p, parent);
 }
 
 Expression::Expression(XMLParser& in, Node* parent) : Node(parent)
@@ -608,31 +613,25 @@ Expression::Expression(XMLParser& in, Node* parent) : Node(parent)
 	if (!in.next(XMLParser::HEADER, "expression")) throw logic_error("bad format");
 
 	bool fNeg = false;
-	for ( auto m : in.getAttributes() ) {
-		if (m.first.compare("negative") == 0) {
-			if ((m.second.compare("true") && m.second.compare("false")))
-				throw logic_error("bad format");
-			fNeg = m.second.compare("true") == 0;
-		}
-		else
-			throw logic_error("bad format");
-	}
+	Node::Select select;
+	if ( !in.getAttributes(fNeg, select).empty() ) throw logic_error("bad format");
 	if (fNeg) negative();
+	if (select) setSelect(select);
 	while (add(in));
 
 	if (!in.next(XMLParser::FOOTER|XMLParser::END, "expression")) throw logic_error("bad format");
 }
 
-NodePtr Expression::xml_in(XMLParser& in, Node* parent)
+Node* Expression::xml_in(XMLParser& in, Node* parent)
 {
 	if (!in.peek(XMLParser::HEADER, "expression")) return nullptr;
 
-	return make_shared<Expression>(in, parent);
+	return new Expression(in, parent);
 }
 
 void Equation::xml_out(XML& xml) const
 {
-	xml.header("equation");
+	xml.header(m_root, "equation");
 	m_root->xml_out(xml);
 	xml.footer("equation");
 }
@@ -652,43 +651,31 @@ void Equation::xml_out(string& str) const
 
 void Function::xml_out(XML& xml) const 
 {
-	if (getSign()) 
-		xml.header("function", false, {"name", m_name});
-	else
-		xml.header("function", false, {"name", m_name, "negative", "true"});
+	xml.header(this, "function", false, {"name", m_name});
 	m_arg->xml_out(xml);
 	xml.footer("function");
 }
 
 void Binary::xml_out(const string& tag, XML& xml) const {
-	if (getSign()) 
-		xml.header(tag);
-	else 
-		xml.header(tag, false, { "negative", "true" });
-	
+	xml.header(this, tag);
 	m_first->xml_out(xml);
 	m_second->xml_out(xml);
 	xml.footer(tag);
 }
 
 void Variable::xml_out(XML& xml) const {
-	string name = string("") + m_name;
-	if (getSign()) 
-		xml.header("variable", true, {"name", name});
-	else
-		xml.header("variable", true, {"name", name, "negative", "true"});
+	xml.header(this, "variable", true, { "name", string(1, m_name) });
 }
 
 void Constant::xml_out(XML& xml) const {
-	xml.header("constant", true, { "name", string(1, m_name) });
+	xml.header(this, "constant", true, { "name", string(1, m_name) });
 }
 
 void Number::xml_out(XML& xml) const {
-	xml.header("number", true, 
-			   { "real", (m_isInteger ? to_string((int) m_value.real()) : to_string(m_value.real())),
-				 "imag", (m_isInteger ? to_string((int) m_value.imag()) : to_string(m_value.imag())),
-				 "negative", (getSign() ? "false" : "true") });
-					   
+	xml.header(this, "number", true, 
+			   { "real", toString(m_value.real(), true), 
+				 "imag", toString(m_value.imag(), true)
+			   });
 }
 
 void Input::xml_out(XML& xml) const
@@ -704,43 +691,27 @@ void Input::xml_out(XML& xml) const
 		if (m_current) {
 			attributes.emplace_back("current");
 			attributes.emplace_back("true");
-		}
-		if (!getSign()) {
-			attributes.emplace_back("negative");
-			attributes.emplace_back("true");
-		}
-		
-		if (attributes.size() == 0)
-			xml.header("input", true);
-		else
-			xml.header("input", true, attributes);
+		}		
+		xml.header(this, "input", true, attributes);
 	}
 	else {
 		Equation eqn("?");
 		Parser p(m_typed, eqn);
-		while (p.peek()) {
-			NodePtr term = Expression::getTerm(p, nullptr);
-			term->xml_out(xml);
-		}
+		Node* term = Expression::getTerm(p, nullptr);
+		if (getSelect() != Node::Select::NONE) 
+			term->end()->setSelect(getSelect());
+ 		term->xml_out(xml);
 	}
 }
 
 void Term::xml_out(XML& xml) const {
-	if (getSign()) 
-		xml.header("term", false);
-	else 
-		xml.header("term", false, { "negative", "true" });
-
+	xml.header(this, "term", false);
 	for ( auto n : factors ) { n->xml_out(xml); }
 	xml.footer("term");
 }
 
 void Expression::xml_out(XML& xml) const {
-	if (getSign()) 
-		xml.header("expression", false);
-	else 
-		xml.header("expression", false, { "negative", "true" });
-
+	xml.header(this, "expression", false);
 	for ( auto n : terms ) { n->xml_out(xml); }
 	xml.footer("expression");
 }
@@ -748,50 +719,50 @@ void Expression::xml_out(XML& xml) const {
 Equation::Equation(string eq)
 { 
 	Parser p(eq, *this); 
-	m_root = make_shared<Expression>(p);
+	m_root = new Expression(p);
 }
 
-NodePtr Function::parse(Parser& p, Node* parent) {
+Node* Function::parse(Parser& p, Node* parent) {
 	if (functions.empty()) { init_functions();	}
 
 	if (!isalpha(p.peek()) ) return nullptr;
 
 	for ( auto m : functions ) { 
 		if (p.match(m.first + "(")) {
-			NodePtr arg = make_shared<Expression>(p, parent);
+			Node* arg = new Expression(p, parent);
 			if (!arg) throw logic_error("bad format");
 
-			return make_shared<Function>(m.first, m.second, arg, parent);
+			return new Function(m.first, m.second, arg, parent);
 		}
 	}
 	return nullptr;
 }
 
-NodePtr Binary::parse(Parser& p, NodePtr one, Node* parent)
+Node* Binary::parse(Parser& p, Node* one, Node* parent)
 {
 	char c = p.peek();
 	if (c != '/' && c != '^') return one;
 
 	c = p.next();
-	NodePtr two = Term::parse(p);
+	Node* two = Term::parse(p);
 	if (!two) throw logic_error("bad format");
 
-	NodePtr binary;
+	Node* binary;
 	if ( c == '/' ) 
-		return make_shared<Divide>(one, two, parent); 
+		return new Divide(one, two, parent); 
 	else if ( c == '^' ) 
-		return make_shared<Power>(one, two, parent);
+		return new Power(one, two, parent);
 	else
 		return nullptr;
 }
 	
 Variable::Variable(Parser& p, Node* parent) : Node(parent), m_name( p.next() ) {}
 
-NodePtr Variable::parse(Parser& p, Node* parent)
+Node* Variable::parse(Parser& p, Node* parent)
 {
 	char c = p.peek();
 	if ( isalpha(c) ) {
-		return make_shared<Variable>(p, parent);
+		return new Variable(p, parent);
 	}
 	else
 		return nullptr;
@@ -800,23 +771,23 @@ NodePtr Variable::parse(Parser& p, Node* parent)
 Constant::Constant(Parser& p, Node* parent) : 
 	Node(parent), m_name(p.next()), m_value(constants.find(m_name)->second) {}
 
-NodePtr Constant::parse(Parser& p, Node* parent)
+Node* Constant::parse(Parser& p, Node* parent)
 {
 	if (constants.empty()) init_constants();
 
 	char c = p.peek();
 	if ( constants.find(c) != constants.end() ) {
-		return make_shared<Constant>(p, parent);
+		return new Constant(p, parent);
 	}
 	else
 		return nullptr;			
 }
 
-NodePtr Number::parse(Parser& p, Node* parent)
+Node* Number::parse(Parser& p, Node* parent)
 {
 	char c = p.peek();
 	if (isdigit(c) || c == 'i' ) {
-		return make_shared<Number>(p, parent);
+		return new Number(p, parent);
 	}
 	else
 		return nullptr;
@@ -863,12 +834,12 @@ void Number::getNumber(Parser& p)
 	}
 }
 
-NodePtr Term::parse(Parser& p, Node* parent)
+Node* Term::parse(Parser& p, Node* parent)
 {
 	char c = p.peek();
-	if ( c=='\0' || c=='+' || c=='-' || c==')' ) return false;
+	if ( c=='\0' || c=='+' || c=='-' || c==')' ) return nullptr;
 
-	NodePtr    node = Expression::parse(p, parent);
+	Node*    node = Expression::parse(p, parent);
 	if (!node) node = Function::parse(p, parent);
 	if (!node) node = Constant::parse(p, parent);
 	if (!node) node = Number::parse(p, parent);
@@ -882,7 +853,7 @@ NodePtr Term::parse(Parser& p, Node* parent)
 
 bool Term::add(Parser& p)
 {
-	NodePtr node = parse(p, this);
+	Node* node = parse(p, this);
 	if (!node) return false;
 
 	factors.push_back(node);
@@ -890,7 +861,7 @@ bool Term::add(Parser& p)
 }
 
 Input::Input(Parser& p, Node* parent) : 
-	Node(parent), m_sn(++input_sn), m_active(true), m_current(false), m_typed("")
+	Node(parent), m_sn(++input_sn), m_active(true), m_current(false), m_typed(""), m_eqn(p.getEqn())
 {
 	p.getEqn().addInput(this);
 	char c = p.next();
@@ -901,11 +872,11 @@ Input::Input(Parser& p, Node* parent) :
 	p.getEqn().setCurrentInput(m_sn);
 }
 
-NodePtr Input::parse(Parser& p, Node* parent)
+Node* Input::parse(Parser& p, Node* parent)
 {
 	char c = p.peek();
 	if ( c == '?' || c == '#' || c == '[' ) {
-		return make_shared<Input>(p, parent);
+		return new Input(p, parent);
 	}
 	else
 		return nullptr;

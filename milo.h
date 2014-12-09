@@ -9,6 +9,7 @@
 #include <sstream>
 #include <vector>
 #include <ctime>
+#include <algorithm>
 
 using Complex = std::complex<double>;
 
@@ -20,14 +21,29 @@ class Draw;
 class XML;
 class XMLParser;
 class Node;
-using NodePtr = std::shared_ptr<Node>;
+using NodeVector = std::vector<Node*>;
 
-inline bool operator==(NodePtr& a, Node*& b) { return a.get() == b; }
+template <class T>
+inline auto find(const std::vector<T>& v, const T& val) -> decltype( v.begin() )
+{
+	return std::find(v.begin(), v.end(), val);
+}
 
-class Node
+template <class T>
+inline void freeVector(std::vector<T*> v)
+{
+	for ( auto p : v ) { delete p; }
+	v.clear();
+}
+
+class Node 
 {
 public:
-    Node(Node* parent = nullptr) : m_parent(parent), m_sign(true) {}
+	enum Select { NONE, START, END, ALL };
+	static const std::vector<std::string> select_tags;
+
+    Node(Node* parent = nullptr, bool fNeg = false, Select s = NONE ) : 
+	    m_parent(parent), m_sign(!fNeg), m_select(s) {}
 	virtual ~Node() {}
 
 	virtual void xml_out(XML& xml) const=0;
@@ -35,7 +51,8 @@ public:
 	virtual void calcSize()=0;
 	virtual void calcOrig(int x, int y)=0;
 	virtual void asciiArt(Draw& draw) const=0;
-	virtual bool drawParenthesis() { return false; }
+	virtual bool drawParenthesis() const { return false; }
+	virtual bool isLeaf() const { return true; }
 
 	Node* begin();
 	Node* end();
@@ -57,6 +74,9 @@ public:
 	void setParent(Node* parent) { m_parent = parent; }
 	Node* getParent() const { return m_parent; }
 
+	void setSelect(Select s) { m_select = s; }
+	Select getSelect() const { return m_select; }
+
 private:
 	virtual Node* downLeft() { return nullptr; }
 	virtual Node* downRight() { return nullptr; }
@@ -70,15 +90,16 @@ private:
 	bool m_sign;
 	Node* m_parent;
 	int m_base;
+	Select m_select;
 };
-
-enum Color { BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE };
 
 class Draw
 {
 public:
     Draw() {}
 	virtual ~Draw() {}
+
+	enum Color { BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE };
 
 	virtual void parenthesis(int x_size, int y_size, int x0, int y0)=0;
 	virtual void horiz_line(int x_size, int x0, int y0)=0;
@@ -104,15 +125,13 @@ protected:
 
 class Equation;
 class Parser;
-class Input;
-using InputPtr = std::shared_ptr<Input>;
 
 class Input : public Node
 {
 public:
     Input(Parser& p, Node* parent = nullptr);
-    Input(Equation& eqn, std::string txt, Node* parent, bool neg, bool current);
-	~Input() {}
+    Input(Equation& eqn, std::string txt, bool current, Node* parent, bool neg, Node::Select s);
+	~Input() { freeVector(m_left); freeVector(m_right); }
 
 	std::string toString() const;
 	void xml_out(XML& xml) const;
@@ -120,23 +139,27 @@ public:
 	void calcOrig(int x, int y);
 	void asciiArt(Draw& draw) const;
 
-	void disable() { m_active = false; }
-	void setCurrent(bool current) { m_current = current; }
-	void addTyped(char c) { m_typed += c; }
-	void delTyped() { m_typed.pop_back(); }
-
 	bool handleChar(int ch);
 
-	static NodePtr parse(Parser& p, Node* parent = nullptr);
-	static NodePtr xml_in(XMLParser& in, Node* parent);
+	static Node* parse(Parser& p, Node* parent = nullptr);
+	static Node* xml_in(XMLParser& in, Node* parent);
 
 	friend class Equation;
 private:
+	NodeVector m_left;  // own these factors
+	NodeVector m_right; // own these factors
+
 	std::string m_typed;
 	int m_sn;
 	bool m_active;
 	bool m_current;
+	Equation& m_eqn;
 
+	void disable() { m_active = false; }
+	void setCurrent(bool current) { m_current = current; }
+	void addTyped(char c) { m_typed += c; }
+	bool handleBackspace();
+	void swapLeftTerm(Node* term);
 	static int input_sn;
 };
 
@@ -145,26 +168,37 @@ class Equation
 public:
 	Equation(std::string eq);
     Equation(std::istream& is);
+	~Equation() { delete m_root; }
 	std::string toString() const { return m_root->toString(); }
 	void xml_out(XML& xml) const;
 	void xml_out(std::ostream& os) const;
 	void xml_out(std::string& str) const;
 	void asciiArt(Draw& draw) const;
-	NodePtr getRoot() { return m_root; }
+	Node* getRoot() { return m_root; }
 
-	Input* getCurrentInput() { return m_inputs[m_input_index]; }
+	Input* getCurrentInput() { 
+		return (m_input_index < 0) ? nullptr : m_inputs[m_input_index];
+	}
 	void nextInput();
 	bool disableCurrentInput();
 
 	void setCurrentInput(int in_sn);
 	void addInput(Input* in) { m_inputs.push_back(in); }
+	bool handleChar(int ch);
+	bool handleBackspace();
+
+	void setSelectStart(Node* node) { m_selectStart = node; }
+	void setSelectEnd(Node* node)   { m_selectEnd = node; }
 
 private:
+	Node* m_root = nullptr; // Equation owns this tree
+
 	std::vector<Input*> m_inputs;
 	int m_input_index = -1;
-	NodePtr m_root;
+	Node* m_selectStart = nullptr;
+	Node* m_selectEnd = nullptr;
 
-	static NodePtr xml_in(XMLParser& in);
+	static Node* xml_in(XMLParser& in);
 };
 
 class EqnUndoList

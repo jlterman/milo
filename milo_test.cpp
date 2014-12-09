@@ -42,7 +42,7 @@ void DrawString::out()
 		for (int j = 0; j < m_xSize; ++j) {
 			if (m_colors[i][j]) m_os << "\033[3" + to_string(m_colors[i][j]) + "m";
 			m_os << m_field[i][j];
-			if (m_colors[i][j]) m_os << "\033[30m";
+			if (m_colors[i][j]) m_os << "\033[37m";
 		}
 		m_os << endl;
 	}
