@@ -541,6 +541,7 @@ bool Equation::handleChar(int ch)
 	    default:  fResult = false;
 		 	      break;
 	}
+	return fResult;
 }
 
 void Equation::nextInput() 

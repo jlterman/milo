@@ -155,7 +155,7 @@ int main(int argc, char* argv[])
 		if (fChanged) {
 			eqns.save(eqn);
 			delete eqn;
-			eqn = eqns.top();                                  LOG_TRACE_MSG("got new eqn");
+			eqn = eqns.top();                                  LOG_TRACE_MSG("got new eqn: " + eqn->toString());
 		}
 	}
 }

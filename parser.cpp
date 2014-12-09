@@ -697,10 +697,13 @@ void Input::xml_out(XML& xml) const
 	else {
 		Equation eqn("?");
 		Parser p(m_typed, eqn);
-		Node* term = Expression::getTerm(p, nullptr);
-		if (getSelect() != Node::Select::NONE) 
-			term->end()->setSelect(getSelect());
- 		term->xml_out(xml);
+		while (p.peek()) {
+			Node* term = Expression::getTerm(p, nullptr);
+			if (getSelect() != Node::Select::NONE) 
+				term->end()->setSelect(getSelect());
+			term->xml_out(xml);
+			delete term;
+		}
 	}
 }
 
