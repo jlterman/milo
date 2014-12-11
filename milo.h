@@ -36,6 +36,34 @@ inline void freeVector(std::vector<T*> v)
 	v.clear();
 }
 
+template <class T>
+class Rectangle
+{
+public:
+    Rectangle(T x, T y, T x0, T y0) : m_width(x), m_height(y), m_xOrig(x0), m_yOrig(y0) {}
+    Rectangle() : m_width(0), m_height(0), m_xOrig(0), m_yOrig(0) {}
+
+	void set(T x, T y, T x0, T y0) { m_width = x; m_height = y; m_xOrig = x0; m_yOrig = y0; }
+
+	bool inside(T x, T y) { 
+		return ( x >= m_xOrig && x < (m_xOrig + m_width) && y >= m_yOrig && y < (m_yOrig + m_height) );
+	}
+
+	bool intersect(const Rectangle& r) {
+		bool noOverlap = (m_xOrig - r.m_xOrig) > r.m_width ||
+			             (r.m_xOrig - m_xOrig) > m_width ||
+			             (m_yOrig - r.m_yOrig) > r.m_height ||
+			             (r.m_yOrig - m_yOrig) > m_height;
+		return !noOverlap;
+	}
+
+private:
+	T m_width;
+	T m_height;
+	T m_xOrig;
+	T m_yOrig;
+};
+
 class Node 
 {
 public:
@@ -53,6 +81,7 @@ public:
 	virtual void asciiArt(Draw& draw) const=0;
 	virtual bool drawParenthesis() const { return false; }
 	virtual bool isLeaf() const { return true; }
+	virtual bool isFactor() const { return true; }
 
 	Node* begin();
 	Node* end();
@@ -111,6 +140,14 @@ public:
 		m_xSize = x; m_ySize = y; m_xOrig = x0, m_yOrig = y0;
 	}
 
+
+	virtual void setSelect(int x, int y, int x0, int y0) { m_select.set(x, y, x0, y0); }
+
+	void setSelect(const Node* node) { 
+		setSelect(node->getSizeX(), node->getSizeY(), node->getOrigX(), node->getOrigY());
+	}
+
+
 	void parenthesis(const Node* node) { 
 		parenthesis(node->getSizeX(), node->getSizeY(), 
 					node->getOrigX(), node->getOrigY());
@@ -121,6 +158,7 @@ protected:
 	int m_ySize;
 	int m_xOrig;
 	int m_yOrig;
+	Rectangle<int> m_select;
 };
 
 class Equation;
@@ -160,6 +198,7 @@ private:
 	void addTyped(char c) { m_typed += c; }
 	bool handleBackspace();
 	void swapLeftTerm(Node* term);
+
 	static int input_sn;
 };
 
@@ -173,7 +212,7 @@ public:
 	void xml_out(XML& xml) const;
 	void xml_out(std::ostream& os) const;
 	void xml_out(std::string& str) const;
-	void asciiArt(Draw& draw) const;
+	void asciiArt(Draw& draw);
 	Node* getRoot() { return m_root; }
 
 	Input* getCurrentInput() { 
@@ -198,6 +237,8 @@ private:
 	Node* m_selectStart = nullptr;
 	Node* m_selectEnd = nullptr;
 
+	void setSelect(Draw& draw);
+
 	static Node* xml_in(XMLParser& in);
 };
 
@@ -220,4 +261,6 @@ namespace Log
 }
 
 #define LOG_TRACE_MSG(m) Log::msg(string("") + __FILE__ + ": " + to_string(__LINE__) + ": " + (m))
+#define LOG_TRACE_FILE "/tmp/milo.log"
+#define LOG_TRACE_CLEAR() remove(LOG_TRACE_FILE)
 #endif // __MILO_H

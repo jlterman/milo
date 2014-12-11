@@ -12,12 +12,34 @@
 
 using namespace std;
 
-void Equation::asciiArt(Draw& draw) const
+void Equation::asciiArt(Draw& draw)
 {
 	m_root->calcSize();
 	m_root->calcOrig(0, 0);
 	draw.set(m_root->getSizeX(), m_root->getSizeY());
+	setSelect(draw);
 	m_root->asciiArt(draw);
+}
+
+void Equation::setSelect(Draw& draw)
+{
+	if (m_selectStart != nullptr && m_selectStart == m_selectEnd) {
+		draw.setSelect(m_selectStart);
+	}
+	else if (m_selectStart != nullptr) {
+		int x0 = m_selectStart->getOrigX();
+		int y0 = m_selectStart->getOrigY();
+		int x = 0, y = 0;
+
+		Node* node = nullptr;
+		do {
+			node = (node == nullptr) ? m_selectStart : node->getNextRight();
+			x += m_selectStart->getSizeX();
+			y = max(y, m_selectStart->getSizeY());
+		}
+		while (node != nullptr && node != m_selectEnd);
+		draw.setSelect(x, y, x0, y0);
+	}
 }
 
 void Equation::setCurrentInput(int in_sn)
@@ -516,7 +538,7 @@ bool Input::handleChar(int ch)
 void Input::swapLeftTerm(Node* node)
 { 
 	Term* term = dynamic_cast<Term*>(node);
-	m_left.swap(term->factors); 
+	if (term != nullptr) m_left.swap(term->factors); 
 }
 
 bool Equation::handleChar(int ch)
@@ -524,15 +546,25 @@ bool Equation::handleChar(int ch)
 	bool fResult = true;
 	switch(ch) {
  	    case ' ': if (m_selectStart != nullptr) {
+			          if (m_selectStart->getParent() == nullptr) return false;
+
 			          m_selectStart->setSelect(Node::Select::NONE);
-			          m_selectStart = m_selectStart->getParent();
 					  m_selectEnd->setSelect(Node::Select::NONE);
+
+					  Node* parent = m_selectStart->getParent();
+					  while (parent && !parent->isFactor()) { parent = parent->getParent(); }
+					  if (parent == nullptr) return false;
+
+					  m_selectStart = parent;
 			          m_selectEnd = m_selectStart;
 					  m_selectStart->setSelect(Node::Select::ALL);
-					  
+					  LOG_TRACE_MSG("current selection: " + m_selectStart->toString());
+		          }
+		          else if (getCurrentInput() == nullptr || getCurrentInput()->toString().length() == 1) {
+					  return false;
 				  }
-		          else {
-					  m_selectStart = getCurrentInput();
+				  else {
+					  m_selectStart = getCurrentInput()->getParent();
 					  getCurrentInput()->disable();
 			          m_selectEnd = m_selectStart;
 					  m_selectStart->setSelect(Node::Select::ALL);
@@ -599,6 +631,7 @@ bool Equation::handleBackspace()
 		parent->replaceNode(in, new_term);
 		setSelectStart(sel);
 		setSelectEnd(sel);
+		return true;
 	}
 	return false;
 }
@@ -607,6 +640,7 @@ void EqnUndoList::save(Equation* eqn)
 { 
 	string store;
 	eqn->xml_out(store);
+	LOG_TRACE_MSG("saved eqn xml:\n" + store);
 	m_eqns.push_back(store);
 }
 
@@ -632,7 +666,7 @@ namespace Log
 		time_t now = time(NULL);
 		struct tm* local = localtime(&now);
 		strftime(timestamp, 256, "%F %T: ", local);
-		fstream out("/tmp/milo.log", fstream::out | fstream::app);
+		fstream out(LOG_TRACE_FILE, fstream::out | fstream::app);
 		out << timestamp << m << endl; 
 		out.close();
 	}

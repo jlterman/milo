@@ -49,6 +49,10 @@ public:
 
 	void header(const Node* node, const string& tag, bool atomic = false);
 
+	void header(const string& tag) { 
+		print_indent(); m_os << "<" + tag + ">" << endl; m_indent += 1; m_tags.push_back(tag);
+	}
+
 	void footer(const string& tag);
 private:
 	vector<string> m_tags;
@@ -81,6 +85,7 @@ public:
 	bool EOL() const { return m_pos == m_tags.size(); }
 	const map<string, string> getAttributes(bool& fNeg, Node::Select& select);
 	Equation& getEqn() const { return m_eqn; }
+	void setSelect(Node* node);
 	
 	static Node* parse(XMLParser& in, Node* parent = nullptr);
 private:
@@ -310,6 +315,19 @@ void XMLParser::next(string& name, string& value)
 	if (!getState(XMLParser::VALUE)) throw logic_error("bad format");
 }
 
+void XMLParser::setSelect(Node* node)
+{
+	switch (node->getSelect()) {
+	    case Node::Select::START: m_eqn.setSelectStart(node); break;
+	    case Node::Select::END  : m_eqn.setSelectEnd(node);   break;
+	    case Node::Select::ALL  : m_eqn.setSelectStart(node);
+                     		      m_eqn.setSelectEnd(node);
+						          break;
+	    case Node::Select::NONE:
+	                    default: break;
+	}
+}
+
 void XMLParser::parse(istream& in)
 {
 	string tag;
@@ -343,15 +361,7 @@ Node* XMLParser::parse(XMLParser& in, Node* parent)
 	if (!node) node = Binary::xml_in(in, '^', "power", parent);
 	if (!node) return nullptr;
 
-	switch (node->getSelect()) {
-	    case Node::Select::START: in.m_eqn.setSelectStart(node); break;
-	    case Node::Select::END  : in.m_eqn.setSelectEnd(node);   break;
-	    case Node::Select::ALL  : in.m_eqn.setSelectStart(node);
-                     		      in.m_eqn.setSelectEnd(node);
-						          break;
-	    case Node::Select::NONE:
-	                    default: break;
-	}
+	in.setSelect(node);
 	return node;
 }
 
@@ -360,6 +370,7 @@ Node* Equation::xml_in(XMLParser& in)
 	Node* root;
 	if (in.next(XMLParser::HEADER|XMLParser::END, "equation")) {
 		root = new Expression(in);
+		in.setSelect(root);
 	}
 	else
 		throw logic_error("bad format");
@@ -401,6 +412,7 @@ Node* Function::xml_in(XMLParser& in, Node* parent)
 			throw logic_error("bad format");
 	}
 	Node* arg = new Expression(in);
+	in.setSelect(arg);
 	
 	if (!in.next(XMLParser::FOOTER|XMLParser::END, "function"))
 		throw logic_error("bad format");
@@ -631,7 +643,7 @@ Node* Expression::xml_in(XMLParser& in, Node* parent)
 
 void Equation::xml_out(XML& xml) const
 {
-	xml.header(m_root, "equation");
+	xml.header("equation");
 	m_root->xml_out(xml);
 	xml.footer("equation");
 }

@@ -206,6 +206,7 @@ public:
 	void asciiArt(Draw& draw) const;
 	bool drawParenthesis() const { return true; }
 	bool isLeaf() const { return false; }
+	bool isFactor() const { return false; }
 
 	friend class Input;
 private:

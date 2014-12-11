@@ -9,7 +9,7 @@ class DrawCurses : public Draw
 public:
 	DrawCurses() { 
 		if (!init) {
-			initscr(); raw(); noecho();
+			initscr(); raw(); noecho(); curs_set(0);
 			keypad(stdscr, TRUE);
 			m_has_colors = (has_colors() == TRUE);
 			if (m_has_colors) {
@@ -26,6 +26,7 @@ public:
 
 	void at(int x, int y, int c, Color color = BLACK) {
 		if (c == 'P') c = ACS_PI;
+		if (m_select.inside(x, y)) c |= A_REVERSE;
 		if (color != BLACK && m_has_colors) attron(COLOR_PAIR(color));
 		mvaddch(y + m_yOrig, x + m_xOrig, c);
 		if (color != BLACK && m_has_colors) attroff(COLOR_PAIR(color));
@@ -33,8 +34,12 @@ public:
 
 	void at(int x, int y, const string& s, Color color = BLACK) {
 		if (color != BLACK && m_has_colors) attron(COLOR_PAIR(color));
+		if (m_select.inside(x, y)) attron(A_REVERSE);
+
 		move(y + m_yOrig, x + m_xOrig); printw(s.c_str());
+
 		if (color != BLACK && m_has_colors) attroff(COLOR_PAIR(color));
+		if (m_select.inside(x, y)) attroff(A_REVERSE);
 	}
 
 	void out() { refresh(); }
@@ -52,14 +57,22 @@ public:
 
 	void parenthesis(int x_size, int y_size, int x0, int y0);
 
+	void setSelect(int x, int y, int x0, int y0) { 
+		Draw::setSelect(x, y, x0, y0);
+		for (int j = 0; j < y; ++j) mvchgat(m_yOrig + y0 + j, m_xOrig + x0, x, A_REVERSE, 0, NULL);
+	}
+
 	int ins(int x, int y) {
 		return mvinch(y + m_yOrig, x + m_xOrig);
 	}
 
 	int getChar(int y, int x) {
+		curs_set(2);
 		mvaddch(y + m_yOrig, x + m_xOrig, ' '); 
 		move(y + m_yOrig, x + m_xOrig);
-		return getch();
+		int ch = getch();
+		curs_set(0);
+		return ch;
 	}
 
 	static DrawCurses& getInstance() {
@@ -100,6 +113,7 @@ static vector<string> eqn_list;
 
 int main(int argc, char* argv[])
 {
+	LOG_TRACE_CLEAR();
 	LOG_TRACE_MSG("Starting milo_ncurses...");
 	DrawCurses& draw = DrawCurses::getInstance();
 	EqnUndoList eqns;
@@ -111,20 +125,24 @@ int main(int argc, char* argv[])
 		eqn->asciiArt(draw);
 		DrawCurses::getInstance().out();
 		Input* cur = eqn->getCurrentInput();
-		int ch = (cur) ? 
-			draw.getChar(cur->getOrigY(), cur->getOrigX() + cur->getSizeX() - 1) : getchar();
-		LOG_TRACE_MSG("Char typed: " + (ch<32 ? "ctrl-" + to_string(ch) : string(1, (char)ch)));
+		int ch = (cur) ? draw.getChar(cur->getOrigY(), cur->getOrigX() + cur->getSizeX() - 1)
+			           : getchar();
+
+		string mkey;
+		if (ch < 32) mkey = "ctrl-" + string(1, (char) ch+'@');
+		else if (ch == 32) mkey = "SPACE";
+		else if (ch > 127) mkey = to_string(ch);
+		else mkey = string(1, (char)ch);
+		LOG_TRACE_MSG("Char typed: " + mkey);
 
 		bool fChanged = true;
-		if (eqn->handleChar(ch)) {
-				fChanged = false;
-		}
-		else if (!cur || !cur->handleChar(ch)) {
+		if (!eqn->handleChar(ch) && !(cur && cur->handleChar(ch))) {
 			switch (ch) 
 			{
 			    case 3: { // ctrl-c typed
 					fRunning = false;                          LOG_TRACE_MSG("ctrl-c typed");
 					fChanged = false;
+					break;
 				}
 				case 9: { // tab typed
 					fChanged = false;                          LOG_TRACE_MSG("tab typed");
@@ -145,6 +163,10 @@ int main(int argc, char* argv[])
 						fChanged = false;                      LOG_TRACE_MSG("undo to " + eqn->toString());
 					}
 					break;
+			    }
+			    case KEY_RESIZE: {
+				    fChanged = false;                          LOG_TRACE_MSG("screen resize detected");
+				    break;
 			    }
 				default: {
 					fChanged = false;                          LOG_TRACE_MSG("char not handled");
