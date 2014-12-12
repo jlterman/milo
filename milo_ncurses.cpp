@@ -9,7 +9,7 @@ class DrawCurses : public Draw
 public:
 	DrawCurses() { 
 		if (!init) {
-			initscr(); raw(); noecho(); curs_set(0);
+			initscr(); raw(); noecho(); //curs_set(0);
 			keypad(stdscr, TRUE);
 			m_has_colors = (has_colors() == TRUE);
 			if (m_has_colors) {
@@ -67,11 +67,11 @@ public:
 	}
 
 	int getChar(int y, int x) {
-		curs_set(2);
+		//curs_set(2);
 		mvaddch(y + m_yOrig, x + m_xOrig, ' '); 
 		move(y + m_yOrig, x + m_xOrig);
 		int ch = getch();
-		curs_set(0);
+		//curs_set(0);
 		return ch;
 	}
 
@@ -136,7 +136,7 @@ int main(int argc, char* argv[])
 		LOG_TRACE_MSG("Char typed: " + mkey);
 
 		bool fChanged = true;
-		if (!eqn->handleChar(ch) && !(cur && cur->handleChar(ch))) {
+		if (!eqn->handleChar(ch)) {
 			switch (ch) 
 			{
 			    case 3: { // ctrl-c typed

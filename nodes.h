@@ -208,7 +208,7 @@ public:
 	bool isLeaf() const { return false; }
 	bool isFactor() const { return false; }
 
-	friend class Input;
+	friend class Equation;
 private:
 	Node* downLeft()  { return factors.front(); }
 	Node* downRight() { return factors.back(); }
@@ -242,6 +242,7 @@ public:
 	static Node* parse(Parser& p, Node* parent);
 	static Node* xml_in(XMLParser& in, Node* parent);
 
+	friend class Equation;
 protected:
 	Node* downLeft()  { return terms.front(); } 
 	Node* downRight() { return terms.back(); }

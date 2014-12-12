@@ -357,6 +357,7 @@ Node* XMLParser::parse(XMLParser& in, Node* parent)
 	if (!node) node = Constant::xml_in(in, parent);
 	if (!node) node = Variable::xml_in(in, parent);
 	if (!node) node = Number::xml_in(in, parent);
+	if (!node) node = Input::xml_in(in, parent);
 	if (!node) node = Binary::xml_in(in, '/', "divide", parent);
 	if (!node) node = Binary::xml_in(in, '^', "power", parent);
 	if (!node) return nullptr;
@@ -514,7 +515,7 @@ Node* Number::xml_in(XMLParser& in, Node* parent)
 
 Node* Input::xml_in(XMLParser& in, Node* parent)
 {
-	if (!in.peek(XMLParser::HEADER, "input")) return nullptr;
+	if (!in.peek(XMLParser::HEADER|XMLParser::ATOM, "input")) return nullptr;
 	in.next();
 
 	bool fNeg = false;
@@ -570,30 +571,21 @@ bool Term::add(XMLParser& in)
 
 bool Expression::add(XMLParser& in)
 {
-	Node* node = nullptr;
-	if (in.peek(XMLParser::HEADER, "term")) {
-		node = new Term(in, this);
-	}
-	else if (in.peek(XMLParser::HEADER, "input")) {
-		node = Input::xml_in(in, this);
-	}
-	if (!node) return false;
+	if (!in.peek(XMLParser::HEADER, "term")) return false;
 
+	Node* node = new Term(in, this);
 	terms.push_back(node);
 	return true;
 }
 
 Node* Expression::getTerm(Parser& p, Node* parent)
 {
-	Node* node = nullptr;
 	bool neg = false;
 	if (p.peek() == '+' || p.peek() == '-') {
 		char c = p.next();
 		neg = (c == '-') ? true : false;
 	}
-	node = Input::parse(p, parent);
-	if (!node) node = new Term(p, parent);
-
+	Node* node = new Term(p, parent);
 	if (neg) node->negative();
 	return node;
 }
@@ -614,8 +606,6 @@ bool Expression::add(Parser& p)
 Node* Expression::parse(Parser& p, Node* parent) {
 	if (p.peek() != '(') return nullptr;
 	
-	Node* node = nullptr;
-	if ( (node = Input::parse(p, parent)) ) return node;
 	char c = p.next();
 	return new Expression(p, parent);
 }

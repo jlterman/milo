@@ -494,53 +494,6 @@ string Input::toString() const
 		return m_typed;
 }
 
-bool Input::handleBackspace() 
-{ 
-	if (!m_typed.empty()) {
-		m_typed.pop_back();    
-		return true;
-	}
-	if (!m_left.empty() && m_left.back()->isLeaf()) {
-		m_left.pop_back();
-		return true;
-	}
-	return false;
-}
-
-bool Input::handleChar(int ch)
-{
-	if (isalnum(ch) || ch == '.') {
-		addTyped(ch);
-		return true;
-	}
-	bool fResult = true;
-	string op(1, (char)ch);
-	switch (ch) {
-	    case Key::BACKSPACE:
-			      if (!handleBackspace()) fResult = m_eqn.handleBackspace();
-			      break;
-	    case '+':
-	    case '-': if (m_typed.empty()) m_typed = "?";
-                  m_typed += op + "#";
-		          break;
-        case '/':
-	    case '^': if (m_typed.empty()) m_typed = "?";
-                  m_typed = "(" + m_typed + ")" + op + "(#)";
-			      break;
-        case '(': m_typed += "(#)";
-			      break;
-	    default:  fResult = false;
-		 	      break;
-	}
-	return fResult;
-}
-
-void Input::swapLeftTerm(Node* node)
-{ 
-	Term* term = dynamic_cast<Term*>(node);
-	if (term != nullptr) m_left.swap(term->factors); 
-}
-
 bool Equation::handleChar(int ch)
 {
 	bool fResult = true;
@@ -597,43 +550,6 @@ bool Equation::disableCurrentInput()
 
 bool Equation::handleBackspace()
 {
-	Input* in = getCurrentInput();
-	Expression* parent = dynamic_cast<Expression*>(in->getParent());
-
-	Node* leftNode = in->getNextLeft();
-	if (!leftNode && leftNode->getParent() != in->getParent()) leftNode = nullptr;
-
-	if (in->m_left.empty() && leftNode == nullptr) return false;
-		
-	if (in->m_left.empty()) {
-		if (typeid(leftNode) == typeid(in)) { // left is Input*
-			Input* left_in = dynamic_cast<Input*>(leftNode);
-			if (left_in->m_right.empty()) {
-				in->m_left.swap(left_in->m_left);
-				left_in->disable();
-			}
-			else {
-				in->m_left.swap(left_in->m_right);
-			}
-		}
-		else { // left is Term*
-			in->swapLeftTerm(leftNode);
-			parent->deleteNode(leftNode);
-		}
-		return true;
-	}
-	else {
-		setCurrentInput(-1);
-		Node* sel = in->m_left.back();
-		in->m_left.reserve(in->m_left.size() + in->m_right.size());
-		in->m_left.insert(in->m_left.end(), in->m_right.begin(), in->m_right.end());
-		Node* new_term = new Term(in->m_left, in->getParent());
-		parent->replaceNode(in, new_term);
-		setSelectStart(sel);
-		setSelectEnd(sel);
-		return true;
-	}
-	return false;
 }
 
 void EqnUndoList::save(Equation* eqn)

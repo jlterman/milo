@@ -169,7 +169,7 @@ class Input : public Node
 public:
     Input(Parser& p, Node* parent = nullptr);
     Input(Equation& eqn, std::string txt, bool current, Node* parent, bool neg, Node::Select s);
-	~Input() { freeVector(m_left); freeVector(m_right); }
+	~Input() {}
 
 	std::string toString() const;
 	void xml_out(XML& xml) const;
@@ -184,9 +184,6 @@ public:
 
 	friend class Equation;
 private:
-	NodeVector m_left;  // own these factors
-	NodeVector m_right; // own these factors
-
 	std::string m_typed;
 	int m_sn;
 	bool m_active;
@@ -195,9 +192,6 @@ private:
 
 	void disable() { m_active = false; }
 	void setCurrent(bool current) { m_current = current; }
-	void addTyped(char c) { m_typed += c; }
-	bool handleBackspace();
-	void swapLeftTerm(Node* term);
 
 	static int input_sn;
 };
