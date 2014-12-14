@@ -13,13 +13,12 @@
 
 using Complex = std::complex<double>;
 
-bool isZero(double x);
-bool isZero(Complex z);
-bool isInteger(const std::string& n);
-
 class Draw;
 class XML;
 class XMLParser;
+class Parser;
+class Input;
+class Term;
 class Node;
 using NodeVector = std::vector<Node*>;
 
@@ -82,6 +81,7 @@ public:
 	virtual bool drawParenthesis() const { return false; }
 	virtual bool isLeaf() const { return true; }
 	virtual bool isFactor() const { return true; }
+	virtual Complex getNodeValue() const=0;
 
 	Node* begin();
 	Node* end();
@@ -89,6 +89,8 @@ public:
 	Node* getNextRight();
 	void negative() { m_sign = !m_sign; }
 	bool getSign() const { return m_sign; }
+	int getSignValue() const { return m_sign ? 1 : -1; }
+	Complex getValue() { return Complex(getSignValue(), 0)*getNodeValue(); }
 
 	int getSizeX() const { return termSize_x; }
 	int getSizeY() const { return termSize_y; }
@@ -102,6 +104,7 @@ public:
 
 	void setParent(Node* parent) { m_parent = parent; }
 	Node* getParent() const { return m_parent; }
+	Term* getParentTerm();
 
 	void setSelect(Select s) { m_select = s; }
 	Select getSelect() const { return m_select; }
@@ -161,41 +164,6 @@ protected:
 	Rectangle<int> m_select;
 };
 
-class Equation;
-class Parser;
-
-class Input : public Node
-{
-public:
-    Input(Parser& p, Node* parent = nullptr);
-    Input(Equation& eqn, std::string txt, bool current, Node* parent, bool neg, Node::Select s);
-	~Input() {}
-
-	std::string toString() const;
-	void xml_out(XML& xml) const;
-	void calcSize();
-	void calcOrig(int x, int y);
-	void asciiArt(Draw& draw) const;
-
-	bool handleChar(int ch);
-
-	static Node* parse(Parser& p, Node* parent = nullptr);
-	static Node* xml_in(XMLParser& in, Node* parent);
-
-	friend class Equation;
-private:
-	std::string m_typed;
-	int m_sn;
-	bool m_active;
-	bool m_current;
-	Equation& m_eqn;
-
-	void disable() { m_active = false; }
-	void setCurrent(bool current) { m_current = current; }
-
-	static int input_sn;
-};
-
 class Equation
 {
 public:
@@ -203,23 +171,16 @@ public:
     Equation(std::istream& is);
 	~Equation() { delete m_root; }
 	std::string toString() const { return m_root->toString(); }
-	void xml_out(XML& xml) const;
 	void xml_out(std::ostream& os) const;
 	void xml_out(std::string& str) const;
 	void asciiArt(Draw& draw);
-	Node* getRoot() { return m_root; }
 
-	Input* getCurrentInput() { 
-		return (m_input_index < 0) ? nullptr : m_inputs[m_input_index];
-	}
-	void nextInput();
-	bool disableCurrentInput();
-
+	Equation* clone();
+	bool blink() { return m_input_index >= 0; }
+	void getCursorOrig(int& x, int& y);
 	void setCurrentInput(int in_sn);
 	void addInput(Input* in) { m_inputs.push_back(in); }
 	bool handleChar(int ch);
-	bool handleBackspace();
-
 	void setSelectStart(Node* node) { m_selectStart = node; }
 	void setSelectEnd(Node* node)   { m_selectEnd = node; }
 
@@ -231,7 +192,16 @@ private:
 	Node* m_selectStart = nullptr;
 	Node* m_selectEnd = nullptr;
 
+	Input* getCurrentInput() { 
+		return (m_input_index < 0) ? nullptr : m_inputs[m_input_index];
+	}
+	void nextInput();
+	void disableCurrentInput();
+	bool handleBackspace();
 	void setSelect(Draw& draw);
+	void factor(std::string text, NodeVector& factors, Node* parent);
+	void xml_out(XML& xml) const;
+	void eraseSelection(Node* node);
 
 	static Node* xml_in(XMLParser& in);
 };

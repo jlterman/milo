@@ -3,6 +3,44 @@
 #include <map>
 #include "milo.h"
 
+bool isZero(double x);
+bool isZero(Complex z);
+bool isInteger(const std::string& n);
+
+class Expression;
+
+class Input : public Node
+{
+public:
+    Input(Parser& p, Node* parent = nullptr);
+    Input(Equation& eqn, std::string txt = std::string(), bool current = false, Node* parent = nullptr,
+		  bool neg = false, Node::Select s = Node::Select::NONE);
+	~Input() {}
+
+	std::string toString() const;
+	void xml_out(XML& xml) const;
+	void calcSize();
+	void calcOrig(int x, int y);
+	void asciiArt(Draw& draw) const;
+	Complex getNodeValue() const;
+
+	static Node* parse(Parser& p, Node* parent = nullptr);
+	static Node* xml_in(XMLParser& in, Node* parent);
+
+	friend class Equation;
+private:
+	std::string m_typed;
+	int m_sn;
+	bool m_active;
+	bool m_current;
+	Equation& m_eqn;
+
+	void disable() { m_active = false; }
+	void setCurrent(bool current) { m_current = current; }
+
+	static int input_sn;
+};
+
 class Binary : public Node
 {
 public:
@@ -45,6 +83,7 @@ public:
 	void calcSize();
 	void calcOrig(int x, int y);
 	void asciiArt(Draw& draw) const;
+	Complex getNodeValue() const;
 };
 
 class Power : public Binary
@@ -61,6 +100,7 @@ public:
 	void calcSize();
 	void calcOrig(int x, int y);
 	void asciiArt(Draw& draw) const;
+	Complex getNodeValue() const;
 };
 
 class Function : public Node
@@ -79,6 +119,7 @@ public:
 	void asciiArt(Draw& draw) const;
 	bool drawParenthesis() const { return true; }
 	bool isLeaf() const { return false; }
+	Complex getNodeValue() const;
 
 	Function(const std::string& name, func_ptr fp, Node* node, 
 			 Node* parent, bool neg = false, Node::Select s = Node::Select::NONE) : 
@@ -124,6 +165,7 @@ public:
 	void calcSize();
 	void calcOrig(int x, int y);
 	void asciiArt(Draw& draw) const;
+	Complex getNodeValue() const { return constants[m_name]; }
 
 	static Node* parse(Parser& p, Node* parent);
 	static Node* xml_in(XMLParser& in, Node* parent);
@@ -141,20 +183,26 @@ class Variable : public Node
 public:
 	Variable(Parser& p, Node* parent);
     Variable(char name, Node* parent, bool neg = false, Node::Select s = Node::Select::NONE) : 
-		Node(parent, neg, s), m_name(name) {}
+	Node(parent, neg, s), m_name(name) { values.emplace(name, Complex(0, 0)); }
 	~Variable() {}
+
+	using var_map = std::map<char, Complex>;
 
 	std::string toString() const { return std::string() + m_name; }
 	void xml_out(XML& xml) const;
 	void calcSize();
 	void calcOrig(int x, int y);
 	void asciiArt(Draw& draw) const;
+	Complex getNodeValue() const { return values[m_name]; }
 
 	static Node* parse(Parser& p, Node* parent);
 	static Node* xml_in(XMLParser& in, Node* parent);
+	static void setValue(char name, Complex value);
 
 private:
 	char m_name;
+
+	static var_map values;
 };
 
 class Number : public Node
@@ -176,6 +224,7 @@ public:
 	void calcSize();
 	void calcOrig(int x, int y);
 	void asciiArt(Draw& draw) const;
+	Complex getNodeValue() const { return m_value; }
 
 	static Node* parse(Parser& p, Node* parent);
 	static Node* xml_in(XMLParser& in, Node* parent);
@@ -194,6 +243,7 @@ public:
     Term(Parser& p, Node* parent = nullptr) : Node(parent) { while(add(p)); }
 	Term(XMLParser& in, Node* parent = nullptr);
     Term(NodeVector f, Node* parent) : Node(parent) { factors.swap(f); }
+    Term(Node* node, Node* parent = nullptr, bool fNeg = false) : Node(parent, fNeg), factors(1, node) {}
 	~Term() { freeVector(factors); }
 	
 	static Node* parse(Parser& p, Node* parent = nullptr);
@@ -207,6 +257,10 @@ public:
 	bool drawParenthesis() const { return true; }
 	bool isLeaf() const { return false; }
 	bool isFactor() const { return false; }
+	Complex getNodeValue() const;
+
+	Expression* getParentExpression();
+	int getFactorIndex(Node* node) { return distance(factors.cbegin(), find(factors, node)); }
 
 	friend class Equation;
 private:
@@ -226,6 +280,7 @@ class Expression : public Node
 public:
 	Expression(Parser& p, Node* parent = nullptr) : Node(parent) { while(add(p)); }
 	Expression(XMLParser& in, Node* parent = nullptr);
+    Expression(Term* term, Node* parent = nullptr) : Node(parent), terms(1, term) {}
 	~Expression() { freeVector(terms); }
 
 	std::string toString() const;
@@ -234,10 +289,11 @@ public:
 	void calcOrig(int x, int y);
 	void asciiArt(Draw& draw) const;
 	bool isLeaf() const { return false; }
+	Complex getNodeValue() const;
 
-	void deleteNode(Node* node);
-	void replaceNode(Node* old, Node* n) { for (auto t : terms) { if (t == old) { t = n; } } }
+	int getTermIndex(Node* term) { return distance(terms.cbegin(), find(terms, term)); }
 
+	static Node* getTerm(Equation& eqn, std::string text, Node* parent);
 	static Node* getTerm(Parser& p, Node* parent);
 	static Node* parse(Parser& p, Node* parent);
 	static Node* xml_in(XMLParser& in, Node* parent);

@@ -1,7 +1,6 @@
 #include <iostream>
 #include <vector>
 #include <iterator>
-#include <exception>
 #include <map>
 #include <limits>
 #include <typeinfo>
@@ -77,14 +76,24 @@ const vector<string> Node::select_tags = { "NONE", "START", "END", "ALL" };
 
 Node* Node::begin()
 {
-	Node* node = downLeft();
-	return (node != nullptr) ? node : this;
+	Node* node = this;
+	Node* down = this->downLeft();
+	while (down != nullptr) {
+		node = down;
+		down = node->downLeft();
+	}
+	return (down != nullptr) ? down : node;
 }
 
 Node* Node::end()
 {
-	Node* node = downRight();
-	return (node != nullptr) ? node : this;
+	Node* node = this;
+	Node* down = this->downRight();
+	while (down != nullptr) {
+		node = down;
+		down = node->downRight();
+	}
+	return (down != nullptr) ? down : node;
 }
 
 Node* Node::getNextLeft()
@@ -113,6 +122,17 @@ Node* Node::getNextRight()
 		return nullptr;
 }
 
+Term* Node::getParentTerm() 
+{ 
+	return dynamic_cast<Term*>(m_parent);
+}
+
+Expression* Term::getParentExpression() 
+{ 
+	return dynamic_cast<Expression*>(getParent());
+}
+
+
 void Divide::calcSize()
 {
 	m_first->calcSize();
@@ -138,6 +158,13 @@ void Divide::asciiArt(Draw& draw) const
 	m_second->asciiArt(draw);
 }
 
+Complex Divide::getNodeValue() const
+{
+	Complex a = m_first->getNodeValue();
+	Complex b = m_second->getNodeValue();
+	return a / b;
+}
+
 void Power::calcSize()
 {
 	m_first->calcSize();
@@ -160,41 +187,39 @@ void Power::asciiArt(Draw& draw) const
 	m_second->asciiArt(draw);
 }
 
+Complex Power::getNodeValue() const
+{
+	Complex a = m_first->getNodeValue();
+	Complex b = m_second->getNodeValue();
+	return pow(a, b);
+}
+
 Function::func_map Function::functions;
 
-Complex Function::sinZ(Complex z) {
-	double x = z.real(), y = z.imag();
-	return Complex(sin(x)*cosh(y), cos(x)*sinh(y));
+Complex Function::sinZ(Complex z)
+{
+	return sin(z);
 }
 
-Complex Function::cosZ(Complex z) {
-	double x = z.real(), y = z.imag();
-	return Complex(cos(x)*cosh(y), -sin(x)*sinh(y));
+Complex Function::cosZ(Complex z)
+{
+	return cos(z);
 }
 
-Complex Function::tanZ(Complex z) {
-	double x = z.real(), y = z.imag();
-	double r = cos(x)*cos(x)*cosh(y)*cosh(y) + 
-               sin(x)*sin(x)*sinh(y)*sinh(y);
-	return Complex(sin(x)*cos(x)/r, sinh(y)*cosh(y)/r);
+Complex Function::tanZ(Complex z)
+{
+	return tan(z);
 }
 
 Complex Function::logZ(Complex z) {
 	if (isZero(z)) {
 		return Complex(-1*numeric_limits<float>::infinity(), 0);
 	}
-	double x = abs(z.real()), y = abs(z.imag());
-	bool neg_x = signbit(z.real()), neg_y = signbit(z.imag());
-	if (isZero(x)) return Complex(log(y), (neg_y ? -1 : 1)*M_PI/2);
-	if (isZero(y)) return Complex(log(x),  neg_x ? -M_PI : 0);
-
-	return Complex(log(x*x + y*y)/2, 
-				   atan(y/x)*((neg_x == neg_y) ? 1 : -1));
+	return log(z);
 }
 
 Complex Function::expZ(Complex z) {
-	double x = z.real(), y = z.imag();
-	return Complex(exp(x)*cos(y), exp(x)*sin(y));
+	return exp(z);
 }
 
 void Function::init_functions()
@@ -225,6 +250,12 @@ void Function::asciiArt(Draw & draw) const
 	m_arg->asciiArt(draw);
 }
 
+Complex Function::getNodeValue() const
+{
+	Complex arg = m_arg->getNodeValue();
+	return m_func(arg);
+}
+
 Constant::const_map Constant::constants;
 
 void Constant::init_constants()
@@ -250,6 +281,8 @@ void Constant::asciiArt(Draw& draw) const
 	draw.at(getOrigX(), getOrigY(), m_name);
 }
 
+Variable::var_map Variable::values;
+
 void Variable::calcSize() 
 {
 	setSize(1, 1);
@@ -264,6 +297,12 @@ void Variable::calcOrig(int x, int y)
 void Variable::asciiArt(Draw& draw) const
 {
 	draw.at(getOrigX(), getOrigY(), m_name);
+}
+
+void Variable::setValue(char name, Complex value)
+{
+	auto it = values.find(name);
+	if (it != values.end() ) it->second = value;
 }
 
 string Number::toString(double value, bool real) const
@@ -379,6 +418,13 @@ Node* Term::getRightSibling(Node* node)
 	return nullptr;
 }
 
+Complex Term::getNodeValue() const
+{
+	Complex value = 1;
+	for (auto n : factors) { value *= n->getNodeValue(); }
+	return value;
+}
+
 void Expression::calcSize() 
 {
 	int x = 0, b = 0, y = 0;
@@ -427,6 +473,13 @@ string Expression::toString() const
 	return s += ")";
 }
 
+Complex Expression::getNodeValue() const
+{
+	Complex value = 0;
+	for (auto n : terms) { value += n->getNodeValue(); }
+	return value;
+}
+
 Node* Expression::getLeftSibling(Node* node)
 {
 	for (int i = 1; i < terms.size(); ++i) {
@@ -443,13 +496,6 @@ Node* Expression::getRightSibling(Node* node)
 			return terms[i + 1];
 	}
 	return nullptr;
-}
-
-void Expression::deleteNode(Node* node)
-{
-	for (auto pos = terms.begin(); pos != terms.end(); ++pos) {
-		if ( *pos == node ) terms.erase(pos);
-	}
 }
 
 int Input::input_sn = -1;
@@ -474,14 +520,7 @@ void Input::calcOrig(int x, int y)
 
 void Input::asciiArt(Draw& draw) const
 {
-	string in = toString();
-	if (in.length() == 1) {
-		draw.at(getOrigX(), getOrigY(), in[0]);
-	}
-	else {
-		in.erase(in.begin()); in.erase(in.end()-1);
-		draw.at(getOrigX(), getOrigY(), in);
-	}
+	draw.at(getOrigX(), getOrigY(), m_typed + "?");
 }
 
 string Input::toString() const
@@ -494,38 +533,209 @@ string Input::toString() const
 		return m_typed;
 }
 
+Complex Input::getNodeValue() const
+{
+	throw logic_error("input has no value");
+}
+
+void Equation::eraseSelection(Node* node)
+{
+	Term* sel_term = m_selectStart->getParentTerm();
+	int fact_index = sel_term->getFactorIndex(m_selectStart);
+	
+	while (sel_term->factors[fact_index] != m_selectEnd) {
+		delete sel_term->factors[fact_index];
+		sel_term->factors.erase(sel_term->factors.begin() + fact_index);
+	}
+	delete sel_term->factors[fact_index];
+
+	if (node != nullptr) {
+		node->setParent(sel_term);
+		sel_term->factors[fact_index] = node;
+	}
+	else
+		sel_term->factors.erase(sel_term->factors.begin() + fact_index);
+
+	m_selectStart = m_selectEnd = nullptr;
+}
+
 bool Equation::handleChar(int ch)
 {
 	bool fResult = true;
-	switch(ch) {
- 	    case ' ': if (m_selectStart != nullptr) {
-			          if (m_selectStart->getParent() == nullptr) return false;
+	if (getCurrentInput() == nullptr) {
+		if (m_selectStart != nullptr && (isalnum(ch) || ch == '.')) {
+			eraseSelection(new Input(*this, string(1, (char)ch), true));
+			getCurrentInput()->m_typed += string(1, (char)ch);
+			return true;
+		}
+		switch(ch) {
+		    case Key::BACKSPACE: {
+				eraseSelection(new Input(*this, string(), true));
+				break;
+			}
+		    case 10: {
+				m_selectStart->setSelect(Node::Select::NONE);
+				m_selectEnd->setSelect(Node::Select::NONE);
 
-			          m_selectStart->setSelect(Node::Select::NONE);
-					  m_selectEnd->setSelect(Node::Select::NONE);
-
-					  Node* parent = m_selectStart->getParent();
-					  while (parent && !parent->isFactor()) { parent = parent->getParent(); }
-					  if (parent == nullptr) return false;
-
-					  m_selectStart = parent;
-			          m_selectEnd = m_selectStart;
-					  m_selectStart->setSelect(Node::Select::ALL);
-					  LOG_TRACE_MSG("current selection: " + m_selectStart->toString());
-		          }
-		          else if (getCurrentInput() == nullptr || getCurrentInput()->toString().length() == 1) {
-					  return false;
-				  }
-				  else {
-					  m_selectStart = getCurrentInput()->getParent();
-					  getCurrentInput()->disable();
-			          m_selectEnd = m_selectStart;
-					  m_selectStart->setSelect(Node::Select::ALL);
-				  }
-			      break;
-	    default:  fResult = false;
-		 	      break;
+				Term* sel_term = m_selectStart->getParentTerm();
+				int fact_index = sel_term->getFactorIndex(m_selectStart);
+				sel_term->factors.insert(sel_term->factors.begin() + fact_index, 
+										 new Input(*this, string(), true, sel_term));
+				break;
+			}
+	        case ' ': {
+		        if (m_selectStart != nullptr) {
+					if (m_selectStart->getParent() == nullptr) return false;
+					
+					m_selectStart->setSelect(Node::Select::NONE);
+					m_selectEnd->setSelect(Node::Select::NONE);
+					
+					Node* parent = m_selectStart->getParent();
+					while (parent && !parent->isFactor()) { parent = parent->getParent(); }
+					if (parent == nullptr) return false;
+					
+					m_selectStart = parent;
+					m_selectEnd = m_selectStart;
+					m_selectStart->setSelect(Node::Select::ALL);
+					m_input_index = -1;
+					LOG_TRACE_MSG("current selection: " + m_selectStart->toString());
+				}
+				else {
+					m_selectStart = m_root->begin();
+					m_selectEnd = m_selectStart;
+					m_selectStart->setSelect(Node::Select::ALL);
+				}
+			}
+            default:
+			   fResult = false;
+			   break;
+		}
 	}
+	else if (m_input_index >= 0) {
+		if (isalnum(ch) || ch == '.') {
+			getCurrentInput()->m_typed += string(1, (char)ch);
+			return true;
+		}
+		Input* in = getCurrentInput();
+		Term* in_term = in->getParentTerm();
+		int fact_index = in_term->getFactorIndex(in);
+		Expression* in_expr = in_term->getParentExpression();
+		int term_index = in_expr->getTermIndex(in_term);
+
+		switch(ch) {
+	        case 9: {
+				if (m_inputs.size() > 1) nextInput();
+				else fResult = false;
+				break;
+			}
+	        case 10: {
+				disableCurrentInput();
+				break;
+			}
+	        case Key::BACKSPACE: {
+				fResult = handleBackspace();
+			    break;
+			}
+	        case '+':
+	        case '-': {
+				if (in->m_typed.empty()) {
+					Term* term = dynamic_cast<Term*>(Expression::getTerm(*this, string(1, (char)ch)+"#", in_expr));
+					in_expr->terms.insert(in_expr->terms.begin() + term_index + 1, term);
+				}
+				else {
+					Term* term = dynamic_cast<Term*>(Expression::getTerm(*this, in->m_typed, in_expr));
+					in_expr->terms.insert(in_expr->terms.begin() + term_index, term);
+					in->m_typed.clear();
+					if (ch == '-') in->getParent()->negative();
+				}
+				break;
+			}
+	        case '/': {
+				bool fNeg = false;
+				if (!in->m_typed.empty()) {
+					in_term->factors.erase(in_term->factors.begin() + fact_index);
+					NodeVector factors;
+					factor(in->m_typed, factors, in_term); in->m_typed.clear();
+					for ( auto f : factors ) {
+						in_term->factors.insert(in_term->factors.begin() + fact_index++, f);
+					}
+				}
+				else {
+					in_term->factors[fact_index] = new Input(*this, string(), false, in_term);
+				}
+				fNeg = !in_term->getSign(); if (fNeg) in_term->negative();
+				Expression* new_upper_expr = new Expression(in_term);
+				in_term->setParent(new_upper_expr);
+				
+				Term* new_lower_term = new Term(in);
+				in->setParent(new_lower_term);
+				Expression* new_lower_expr = new Expression(new_lower_term);
+				new_lower_term->setParent(new_lower_expr);
+				
+				Divide* d = new Divide(new_upper_expr, new_lower_expr, in_term);
+				Term* divide_term = new Term(d, in_expr, fNeg);
+				in_expr->terms[term_index] = divide_term;
+				break;
+			}
+	        case '^': {
+				Node* node = nullptr;
+				in_term->factors.erase(in_term->factors.begin() + fact_index);
+				if (!in->m_typed.empty()) {
+					NodeVector factors;
+					factor(in->m_typed, factors, in_term); in->m_typed.clear();
+					node = factors.front();
+					for (auto it = factors.begin() + 1; it != factors.end(); ++it) {
+						in_term->factors.insert(in_term->factors.begin() + fact_index++, node);
+						node = *it;
+					}
+				}
+				else {
+					node = new Input(*this, string(), false, in_term);
+				}
+				Term* a_term = new Term(node);
+				node->setParent(a_term);
+				Expression* a_expr = new Expression(a_term);
+				a_term->setParent(a_expr);
+				
+				Term* b_term = new Term(in);
+				node->setParent(b_term);
+				Expression* b_expr = new Expression(b_term);
+				a_term->setParent(b_expr);
+				
+				Power* p = new Power(a_expr, b_expr, in_term);
+				in_term->factors.insert(in_term->factors.begin() + fact_index, p);
+				break;
+			}
+	        case '(': {
+				in->m_typed += "(#)";
+
+				disableCurrentInput();
+				break;
+			}
+	        case ' ': {
+				if (getCurrentInput()->m_typed.empty()) {
+					return false;
+				}
+				else {
+					Input* in = m_inputs[m_input_index];
+					Term* in_term = in->getParentTerm();
+					int fact_index = in_term->getFactorIndex(in) + in->m_typed.length() - 1;
+					disableCurrentInput();
+
+					m_selectStart = in_term->factors[fact_index];
+					m_selectEnd = m_selectStart;
+					m_selectStart->setSelect(Node::Select::ALL);
+				}
+				break;
+			}
+	        default:  
+				fResult = false;
+				break;
+		}
+	}
+	else
+		fResult = false;
+
 	return fResult;
 }
 
@@ -536,20 +746,89 @@ void Equation::nextInput()
 	m_inputs[m_input_index]->setCurrent(true);
 }
 
-bool Equation::disableCurrentInput()
+void Equation::disableCurrentInput()
 {
-	bool fResult = false;
-	Input* current = m_inputs[m_input_index];
-	if ( m_inputs.size() > 1 && !current->m_typed.empty() ) {
-		current->disable();
-		nextInput();
-		fResult = true;
+	if (m_input_index < 0) throw logic_error("no current input to disable");
+
+	Input* in = m_inputs[m_input_index];
+	Term* in_term = in->getParentTerm();
+	int fact_index = in_term->getFactorIndex(in);
+
+	in_term->factors.erase(in_term->factors.begin() + fact_index);
+	if (!in->m_typed.empty()) {
+		NodeVector factors;
+		factor(in->m_typed, factors, in_term);
+		for ( auto f : factors ) {
+			in_term->factors.insert(in_term->factors.begin() + fact_index++, f);
+		}
 	}
-	return fResult;
+	m_inputs.erase(m_inputs.begin() + m_input_index);
+	if (m_inputs.size() > 0) {
+		m_input_index = (++m_input_index)%m_inputs.size();
+		m_inputs[m_input_index]->setCurrent(true);
+	}
+	else
+		m_input_index = -1;
+	delete in;
 }
 
 bool Equation::handleBackspace()
 {
+	bool fResult = true;
+	if (m_input_index >= 0) {
+		Input* in = getCurrentInput();
+		if (!in->m_typed.empty()) {
+			in->m_typed.erase(in->m_typed.end() - 1);
+		}
+		else {
+			Term* in_term = in->getParentTerm();
+			int fact_index = in_term->getFactorIndex(in);
+			Expression* in_expr = in_term->getParentExpression();
+			int term_index = in_expr->getTermIndex(in_term);
+
+			if (fact_index > 0 && in_term->factors[fact_index-1]->isLeaf()) {
+				delete in_term->factors[fact_index-1];
+				in_term->factors.erase(in_term->factors.begin() + fact_index - 1);
+			}
+			else if (fact_index > 0) {
+				in->disable();
+				m_selectStart = in_term->factors[fact_index-1];
+				m_selectEnd = m_selectStart;
+				m_selectStart->setSelect(Node::Select::ALL);
+				m_input_index = -1;
+				LOG_TRACE_MSG("current selection: " + m_selectStart->toString());
+			}
+			else if (term_index > 0) {
+				Term* prev_term = dynamic_cast<Term*>(in_expr->terms[term_index - 1]);
+				Term* term = dynamic_cast<Term*>(in_expr->terms[term_index]);
+				
+				int prev_size = prev_term->factors.size();
+				prev_term->factors.resize( prev_size + term->factors.size(), nullptr );
+				move(term->factors.begin(), term->factors.end(), prev_term->factors.begin() + prev_size);
+				term->factors.clear();
+				in_expr->terms.erase(in_expr->terms.begin() + term_index);
+			}
+			else
+				fResult = false;
+		}
+	}
+	return fResult;
+}
+
+Equation* Equation::clone()
+{
+	string store;
+	xml_out(store);
+	istringstream in(store);
+	return new Equation(in);
+}
+
+void Equation::getCursorOrig(int& x, int& y) 
+{ 
+	if (getCurrentInput() == nullptr) return;
+
+	x = getCurrentInput()->getOrigX() + getCurrentInput()->getSizeX(); 
+	y = getCurrentInput()->getOrigY();
 }
 
 void EqnUndoList::save(Equation* eqn)

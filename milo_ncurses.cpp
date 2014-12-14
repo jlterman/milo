@@ -9,7 +9,7 @@ class DrawCurses : public Draw
 public:
 	DrawCurses() { 
 		if (!init) {
-			initscr(); raw(); noecho(); //curs_set(0);
+			initscr(); raw(); noecho(); curs_set(0);
 			keypad(stdscr, TRUE);
 			m_has_colors = (has_colors() == TRUE);
 			if (m_has_colors) {
@@ -67,11 +67,12 @@ public:
 	}
 
 	int getChar(int y, int x) {
-		//curs_set(2);
+		curs_set(2);
 		mvaddch(y + m_yOrig, x + m_xOrig, ' '); 
 		move(y + m_yOrig, x + m_xOrig);
 		int ch = getch();
-		//curs_set(0);
+		curs_set(0);
+		mvaddch(y + m_yOrig, x + m_xOrig, '?'); 
 		return ch;
 	}
 
@@ -109,8 +110,6 @@ void DrawCurses::parenthesis(int x_size, int y_size, int x0, int y0)
 	}
 }
 
-static vector<string> eqn_list;
-
 int main(int argc, char* argv[])
 {
 	LOG_TRACE_CLEAR();
@@ -124,9 +123,9 @@ int main(int argc, char* argv[])
 	while (fRunning) {
 		eqn->asciiArt(draw);
 		DrawCurses::getInstance().out();
-		Input* cur = eqn->getCurrentInput();
-		int ch = (cur) ? draw.getChar(cur->getOrigY(), cur->getOrigX() + cur->getSizeX() - 1)
-			           : getchar();
+		int xCursor = 0, yCursor = 0;
+		eqn->getCursorOrig(xCursor, yCursor);
+		int ch = (eqn->blink()) ? draw.getChar(yCursor, xCursor - 1) : getchar();
 
 		string mkey;
 		if (ch < 32) mkey = "ctrl-" + string(1, (char) ch+'@');
@@ -142,17 +141,6 @@ int main(int argc, char* argv[])
 			    case 3: { // ctrl-c typed
 					fRunning = false;                          LOG_TRACE_MSG("ctrl-c typed");
 					fChanged = false;
-					break;
-				}
-				case 9: { // tab typed
-					fChanged = false;                          LOG_TRACE_MSG("tab typed");
-					if (!cur) break;
-					draw.at(cur->getOrigY(), cur->getOrigX() + cur->getSizeX() - 1, '?');
-					eqn->nextInput();
-					break;
-				}
-			    case 10: { // enter typed
-					fChanged = eqn->disableCurrentInput();
 					break;
 				}
 			    case 26: { // ctrl-z typed

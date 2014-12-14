@@ -1,7 +1,6 @@
 #include <iostream>
 #include <vector>
 #include <iterator>
-#include <exception>
 #include <map>
 #include <limits>
 #include <initializer_list>
@@ -9,17 +8,6 @@
 #include "nodes.h"
 
 using namespace std;
-
-class DrawNull : public Draw
-{
-public:
-	void at(int x, int y, char c) {}
-	void at(int x, int y, const string& s) {}
-	void out() {}
-	void set(int x, int y, int x0 = 0, int y0 = 0) {}
-	void parenthesis(int x_size, int y_size, int x0, int y0) {}
-};
-
 
 class Parser
 {
@@ -578,6 +566,12 @@ bool Expression::add(XMLParser& in)
 	return true;
 }
 
+Node* Expression::getTerm(Equation& eqn, string text, Node* parent)
+{
+	Parser p(text, eqn);
+	return getTerm(p, parent);
+}
+
 Node* Expression::getTerm(Parser& p, Node* parent)
 {
 	bool neg = false;
@@ -725,6 +719,14 @@ Equation::Equation(string eq)
 { 
 	Parser p(eq, *this); 
 	m_root = new Expression(p);
+}
+
+void Equation::factor(string text, NodeVector& factors, Node* parent)
+{
+	Parser p(text, *this);
+	while (p.peek()) {
+		factors.push_back(Term::parse(p, parent));
+	}	
 }
 
 Node* Function::parse(Parser& p, Node* parent) {
