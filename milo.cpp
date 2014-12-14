@@ -15,14 +15,17 @@ void Equation::asciiArt(Draw& draw)
 {
 	m_root->calcSize();
 	m_root->calcOrig(0, 0);
-	draw.set(m_root->getSizeX(), m_root->getSizeY());
+	draw.set(m_root);
 	setSelect(draw);
 	m_root->asciiArt(draw);
 }
 
 void Equation::setSelect(Draw& draw)
 {
-	if (m_selectStart != nullptr && m_selectStart == m_selectEnd) {
+	if (m_selectStart == nullptr && m_selectEnd == nullptr) {
+		draw.setSelect(0, 0, 0, 0);
+	}
+	else if (m_selectStart != nullptr && m_selectStart == m_selectEnd) {
 		draw.setSelect(m_selectStart);
 	}
 	else if (m_selectStart != nullptr) {
@@ -573,13 +576,14 @@ bool Equation::handleChar(int ch)
 				eraseSelection(new Input(*this, string(), true));
 				break;
 			}
-		    case 10: {
+		    case 10:
+		    case 13: {
 				m_selectStart->setSelect(Node::Select::NONE);
 				m_selectEnd->setSelect(Node::Select::NONE);
 
 				Term* sel_term = m_selectStart->getParentTerm();
 				int fact_index = sel_term->getFactorIndex(m_selectStart);
-				sel_term->factors.insert(sel_term->factors.begin() + fact_index, 
+				sel_term->factors.insert(sel_term->factors.begin() + fact_index + 1, 
 										 new Input(*this, string(), true, sel_term));
 				break;
 			}
@@ -605,6 +609,7 @@ bool Equation::handleChar(int ch)
 					m_selectEnd = m_selectStart;
 					m_selectStart->setSelect(Node::Select::ALL);
 				}
+				break;
 			}
             default:
 			   fResult = false;
@@ -628,7 +633,8 @@ bool Equation::handleChar(int ch)
 				else fResult = false;
 				break;
 			}
-	        case 10: {
+		    case 10:
+	        case 13: {
 				disableCurrentInput();
 				break;
 			}
@@ -714,7 +720,7 @@ bool Equation::handleChar(int ch)
 			}
 	        case ' ': {
 				if (getCurrentInput()->m_typed.empty()) {
-					return false;
+					fResult = false;
 				}
 				else {
 					Input* in = m_inputs[m_input_index];

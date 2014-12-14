@@ -143,6 +143,9 @@ public:
 		m_xSize = x; m_ySize = y; m_xOrig = x0, m_yOrig = y0;
 	}
 
+	void set(Node* node) { 
+		set(node->getSizeX(), node->getSizeY(), node->getOrigX(), node->getOrigY());
+	}
 
 	virtual void setSelect(int x, int y, int x0, int y0) { m_select.set(x, y, x0, y0); }
 
