@@ -51,6 +51,7 @@ public:
 
 	std::string toString() const { return m_first->toString() + m_op + m_second->toString(); }
 	bool isLeaf() const { return false; }
+	Node* findNode(int x, int y);
 
 	static Node* parse(Parser& p, Node* one, Node* parent);
 	static Node* xml_in(XMLParser& in, char op, const std::string& name, Node* parent);
@@ -120,6 +121,7 @@ public:
 	bool drawParenthesis() const { return true; }
 	bool isLeaf() const { return false; }
 	Complex getNodeValue() const;
+	Node* findNode(int x, int y);
 
 	Function(const std::string& name, func_ptr fp, Node* node, 
 			 Node* parent, bool neg = false, Node::Select s = Node::Select::NONE) : 
@@ -258,6 +260,7 @@ public:
 	bool isLeaf() const { return false; }
 	bool isFactor() const { return false; }
 	Complex getNodeValue() const;
+	Node* findNode(int x, int y);
 
 	Expression* getParentExpression();
 	int getFactorIndex(Node* node) { return distance(factors.cbegin(), find(factors, node)); }
@@ -290,6 +293,7 @@ public:
 	void asciiArt(Draw& draw) const;
 	bool isLeaf() const { return false; }
 	Complex getNodeValue() const;
+	Node* findNode(int x, int y);
 
 	int getTermIndex(Node* term) { return distance(terms.cbegin(), find(terms, term)); }
 

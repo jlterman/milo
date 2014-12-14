@@ -82,6 +82,7 @@ public:
 	virtual bool isLeaf() const { return true; }
 	virtual bool isFactor() const { return true; }
 	virtual Complex getNodeValue() const=0;
+	virtual Node* findNode(int x, int y);
 
 	Node* begin();
 	Node* end();
@@ -92,14 +93,14 @@ public:
 	int getSignValue() const { return m_sign ? 1 : -1; }
 	Complex getValue() { return Complex(getSignValue(), 0)*getNodeValue(); }
 
-	int getSizeX() const { return termSize_x; }
-	int getSizeY() const { return termSize_y; }
-	int getOrigX() const { return termOrig_x; }
-	int getOrigY() const { return termOrig_y; }
+	int getSizeX() const { return m_xSize; }
+	int getSizeY() const { return m_ySize; }
+	int getOrigX() const { return m_xOrig; }
+	int getOrigY() const { return m_yOrig; }
 	int  getBaseLine() const { return m_base; }
 
-	void setSize(int x, int y) { termSize_x = x; termSize_y = y; }
-	void setOrig(int x, int y) { termOrig_x = x; termOrig_y = y; }
+	void setSize(int x, int y) { m_xSize = x; m_ySize = y; }
+	void setOrig(int x, int y) { m_xOrig = x; m_yOrig = y; }
 	void setBaseLine(int base) { m_base = base; }
 
 	void setParent(Node* parent) { m_parent = parent; }
@@ -115,10 +116,10 @@ private:
 	virtual Node* getLeftSibling(Node* node) { return nullptr; }
 	virtual Node* getRightSibling(Node* node) { return nullptr; }
 
-	int termSize_x;
-	int termSize_y;
-	int termOrig_x;
-	int termOrig_y;
+	int m_xSize;
+	int m_ySize;
+	int m_xOrig;
+	int m_yOrig;
 	bool m_sign;
 	Node* m_parent;
 	int m_base;
@@ -159,6 +160,7 @@ public:
 					node->getOrigX(), node->getOrigY());
 	}
 
+	void relativeOrig(int& x, int& y) { x -= m_xOrig; y -= m_yOrig; }
 protected:
 	int m_xSize;
 	int m_ySize;
@@ -186,6 +188,9 @@ public:
 	bool handleChar(int ch);
 	void setSelectStart(Node* node) { m_selectStart = node; }
 	void setSelectEnd(Node* node)   { m_selectEnd = node; }
+	void clearSelect();
+	void setSelect(Node* start, Node* end = nullptr);
+	Node* findNode(Draw& draw, int x, int y);
 
 private:
 	Node* m_root = nullptr; // Equation owns this tree
@@ -200,6 +205,7 @@ private:
 	}
 	void nextInput();
 	void disableCurrentInput();
+	void disableInput(Input* in);
 	bool handleBackspace();
 	void setSelect(Draw& draw);
 	void factor(std::string text, NodeVector& factors, Node* parent);

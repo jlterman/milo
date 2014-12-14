@@ -544,21 +544,28 @@ Complex Input::getNodeValue() const
 void Equation::eraseSelection(Node* node)
 {
 	Term* sel_term = m_selectStart->getParentTerm();
-	int fact_index = sel_term->getFactorIndex(m_selectStart);
-	
-	while (sel_term->factors[fact_index] != m_selectEnd) {
+	if (m_selectStart->getParentTerm() == nullptr) {
+		delete m_root;
+		Term* term = new Term(node);
+		Expression* expr = new Expression(term);
+		term->setParent(expr);
+		m_root = expr;
+	}
+	else if (sel_term != nullptr) {
+		int fact_index = sel_term->getFactorIndex(m_selectStart);
+		while (sel_term->factors[fact_index] != m_selectEnd) {
+			delete sel_term->factors[fact_index];
+			sel_term->factors.erase(sel_term->factors.begin() + fact_index);
+		}
 		delete sel_term->factors[fact_index];
-		sel_term->factors.erase(sel_term->factors.begin() + fact_index);
+		
+		if (node != nullptr) {
+			node->setParent(sel_term);
+			sel_term->factors[fact_index] = node;
+		}
+		else
+			sel_term->factors.erase(sel_term->factors.begin() + fact_index);
 	}
-	delete sel_term->factors[fact_index];
-
-	if (node != nullptr) {
-		node->setParent(sel_term);
-		sel_term->factors[fact_index] = node;
-	}
-	else
-		sel_term->factors.erase(sel_term->factors.begin() + fact_index);
-
 	m_selectStart = m_selectEnd = nullptr;
 }
 
@@ -568,7 +575,6 @@ bool Equation::handleChar(int ch)
 	if (getCurrentInput() == nullptr) {
 		if (m_selectStart != nullptr && (isalnum(ch) || ch == '.')) {
 			eraseSelection(new Input(*this, string(1, (char)ch), true));
-			getCurrentInput()->m_typed += string(1, (char)ch);
 			return true;
 		}
 		switch(ch) {
@@ -578,9 +584,7 @@ bool Equation::handleChar(int ch)
 			}
 		    case 10:
 		    case 13: {
-				m_selectStart->setSelect(Node::Select::NONE);
-				m_selectEnd->setSelect(Node::Select::NONE);
-
+				clearSelect();
 				Term* sel_term = m_selectStart->getParentTerm();
 				int fact_index = sel_term->getFactorIndex(m_selectStart);
 				sel_term->factors.insert(sel_term->factors.begin() + fact_index + 1, 
@@ -591,23 +595,16 @@ bool Equation::handleChar(int ch)
 		        if (m_selectStart != nullptr) {
 					if (m_selectStart->getParent() == nullptr) return false;
 					
-					m_selectStart->setSelect(Node::Select::NONE);
-					m_selectEnd->setSelect(Node::Select::NONE);
-					
 					Node* parent = m_selectStart->getParent();
 					while (parent && !parent->isFactor()) { parent = parent->getParent(); }
 					if (parent == nullptr) return false;
 					
-					m_selectStart = parent;
-					m_selectEnd = m_selectStart;
-					m_selectStart->setSelect(Node::Select::ALL);
+					setSelect(parent);
 					m_input_index = -1;
 					LOG_TRACE_MSG("current selection: " + m_selectStart->toString());
 				}
 				else {
-					m_selectStart = m_root->begin();
-					m_selectEnd = m_selectStart;
-					m_selectStart->setSelect(Node::Select::ALL);
+					setSelect(m_root->begin());
 				}
 				break;
 			}
@@ -728,9 +725,7 @@ bool Equation::handleChar(int ch)
 					int fact_index = in_term->getFactorIndex(in) + in->m_typed.length() - 1;
 					disableCurrentInput();
 
-					m_selectStart = in_term->factors[fact_index];
-					m_selectEnd = m_selectStart;
-					m_selectStart->setSelect(Node::Select::ALL);
+					setSelect(in_term->factors[fact_index]);
 				}
 				break;
 			}
@@ -757,6 +752,11 @@ void Equation::disableCurrentInput()
 	if (m_input_index < 0) throw logic_error("no current input to disable");
 
 	Input* in = m_inputs[m_input_index];
+	disableInput(in);
+}
+
+void Equation::disableInput(Input* in)
+{
 	Term* in_term = in->getParentTerm();
 	int fact_index = in_term->getFactorIndex(in);
 
@@ -798,9 +798,7 @@ bool Equation::handleBackspace()
 			}
 			else if (fact_index > 0) {
 				in->disable();
-				m_selectStart = in_term->factors[fact_index-1];
-				m_selectEnd = m_selectStart;
-				m_selectStart->setSelect(Node::Select::ALL);
+				setSelect(in_term->factors[fact_index-1]);
 				m_input_index = -1;
 				LOG_TRACE_MSG("current selection: " + m_selectStart->toString());
 			}
@@ -835,6 +833,82 @@ void Equation::getCursorOrig(int& x, int& y)
 
 	x = getCurrentInput()->getOrigX() + getCurrentInput()->getSizeX(); 
 	y = getCurrentInput()->getOrigY();
+}
+
+void Equation::clearSelect()
+{
+	if (m_selectStart != nullptr) m_selectStart->setSelect(Node::Select::NONE);
+	if (m_selectEnd != nullptr) m_selectEnd->setSelect(Node::Select::NONE);
+}
+
+void Equation::setSelect(Node* start, Node* end)
+{
+	if (start == nullptr) return;
+	clearSelect();
+
+	if (end == nullptr) {
+		m_selectStart = m_selectEnd = start;
+		start->setSelect(Node::Select::ALL);
+	}
+	else {
+		m_selectStart = start;
+		m_selectEnd = end;
+		start->setSelect(Node::Select::START);
+		end->setSelect(Node::Select::END);
+	}
+}
+
+Node* Equation::findNode(Draw& draw, int x, int y)
+{
+	draw.relativeOrig(x, y);
+	Node* node = m_root->findNode(x, y);
+	if (node != nullptr && typeid(node) == typeid(Input)) {
+		disableInput(dynamic_cast<Input*>(node));
+		return m_root->findNode(x, y);
+	}
+	else
+		return node;
+}
+
+Node* Node::findNode(int x, int y)
+{
+	if (x >= m_xOrig && x < m_xOrig + m_xSize &&
+		y >= m_yOrig && y < m_yOrig + m_ySize)
+		return this;
+	else
+		return nullptr;
+}
+
+Node* Function::findNode(int x, int y)
+{
+	return m_arg->findNode(x, y);
+}
+
+Node* Binary::findNode(int x, int y)
+{
+	Node* node = m_first->findNode(x, y);
+	if (node == nullptr) return m_second->findNode(x, y);
+	return node;
+}
+
+Node* Term::findNode(int x, int y)
+{
+	Node* node = nullptr;
+	for ( auto n : factors ) {
+		node = n->findNode(x, y);
+		if (node != nullptr) break;
+	}
+	return node;
+}
+
+Node* Expression::findNode(int x, int y)
+{
+	Node* node = nullptr;
+	for ( auto n : terms ) {
+		node = n->findNode(x, y);
+		if (node != nullptr) break;
+	}
+	return node;
 }
 
 void EqnUndoList::save(Equation* eqn)

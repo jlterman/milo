@@ -1,5 +1,6 @@
 #include <ncurses.h>
 #include <iostream>
+#include <typeinfo>
 #include "milo.h"
 
 using namespace std;
@@ -11,6 +12,7 @@ public:
 		if (!init) {
 			initscr(); raw(); noecho(); curs_set(0);
 			keypad(stdscr, TRUE);
+			mousemask(ALL_MOUSE_EVENTS, NULL);
 			m_has_colors = (has_colors() == TRUE);
 			if (m_has_colors) {
 				start_color();/* Start color */
@@ -125,7 +127,7 @@ int main(int argc, char* argv[])
 		DrawCurses::getInstance().out();
 		int xCursor = 0, yCursor = 0;
 		eqn->getCursorOrig(xCursor, yCursor);
-		int ch = (eqn->blink()) ? draw.getChar(yCursor, xCursor - 1) : getchar();
+		int ch = (eqn->blink()) ? draw.getChar(yCursor, xCursor - 1) : getch();
 
 		string mkey;
 		if (ch < 32) mkey = "ctrl-" + string(1, (char) ch+'@');
@@ -139,7 +141,8 @@ int main(int argc, char* argv[])
 			switch (ch) 
 			{
 			    case 3: { // ctrl-c typed
-					fRunning = false;                          LOG_TRACE_MSG("ctrl-c typed");
+					LOG_TRACE_MSG("ctrl-c typed");
+					fRunning = false;
 					fChanged = false;
 					break;
 				}
@@ -148,16 +151,33 @@ int main(int argc, char* argv[])
 					if (undo_eqn) {
 						delete eqn;
 						eqn = undo_eqn;
-						fChanged = false;                      LOG_TRACE_MSG("undo to " + eqn->toString());
+						fChanged = false;
+						LOG_TRACE_MSG("undo to " + eqn->toString());
 					}
 					break;
 			    }
+			    case KEY_MOUSE: {
+					MEVENT event;
+					if(getmouse(&event) == OK) {
+						if(event.bstate & BUTTON1_PRESSED) {
+							LOG_TRACE_MSG("mouse click at: " + to_string(event.x) + ", " + 
+												 to_string(event.y));
+							Node* node = eqn->findNode(draw, event.x, event.y);
+							eqn->setSelect(node);
+							LOG_TRACE_MSG(string("found node: ") + typeid(node).name() + ": " + 
+										  node->toString());
+						}
+					}
+					break;
+				}
 			    case KEY_RESIZE: {
-				    fChanged = false;                          LOG_TRACE_MSG("screen resize detected");
+				    fChanged = false;
+					LOG_TRACE_MSG("screen resize detected");
 				    break;
 			    }
 				default: {
-					fChanged = false;                          LOG_TRACE_MSG("char not handled");
+					fChanged = false;
+					LOG_TRACE_MSG("char not handled");
 					break;
 				}
 			}
@@ -165,7 +185,8 @@ int main(int argc, char* argv[])
 		if (fChanged) {
 			eqns.save(eqn);
 			delete eqn;
-			eqn = eqns.top();                                  LOG_TRACE_MSG("got new eqn: " + eqn->toString());
+			eqn = eqns.top();
+			LOG_TRACE_MSG("got new eqn: " + eqn->toString());
 		}
 	}
 }
