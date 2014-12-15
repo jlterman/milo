@@ -20,6 +20,7 @@ class Parser;
 class Input;
 class Term;
 class Node;
+class Equation;
 using NodeVector = std::vector<Node*>;
 
 template <class T>
@@ -63,6 +64,27 @@ private:
 	T m_yOrig;
 };
 
+class NodeIterator : public std::iterator< std::bidirectional_iterator_tag, Node* >
+{
+private:
+	Node* m_node;
+	Equation& m_eqn;
+
+	void next();
+	void prev();
+public:
+	NodeIterator(Node* node, Equation& eqn) : m_node(node), m_eqn(eqn) {}
+
+	Node* operator*() { return m_node; }
+	bool operator==(const NodeIterator& rhs) { return m_node == rhs.m_node; }
+	bool operator!=(const NodeIterator& rhs) { return m_node != rhs.m_node; }
+
+	NodeIterator& operator++()   { next(); return *this; }
+	NodeIterator operator++(int) { NodeIterator tmp(*this); next(); return tmp; }
+	NodeIterator& operator--()   { prev(); return *this; }
+	NodeIterator operator--(int) { NodeIterator tmp(*this); prev(); return tmp; }
+};
+
 class Node 
 {
 public:
@@ -84,8 +106,8 @@ public:
 	virtual Complex getNodeValue() const=0;
 	virtual Node* findNode(int x, int y);
 
-	Node* begin();
-	Node* end();
+	Node* first();
+	Node* last();
 	Node* getNextLeft();
 	Node* getNextRight();
 	void negative() { m_sign = !m_sign; }
@@ -191,6 +213,10 @@ public:
 	void clearSelect();
 	void setSelect(Node* start, Node* end = nullptr);
 	Node* findNode(Draw& draw, int x, int y);
+
+	NodeIterator begin() { return NodeIterator(m_root->first(), *this); }
+	NodeIterator end()   { return NodeIterator(nullptr, *this); }
+	NodeIterator last()  { return NodeIterator(m_root->last(), *this); }
 
 private:
 	Node* m_root = nullptr; // Equation owns this tree

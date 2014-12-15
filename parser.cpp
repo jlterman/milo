@@ -695,8 +695,6 @@ void Input::xml_out(XML& xml) const
 		Parser p(m_typed, eqn);
 		while (p.peek()) {
 			Node* term = Expression::getTerm(p, nullptr);
-			if (getSelect() != Node::Select::NONE) 
-				term->end()->setSelect(getSelect());
 			term->xml_out(xml);
 			delete term;
 		}

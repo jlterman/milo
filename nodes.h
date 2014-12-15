@@ -65,8 +65,8 @@ protected:
 private:
 	Node* downLeft()  { return m_first; }
 	Node* downRight() { return m_second; }
-	Node* getLeftSibling(Node* node)  { return (m_second == node) ? m_first : nullptr; }
-	Node* getRightSibling(Node* node) { return (m_first == node) ? m_second : nullptr; }
+	Node* getLeftSibling(Node* node)  { return (m_second == node) ? m_first->last() : nullptr; }
+	Node* getRightSibling(Node* node) { return (m_first == node) ? m_second->first() : nullptr; }
 
 };
 
@@ -134,8 +134,8 @@ public:
 	~Function() { delete m_arg; }
 
 private:
-	Node* downLeft()  { return m_arg; }
-	Node* downRight() { return m_arg; }
+	Node* downLeft()  { return m_arg->first(); }
+	Node* downRight() { return m_arg->last(); }
 
 private:
 	Node* m_arg;       // Function own this tree

@@ -10,7 +10,7 @@ class DrawCurses : public Draw
 public:
 	DrawCurses() { 
 		if (!init) {
-			initscr(); raw(); noecho(); curs_set(0);
+			initscr(); raw(); noecho(); //curs_set(0);
 			keypad(stdscr, TRUE);
 			mousemask(ALL_MOUSE_EVENTS, NULL);
 			m_has_colors = (has_colors() == TRUE);
@@ -69,11 +69,11 @@ public:
 	}
 
 	int getChar(int y, int x) {
-		curs_set(2);
+		//curs_set(2);
 		mvaddch(y + m_yOrig, x + m_xOrig, ' '); 
 		move(y + m_yOrig, x + m_xOrig);
 		int ch = getch();
-		curs_set(0);
+		//curs_set(0);
 		mvaddch(y + m_yOrig, x + m_xOrig, '?'); 
 		return ch;
 	}

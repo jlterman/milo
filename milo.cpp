@@ -77,7 +77,7 @@ bool isInteger(const string& s)
 
 const vector<string> Node::select_tags = { "NONE", "START", "END", "ALL" };
 
-Node* Node::begin()
+Node* Node::first()
 {
 	Node* node = this;
 	Node* down = this->downLeft();
@@ -88,7 +88,7 @@ Node* Node::begin()
 	return (down != nullptr) ? down : node;
 }
 
-Node* Node::end()
+Node* Node::last()
 {
 	Node* node = this;
 	Node* down = this->downRight();
@@ -101,9 +101,9 @@ Node* Node::end()
 
 Node* Node::getNextLeft()
 {
-	Node* left = m_parent->getLeftSibling(this);
+	Node* left = (m_parent) ? m_parent->getLeftSibling(this) : nullptr;
 	if (left != nullptr) { 
-		return left->end();
+		return left->last();
 	}
 	else if (m_parent != nullptr) {
 		return m_parent->getNextLeft();
@@ -114,9 +114,9 @@ Node* Node::getNextLeft()
 
 Node* Node::getNextRight()
 {
-	Node* right = m_parent->getRightSibling(this);
+	Node* right = (m_parent) ? m_parent->getRightSibling(this) : nullptr;
 	if (right != nullptr) { 
-		return right->begin();
+		return right->first();
 	}
 	else if (m_parent != nullptr) {
 		return m_parent->getNextRight();
@@ -163,8 +163,8 @@ void Divide::asciiArt(Draw& draw) const
 
 Complex Divide::getNodeValue() const
 {
-	Complex a = m_first->getNodeValue();
-	Complex b = m_second->getNodeValue();
+	Complex a = m_first->getValue();
+	Complex b = m_second->getValue();
 	return a / b;
 }
 
@@ -192,8 +192,8 @@ void Power::asciiArt(Draw& draw) const
 
 Complex Power::getNodeValue() const
 {
-	Complex a = m_first->getNodeValue();
-	Complex b = m_second->getNodeValue();
+	Complex a = m_first->getValue();
+	Complex b = m_second->getValue();
 	return pow(a, b);
 }
 
@@ -255,7 +255,7 @@ void Function::asciiArt(Draw & draw) const
 
 Complex Function::getNodeValue() const
 {
-	Complex arg = m_arg->getNodeValue();
+	Complex arg = m_arg->getValue();
 	return m_func(arg);
 }
 
@@ -414,7 +414,7 @@ Node* Term::getLeftSibling(Node* node)
 
 Node* Term::getRightSibling(Node* node)
 {
-	for (int i = 0; i < factors.size() - 2; ++i) {
+	for (int i = 0; i < factors.size() - 1; ++i) {
 		if (factors[i] == node) 
 			return factors[i + 1];
 	}
@@ -424,7 +424,7 @@ Node* Term::getRightSibling(Node* node)
 Complex Term::getNodeValue() const
 {
 	Complex value = 1;
-	for (auto n : factors) { value *= n->getNodeValue(); }
+	for (auto n : factors) { value *= n->getValue(); }
 	return value;
 }
 
@@ -479,7 +479,7 @@ string Expression::toString() const
 Complex Expression::getNodeValue() const
 {
 	Complex value = 0;
-	for (auto n : terms) { value += n->getNodeValue(); }
+	for (auto n : terms) { value += n->getValue(); }
 	return value;
 }
 
@@ -487,16 +487,16 @@ Node* Expression::getLeftSibling(Node* node)
 {
 	for (int i = 1; i < terms.size(); ++i) {
 		if (terms[i] == node)
-			return terms[i - 1];
+			return terms[i - 1]->last();
 	}
 	return nullptr;
 }
 
 Node* Expression::getRightSibling(Node* node)
 {
-	for (int i = 0; i < terms.size() - 2; ++i) {
-		if (terms[i] == node) 
-			return terms[i + 1];
+	for (int i = 0; i < terms.size() - 1; ++i) {
+		if (terms[i] == node)
+			return terms[i + 1]->first();
 	}
 	return nullptr;
 }
@@ -572,14 +572,27 @@ void Equation::eraseSelection(Node* node)
 bool Equation::handleChar(int ch)
 {
 	bool fResult = true;
-	if (getCurrentInput() == nullptr) {
-		if (m_selectStart != nullptr && (isalnum(ch) || ch == '.')) {
+	if (m_selectStart != nullptr) {
+		if (isalnum(ch) || ch == '.') {
 			eraseSelection(new Input(*this, string(1, (char)ch), true));
 			return true;
 		}
 		switch(ch) {
 		    case Key::BACKSPACE: {
 				eraseSelection(new Input(*this, string(), true));
+				break;
+			}
+		    case Key::LEFT: {
+				bool success = true;
+				NodeIterator n(m_selectStart, *this);
+				try { --n; } catch (exception& e) { success = false; }
+				if (success) setSelect(*n);
+				break;
+			}
+		    case Key::RIGHT: {
+				NodeIterator n(m_selectStart, *this);
+				++n;
+				setSelect(*n);
 				break;
 			}
 		    case 10:
@@ -592,20 +605,15 @@ bool Equation::handleChar(int ch)
 				break;
 			}
 	        case ' ': {
-		        if (m_selectStart != nullptr) {
-					if (m_selectStart->getParent() == nullptr) return false;
-					
-					Node* parent = m_selectStart->getParent();
-					while (parent && !parent->isFactor()) { parent = parent->getParent(); }
-					if (parent == nullptr) return false;
-					
-					setSelect(parent);
-					m_input_index = -1;
-					LOG_TRACE_MSG("current selection: " + m_selectStart->toString());
-				}
-				else {
-					setSelect(m_root->begin());
-				}
+				if (m_selectStart->getParent() == nullptr) return false;
+				
+				Node* parent = m_selectStart->getParent();
+				while (parent && !parent->isFactor()) { parent = parent->getParent(); }
+				if (parent == nullptr) return false;
+				
+				setSelect(parent);
+				m_input_index = -1;
+				LOG_TRACE_MSG("current selection: " + m_selectStart->toString());
 				break;
 			}
             default:
@@ -734,8 +742,17 @@ bool Equation::handleChar(int ch)
 				break;
 		}
 	}
-	else
-		fResult = false;
+	else {
+		switch(ch) {
+	        case ' ': {
+				setSelect(m_root->first());
+				break;
+			}
+            default:
+			    fResult = false;
+			    break;
+		}
+	}
 
 	return fResult;
 }
@@ -909,6 +926,20 @@ Node* Expression::findNode(int x, int y)
 		if (node != nullptr) break;
 	}
 	return node;
+}
+
+void NodeIterator::next()
+{
+	if (m_node == nullptr) throw range_error("out of range");
+    else if (m_node ==  *m_eqn.last()) m_node = nullptr;
+    else m_node = m_node->getNextRight();
+}
+
+void NodeIterator::prev()
+{
+	if (m_node == *m_eqn.begin()) throw range_error("out of range");
+
+	m_node = m_node->getNextLeft();
 }
 
 void EqnUndoList::save(Equation* eqn)
