@@ -583,16 +583,35 @@ bool Equation::handleChar(int ch)
 				break;
 			}
 		    case Key::LEFT: {
-				bool success = true;
-				NodeIterator n(m_selectStart, *this);
-				try { --n; } catch (exception& e) { success = false; }
-				if (success) setSelect(*n);
+				FactorIterator n(m_selectStart);
+				if (!n.isBegin() ) {
+					--n;
+					setSelect(*n);
+				}
+				else
+					fResult = false;
 				break;
 			}
 		    case Key::RIGHT: {
+				FactorIterator n(m_selectStart);
+				++n;
+				if (!n.isEnd()) setSelect(*n); else fResult = false;
+				break;
+			}
+		    case Key::UP: {
+				NodeIterator n(m_selectStart, *this);
+				if (n != begin() ) {
+					--n;
+					setSelect(*n);
+				}
+				else
+					fResult = false;
+				break;
+			}
+		    case Key::DOWN: {
 				NodeIterator n(m_selectStart, *this);
 				++n;
-				setSelect(*n);
+				if (n != end()) setSelect(*n); else fResult = false;
 				break;
 			}
 		    case 10:
@@ -887,6 +906,21 @@ Node* Equation::findNode(Draw& draw, int x, int y)
 		return node;
 }
 
+FactorIterator Equation::insert(FactorIterator it, Node* node)
+{ 
+	it.m_pTerm->factors.insert(it.m_pTerm->factors.begin() + it.m_factor_index, node);
+	it.m_node = node;
+	return it;
+}
+
+FactorIterator Equation::erase(FactorIterator it)
+{
+	it.m_pTerm->factors.erase(it.m_pTerm->factors.begin() + it.m_factor_index);
+	it.m_node = it.m_pTerm->factors[it.m_factor_index];
+	return it;
+}
+
+
 Node* Node::findNode(int x, int y)
 {
 	if (x >= m_xOrig && x < m_xOrig + m_xSize &&
@@ -931,15 +965,63 @@ Node* Expression::findNode(int x, int y)
 void NodeIterator::next()
 {
 	if (m_node == nullptr) throw range_error("out of range");
-    else if (m_node ==  *m_eqn.last()) m_node = nullptr;
-    else m_node = m_node->getNextRight();
+
+	m_node = m_node->getNextRight();
 }
 
 void NodeIterator::prev()
 {
-	if (m_node == *m_eqn.begin()) throw range_error("out of range");
+	Node* prev_node = m_node->getNextLeft();
+	if (prev_node == nullptr) throw range_error("out of range");
 
-	m_node = m_node->getNextLeft();
+	m_node = prev_node;
+}
+
+FactorIterator::FactorIterator(Node* node) : m_node(node)
+{
+	if (m_node != nullptr) {
+		m_pTerm = dynamic_cast<Term*>(m_node->getParent());
+		m_gpExpr = dynamic_cast<Expression*>(m_pTerm->getParent());
+		m_factor_index = m_pTerm->getFactorIndex(m_node);
+		m_term_index = m_gpExpr->getTermIndex(m_pTerm);
+	}
+	else {
+		m_pTerm = nullptr; m_gpExpr = nullptr;
+		m_factor_index = m_term_index = 0;
+	}
+}
+
+void FactorIterator::next()
+{
+	if (++m_factor_index == m_pTerm->factors.size()) {
+		m_factor_index = 0;
+		++m_term_index;
+	}
+	if (m_term_index < m_gpExpr->terms.size()) {
+		m_pTerm = dynamic_cast<Term*>(m_gpExpr->terms[m_term_index]);
+		m_node = m_pTerm->factors[m_factor_index];
+	}
+	else if (m_term_index == m_gpExpr->terms.size()) {
+		m_node = nullptr; m_pTerm = nullptr; m_gpExpr = nullptr;
+		m_factor_index = m_term_index = 0;
+	}
+	else
+		throw range_error("out of range");
+}
+
+void FactorIterator::prev()
+{
+	if (--m_factor_index < 0) {
+		--m_term_index;
+	}
+	if (m_term_index >= 0) {
+		m_pTerm = dynamic_cast<Term*>(m_gpExpr->terms[m_term_index]);
+
+		if (m_factor_index < 0) m_factor_index += m_pTerm->factors.size();
+		m_node = m_pTerm->factors[m_factor_index];
+	}
+	else 
+		throw range_error("out of range");		
 }
 
 void EqnUndoList::save(Equation* eqn)

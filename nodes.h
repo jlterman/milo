@@ -7,8 +7,6 @@ bool isZero(double x);
 bool isZero(Complex z);
 bool isInteger(const std::string& n);
 
-class Expression;
-
 class Input : public Node
 {
 public:
@@ -266,6 +264,7 @@ public:
 	int getFactorIndex(Node* node) { return distance(factors.cbegin(), find(factors, node)); }
 
 	friend class Equation;
+	friend class FactorIterator;
 private:
 	Node* downLeft()  { return factors.front(); }
 	Node* downRight() { return factors.back(); }
@@ -303,6 +302,7 @@ public:
 	static Node* xml_in(XMLParser& in, Node* parent);
 
 	friend class Equation;
+	friend class FactorIterator;
 protected:
 	Node* downLeft()  { return terms.front(); } 
 	Node* downRight() { return terms.back(); }

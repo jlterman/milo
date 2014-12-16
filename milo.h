@@ -17,9 +17,10 @@ class Draw;
 class XML;
 class XMLParser;
 class Parser;
+class Node;
 class Input;
 class Term;
-class Node;
+class Expression;
 class Equation;
 using NodeVector = std::vector<Node*>;
 
@@ -62,27 +63,6 @@ private:
 	T m_height;
 	T m_xOrig;
 	T m_yOrig;
-};
-
-class NodeIterator : public std::iterator< std::bidirectional_iterator_tag, Node* >
-{
-private:
-	Node* m_node;
-	Equation& m_eqn;
-
-	void next();
-	void prev();
-public:
-	NodeIterator(Node* node, Equation& eqn) : m_node(node), m_eqn(eqn) {}
-
-	Node* operator*() { return m_node; }
-	bool operator==(const NodeIterator& rhs) { return m_node == rhs.m_node; }
-	bool operator!=(const NodeIterator& rhs) { return m_node != rhs.m_node; }
-
-	NodeIterator& operator++()   { next(); return *this; }
-	NodeIterator operator++(int) { NodeIterator tmp(*this); next(); return tmp; }
-	NodeIterator& operator--()   { prev(); return *this; }
-	NodeIterator operator--(int) { NodeIterator tmp(*this); prev(); return tmp; }
 };
 
 class Node 
@@ -191,6 +171,57 @@ protected:
 	Rectangle<int> m_select;
 };
 
+class NodeIterator : public std::iterator< std::bidirectional_iterator_tag, Node* >
+{
+private:
+	Node* m_node;
+
+	void next();
+	void prev();
+
+public:
+	NodeIterator(Node* node, Equation& eqn) : m_node(node) {}
+
+	Node* operator*() { return m_node; }
+	bool operator==(const NodeIterator& rhs) { return m_node == rhs.m_node; }
+	bool operator!=(const NodeIterator& rhs) { return m_node != rhs.m_node; }
+
+	NodeIterator& operator++()   { next(); return *this; }
+	NodeIterator operator++(int) { NodeIterator tmp(*this); next(); return tmp; }
+	NodeIterator& operator--()   { prev(); return *this; }
+	NodeIterator operator--(int) { NodeIterator tmp(*this); prev(); return tmp; }
+};
+
+class FactorIterator : public std::iterator< std::bidirectional_iterator_tag, Node* >
+{
+ private:
+	Node* m_node;
+	Term* m_pTerm;
+	Expression* m_gpExpr;
+	int m_factor_index;
+	int m_term_index;
+
+	void next();
+	void prev();
+
+public:
+    FactorIterator(Node* node);
+
+	Node* operator*() { return m_node; }
+	bool operator==(const FactorIterator& rhs) { return m_node == rhs.m_node; }
+	bool operator!=(const FactorIterator& rhs) { return m_node != rhs.m_node; }
+
+	FactorIterator& operator++()   { next(); return *this; }
+	FactorIterator operator++(int) { FactorIterator tmp(*this); next(); return tmp; }
+	FactorIterator& operator--()   { prev(); return *this; }
+	FactorIterator operator--(int) { FactorIterator tmp(*this); prev(); return tmp; }
+
+	bool isBegin() { return m_factor_index == 0 && m_term_index == 0; }
+	bool isEnd()   { return m_node == nullptr; }
+	
+	friend class Equation;
+};
+
 class Equation
 {
 public:
@@ -217,6 +248,8 @@ public:
 	NodeIterator begin() { return NodeIterator(m_root->first(), *this); }
 	NodeIterator end()   { return NodeIterator(nullptr, *this); }
 	NodeIterator last()  { return NodeIterator(m_root->last(), *this); }
+	FactorIterator insert(FactorIterator it, Node* node);
+	FactorIterator erase(FactorIterator it);
 
 private:
 	Node* m_root = nullptr; // Equation owns this tree
