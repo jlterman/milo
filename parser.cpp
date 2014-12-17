@@ -527,7 +527,7 @@ Node* Input::xml_in(XMLParser& in, Node* parent)
 	return new Input(in.getEqn(), text, fCurrent, parent, fNeg, select);
 }
 
-Term::Term(XMLParser& in, Node* parent) : Node(parent)
+Term::Term(XMLParser& in, Expression* parent) : Node(parent)
 {
 	if (!in.next(XMLParser::HEADER, "term")) throw logic_error("bad format");
 
@@ -541,7 +541,7 @@ Term::Term(XMLParser& in, Node* parent) : Node(parent)
 	if (!in.next(XMLParser::FOOTER|XMLParser::END, "term")) throw logic_error("bad format");
 }
 
-Node* Term::xml_in(XMLParser& in, Node* parent)
+Term* Term::xml_in(XMLParser& in, Expression* parent)
 {
 	if (!in.peek(XMLParser::HEADER, "term")) return nullptr;
 
@@ -561,33 +561,33 @@ bool Expression::add(XMLParser& in)
 {
 	if (!in.peek(XMLParser::HEADER, "term")) return false;
 
-	Node* node = new Term(in, this);
-	terms.push_back(node);
+	Term* term = new Term(in, this);
+	terms.push_back(term);
 	return true;
 }
 
-Node* Expression::getTerm(Equation& eqn, string text, Node* parent)
+Term* Expression::getTerm(Equation& eqn, string text, Expression* parent)
 {
 	Parser p(text, eqn);
 	return getTerm(p, parent);
 }
 
-Node* Expression::getTerm(Parser& p, Node* parent)
+Term* Expression::getTerm(Parser& p, Expression* parent)
 {
 	bool neg = false;
 	if (p.peek() == '+' || p.peek() == '-') {
 		char c = p.next();
 		neg = (c == '-') ? true : false;
 	}
-	Node* node = new Term(p, parent);
+	Term* node = new Term(p, parent);
 	if (neg) node->negative();
 	return node;
 }
 
 bool Expression::add(Parser& p)
 {
-	Node* node = getTerm(p, this);
-	terms.push_back(node);
+	Term* term = getTerm(p, this);
+	terms.push_back(term);
 	
 	if ( p.peek() == '\0' || p.peek() == ')' ) {
 		char c = p.next();
@@ -694,7 +694,7 @@ void Input::xml_out(XML& xml) const
 		Equation eqn("?");
 		Parser p(m_typed, eqn);
 		while (p.peek()) {
-			Node* term = Expression::getTerm(p, nullptr);
+			Term* term = Expression::getTerm(p, nullptr);
 			term->xml_out(xml);
 			delete term;
 		}

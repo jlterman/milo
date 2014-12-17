@@ -26,20 +26,19 @@ void Equation::setSelect(Draw& draw)
 		draw.setSelect(0, 0, 0, 0);
 	}
 	else if (m_selectStart != nullptr && m_selectStart == m_selectEnd) {
-		draw.setSelect(m_selectStart);
+		draw.setSelect(*m_selectStart);
 	}
 	else if (m_selectStart != nullptr) {
 		int x0 = m_selectStart->getOrigX();
 		int y0 = m_selectStart->getOrigY();
 		int x = 0, y = 0;
 
-		Node* node = nullptr;
-		do {
-			node = (node == nullptr) ? m_selectStart : node->getNextRight();
-			x += m_selectStart->getSizeX();
-			y = max(y, m_selectStart->getSizeY());
+		for ( auto it = ++m_selectStart; it != m_selectEnd; ++it) {
+			if (x0 > it->getOrigX()) x0 = it->getOrigX();
+			if (y0 > it->getOrigY()) y0 = it->getOrigY();
+			if (x > it->getSizeX()) x = it->getSizeX();
+			if (y > it->getSizeY()) y = it->getSizeY();
 		}
-		while (node != nullptr && node != m_selectEnd);
 		draw.setSelect(x, y, x0, y0);
 	}
 }
@@ -123,16 +122,6 @@ Node* Node::getNextRight()
 	}
 	else
 		return nullptr;
-}
-
-Term* Node::getParentTerm() 
-{ 
-	return dynamic_cast<Term*>(m_parent);
-}
-
-Expression* Term::getParentExpression() 
-{ 
-	return dynamic_cast<Expression*>(getParent());
 }
 
 
@@ -543,28 +532,22 @@ Complex Input::getNodeValue() const
 
 void Equation::eraseSelection(Node* node)
 {
-	Term* sel_term = m_selectStart->getParentTerm();
-	if (m_selectStart->getParentTerm() == nullptr) {
+	if (*m_selectStart == m_root) {
 		delete m_root;
+		if (node == nullptr) node = new Input(*this, string(), true);
 		Term* term = new Term(node);
 		Expression* expr = new Expression(term);
 		term->setParent(expr);
 		m_root = expr;
 	}
-	else if (sel_term != nullptr) {
-		int fact_index = sel_term->getFactorIndex(m_selectStart);
-		while (sel_term->factors[fact_index] != m_selectEnd) {
-			delete sel_term->factors[fact_index];
-			sel_term->factors.erase(sel_term->factors.begin() + fact_index);
-		}
-		delete sel_term->factors[fact_index];
-		
-		if (node != nullptr) {
-			node->setParent(sel_term);
-			sel_term->factors[fact_index] = node;
-		}
-		else
-			sel_term->factors.erase(sel_term->factors.begin() + fact_index);
+	else if (m_selectStart == m_selectEnd) {
+		auto it = erase(m_selectStart);
+		insert(it, node);
+	}
+	else {
+		FactorIterator it = nullptr;
+		for (it = m_selectStart; it != m_selectEnd; it = erase(it));
+		insert(it, node);
 	}
 	m_selectStart = m_selectEnd = nullptr;
 }
@@ -583,7 +566,7 @@ bool Equation::handleChar(int ch)
 				break;
 			}
 		    case Key::LEFT: {
-				FactorIterator n(m_selectStart);
+				FactorIterator n{m_selectStart};
 				if (!n.isBegin() ) {
 					--n;
 					setSelect(*n);
@@ -593,13 +576,13 @@ bool Equation::handleChar(int ch)
 				break;
 			}
 		    case Key::RIGHT: {
-				FactorIterator n(m_selectStart);
+				FactorIterator n{m_selectStart};
 				++n;
 				if (!n.isEnd()) setSelect(*n); else fResult = false;
 				break;
 			}
 		    case Key::UP: {
-				NodeIterator n(m_selectStart, *this);
+				NodeIterator n{*m_selectStart, *this};
 				if (n != begin() ) {
 					--n;
 					setSelect(*n);
@@ -609,18 +592,16 @@ bool Equation::handleChar(int ch)
 				break;
 			}
 		    case Key::DOWN: {
-				NodeIterator n(m_selectStart, *this);
+				NodeIterator n{*m_selectStart, *this};
 				++n;
 				if (n != end()) setSelect(*n); else fResult = false;
 				break;
 			}
 		    case 10:
 		    case 13: {
+				auto it = m_selectStart;
 				clearSelect();
-				Term* sel_term = m_selectStart->getParentTerm();
-				int fact_index = sel_term->getFactorIndex(m_selectStart);
-				sel_term->factors.insert(sel_term->factors.begin() + fact_index + 1, 
-										 new Input(*this, string(), true, sel_term));
+				insert(it, new Input(*this, string(), true));
 				break;
 			}
 	        case ' ': {
@@ -631,7 +612,6 @@ bool Equation::handleChar(int ch)
 				if (parent == nullptr) return false;
 				
 				setSelect(parent);
-				m_input_index = -1;
 				LOG_TRACE_MSG("current selection: " + m_selectStart->toString());
 				break;
 			}
@@ -641,16 +621,12 @@ bool Equation::handleChar(int ch)
 		}
 	}
 	else if (m_input_index >= 0) {
+		Input* in = getCurrentInput();
+		FactorIterator in_pos(in);
 		if (isalnum(ch) || ch == '.') {
-			getCurrentInput()->m_typed += string(1, (char)ch);
+			in->m_typed += string(1, (char)ch);
 			return true;
 		}
-		Input* in = getCurrentInput();
-		Term* in_term = in->getParentTerm();
-		int fact_index = in_term->getFactorIndex(in);
-		Expression* in_expr = in_term->getParentExpression();
-		int term_index = in_expr->getTermIndex(in_term);
-
 		switch(ch) {
 	        case 9: {
 				if (m_inputs.size() > 1) nextInput();
@@ -663,77 +639,65 @@ bool Equation::handleChar(int ch)
 				break;
 			}
 	        case Key::BACKSPACE: {
-				fResult = handleBackspace();
+				Input* in = getCurrentInput();
+				if (!in->m_typed.empty()) {
+					in->m_typed.erase(in->m_typed.end() - 1);
+				}
 			    break;
 			}
 	        case '+':
 	        case '-': {
 				if (in->m_typed.empty()) {
-					Term* term = dynamic_cast<Term*>(Expression::getTerm(*this, string(1, (char)ch)+"#", in_expr));
-					in_expr->terms.insert(in_expr->terms.begin() + term_index + 1, term);
+					insert(in_pos, Expression::getTerm(*this, string(1, (char)ch)+"#"));
 				}
 				else {
-					Term* term = dynamic_cast<Term*>(Expression::getTerm(*this, in->m_typed, in_expr));
-					in_expr->terms.insert(in_expr->terms.begin() + term_index, term);
+					insert(in_pos, Expression::getTerm(*this, in->m_typed));
 					in->m_typed.clear();
 					if (ch == '-') in->getParent()->negative();
 				}
 				break;
 			}
 	        case '/': {
-				bool fNeg = false;
+				bool fNeg = !in->getParent()->getSign();
+				if (fNeg) in->getParent()->negative();
+
+				Expression* lower = new Expression(in);
+				lower->setParent();
+
+				Expression* upper = nullptr;
 				if (!in->m_typed.empty()) {
-					in_term->factors.erase(in_term->factors.begin() + fact_index);
-					NodeVector factors;
-					factor(in->m_typed, factors, in_term); in->m_typed.clear();
-					for ( auto f : factors ) {
-						in_term->factors.insert(in_term->factors.begin() + fact_index++, f);
-					}
+					insert(in, in->m_typed); in->m_typed.clear();
+					upper = new Expression(in_pos.m_pTerm);
+					in_pos.m_pTerm->setParent(upper);
 				}
 				else {
-					in_term->factors[fact_index] = new Input(*this, string(), false, in_term);
+					upper = new Expression(new Input(*this, string(), false));
+					upper->setParent();
 				}
-				fNeg = !in_term->getSign(); if (fNeg) in_term->negative();
-				Expression* new_upper_expr = new Expression(in_term);
-				in_term->setParent(new_upper_expr);
 				
-				Term* new_lower_term = new Term(in);
-				in->setParent(new_lower_term);
-				Expression* new_lower_expr = new Expression(new_lower_term);
-				new_lower_term->setParent(new_lower_expr);
-				
-				Divide* d = new Divide(new_upper_expr, new_lower_expr, in_term);
-				Term* divide_term = new Term(d, in_expr, fNeg);
-				in_expr->terms[term_index] = divide_term;
+				Divide* d = new Divide(upper, lower, nullptr);
+				Term* divide_term = new Term(d, nullptr, fNeg);
+				replace(in_pos, divide_term);
 				break;
 			}
 	        case '^': {
-				Node* node = nullptr;
-				in_term->factors.erase(in_term->factors.begin() + fact_index);
+				Expression* b = new Expression(in);
+				b->setParent();
+
+				Expression* a = nullptr;
 				if (!in->m_typed.empty()) {
-					NodeVector factors;
-					factor(in->m_typed, factors, in_term); in->m_typed.clear();
-					node = factors.front();
-					for (auto it = factors.begin() + 1; it != factors.end(); ++it) {
-						in_term->factors.insert(in_term->factors.begin() + fact_index++, node);
-						node = *it;
-					}
+					in_pos = insert(in_pos, in->m_typed); in->m_typed.clear();
+					Node* last = *(--in_pos);
+					a = new Expression(last);
+					in_pos.m_pTerm->setParent(a);
 				}
 				else {
-					node = new Input(*this, string(), false, in_term);
+					a = new Expression(new Input(*this, string(), false));
+					a->setParent();
 				}
-				Term* a_term = new Term(node);
-				node->setParent(a_term);
-				Expression* a_expr = new Expression(a_term);
-				a_term->setParent(a_expr);
 				
-				Term* b_term = new Term(in);
-				node->setParent(b_term);
-				Expression* b_expr = new Expression(b_term);
-				a_term->setParent(b_expr);
-				
-				Power* p = new Power(a_expr, b_expr, in_term);
-				in_term->factors.insert(in_term->factors.begin() + fact_index, p);
+				Power* p = new Power(a, b, in->getParent());
+				replace(in_pos, p);
 				break;
 			}
 	        case '(': {
@@ -747,12 +711,8 @@ bool Equation::handleChar(int ch)
 					fResult = false;
 				}
 				else {
-					Input* in = m_inputs[m_input_index];
-					Term* in_term = in->getParentTerm();
-					int fact_index = in_term->getFactorIndex(in) + in->m_typed.length() - 1;
-					disableCurrentInput();
-
-					setSelect(in_term->factors[fact_index]);
+					auto it = disableCurrentInput();
+					setSelect(it);
 				}
 				break;
 			}
@@ -783,27 +743,22 @@ void Equation::nextInput()
 	m_inputs[m_input_index]->setCurrent(true);
 }
 
-void Equation::disableCurrentInput()
+FactorIterator Equation::disableCurrentInput()
 {
 	if (m_input_index < 0) throw logic_error("no current input to disable");
 
 	Input* in = m_inputs[m_input_index];
-	disableInput(in);
+	return disableInput(in);
 }
 
-void Equation::disableInput(Input* in)
+FactorIterator Equation::disableInput(Input* in)
 {
-	Term* in_term = in->getParentTerm();
-	int fact_index = in_term->getFactorIndex(in);
-
-	in_term->factors.erase(in_term->factors.begin() + fact_index);
+	FactorIterator pos(in);
 	if (!in->m_typed.empty()) {
-		NodeVector factors;
-		factor(in->m_typed, factors, in_term);
-		for ( auto f : factors ) {
-			in_term->factors.insert(in_term->factors.begin() + fact_index++, f);
-		}
+		pos = insert(in, in->m_typed);
 	}
+	pos = erase(pos);
+
 	m_inputs.erase(m_inputs.begin() + m_input_index);
 	if (m_inputs.size() > 0) {
 		m_input_index = (++m_input_index)%m_inputs.size();
@@ -812,47 +767,7 @@ void Equation::disableInput(Input* in)
 	else
 		m_input_index = -1;
 	delete in;
-}
-
-bool Equation::handleBackspace()
-{
-	bool fResult = true;
-	if (m_input_index >= 0) {
-		Input* in = getCurrentInput();
-		if (!in->m_typed.empty()) {
-			in->m_typed.erase(in->m_typed.end() - 1);
-		}
-		else {
-			Term* in_term = in->getParentTerm();
-			int fact_index = in_term->getFactorIndex(in);
-			Expression* in_expr = in_term->getParentExpression();
-			int term_index = in_expr->getTermIndex(in_term);
-
-			if (fact_index > 0 && in_term->factors[fact_index-1]->isLeaf()) {
-				delete in_term->factors[fact_index-1];
-				in_term->factors.erase(in_term->factors.begin() + fact_index - 1);
-			}
-			else if (fact_index > 0) {
-				in->disable();
-				setSelect(in_term->factors[fact_index-1]);
-				m_input_index = -1;
-				LOG_TRACE_MSG("current selection: " + m_selectStart->toString());
-			}
-			else if (term_index > 0) {
-				Term* prev_term = dynamic_cast<Term*>(in_expr->terms[term_index - 1]);
-				Term* term = dynamic_cast<Term*>(in_expr->terms[term_index]);
-				
-				int prev_size = prev_term->factors.size();
-				prev_term->factors.resize( prev_size + term->factors.size(), nullptr );
-				move(term->factors.begin(), term->factors.end(), prev_term->factors.begin() + prev_size);
-				term->factors.clear();
-				in_expr->terms.erase(in_expr->terms.begin() + term_index);
-			}
-			else
-				fResult = false;
-		}
-	}
-	return fResult;
+	return --pos; 
 }
 
 Equation* Equation::clone()
@@ -883,12 +798,12 @@ void Equation::setSelect(Node* start, Node* end)
 	clearSelect();
 
 	if (end == nullptr) {
-		m_selectStart = m_selectEnd = start;
+		m_selectStart = m_selectEnd = FactorIterator(start);
 		start->setSelect(Node::Select::ALL);
 	}
 	else {
-		m_selectStart = start;
-		m_selectEnd = end;
+		m_selectStart = FactorIterator(start);
+		m_selectEnd = FactorIterator(end);
 		start->setSelect(Node::Select::START);
 		end->setSelect(Node::Select::END);
 	}
@@ -909,13 +824,56 @@ Node* Equation::findNode(Draw& draw, int x, int y)
 FactorIterator Equation::insert(FactorIterator it, Node* node)
 { 
 	it.m_pTerm->factors.insert(it.m_pTerm->factors.begin() + it.m_factor_index, node);
+	node->setParent(it.m_pTerm);
 	it.m_node = node;
 	return it;
 }
 
+FactorIterator Equation::insert(FactorIterator it, string text)
+{
+	NodeVector factors;
+	factor(text, factors, it.m_pTerm);
+	for ( auto f : factors ) { it = insert(it, f); ++it; }	
+}
+
+FactorIterator Equation::insert(FactorIterator it, Term* term)
+{
+	it.m_gpExpr->terms.insert(it.m_gpExpr->terms.begin() + it.m_term_index, term);
+	term->setParent(it.m_gpExpr);
+	++it.m_term_index;
+	return it;
+}
+
+void Equation::replace(FactorIterator it, Node* node)
+{
+	it.m_pTerm->factors[it.m_factor_index] = node;
+	node->setParent(it.m_pTerm);
+}
+
+void Equation::replace(FactorIterator it, Term* term)
+{ 
+	it.m_gpExpr->terms[it.m_term_index] = term;
+	term->setParent(it.m_gpExpr);
+}
+
 FactorIterator Equation::erase(FactorIterator it)
 {
+	delete it.m_pTerm->factors[it.m_factor_index];
 	it.m_pTerm->factors.erase(it.m_pTerm->factors.begin() + it.m_factor_index);
+	if (--it.m_factor_index < 0) it.m_factor_index = 0;
+
+	if (it.m_pTerm->factors.size() == 0) {
+		if (it.m_gpExpr->terms.size() == 1) {
+			it.m_gpExpr->terms[0]->factors.push_back(new Input(*this, string(), true));
+			it.m_factor_index = 0;
+		}
+		else {
+			delete it.m_gpExpr->terms[it.m_term_index];
+			it.m_gpExpr->terms.erase(it.m_gpExpr->terms.begin() + it.m_term_index);
+			if (--it.m_term_index < 0) it.m_term_index = 0;
+			it.m_pTerm = it.m_gpExpr->terms[it.m_term_index];
+		}
+	}
 	it.m_node = it.m_pTerm->factors[it.m_factor_index];
 	return it;
 }
@@ -998,7 +956,7 @@ void FactorIterator::next()
 		++m_term_index;
 	}
 	if (m_term_index < m_gpExpr->terms.size()) {
-		m_pTerm = dynamic_cast<Term*>(m_gpExpr->terms[m_term_index]);
+		m_pTerm = m_gpExpr->terms[m_term_index];
 		m_node = m_pTerm->factors[m_factor_index];
 	}
 	else if (m_term_index == m_gpExpr->terms.size()) {
@@ -1015,7 +973,7 @@ void FactorIterator::prev()
 		--m_term_index;
 	}
 	if (m_term_index >= 0) {
-		m_pTerm = dynamic_cast<Term*>(m_gpExpr->terms[m_term_index]);
+		m_pTerm = m_gpExpr->terms[m_term_index];
 
 		if (m_factor_index < 0) m_factor_index += m_pTerm->factors.size();
 		m_node = m_pTerm->factors[m_factor_index];

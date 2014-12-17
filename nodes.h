@@ -240,14 +240,15 @@ private:
 class Term : public Node
 {
 public:
-    Term(Parser& p, Node* parent = nullptr) : Node(parent) { while(add(p)); }
-	Term(XMLParser& in, Node* parent = nullptr);
-    Term(NodeVector f, Node* parent) : Node(parent) { factors.swap(f); }
-    Term(Node* node, Node* parent = nullptr, bool fNeg = false) : Node(parent, fNeg), factors(1, node) {}
+    Term(Parser& p, Expression* parent = nullptr) : Node((Node*) parent) { while(add(p)); }
+	Term(XMLParser& in, Expression* parent = nullptr);
+    Term(NodeVector f, Expression* parent) : Node((Node*) parent) { factors.swap(f); }
+    Term(Node* node, Expression* parent = nullptr, bool fNeg = false) : 
+	    Node((Node*) parent, fNeg), factors(1, node) {}
 	~Term() { freeVector(factors); }
 	
 	static Node* parse(Parser& p, Node* parent = nullptr);
-	static Node* xml_in(XMLParser& in, Node* parent);
+	static Term* xml_in(XMLParser& in, Expression* parent);
 
 	std::string toString() const;
 	void xml_out(XML& xml) const;
@@ -260,8 +261,9 @@ public:
 	Complex getNodeValue() const;
 	Node* findNode(int x, int y);
 
-	Expression* getParentExpression();
 	int getFactorIndex(Node* node) { return distance(factors.cbegin(), find(factors, node)); }
+	void setParent() { for ( auto f : factors ) f->setParent(this); }
+	void setParent(Expression* parent) { Node::setParent((Node*) parent); }
 
 	friend class Equation;
 	friend class FactorIterator;
@@ -283,6 +285,9 @@ public:
 	Expression(Parser& p, Node* parent = nullptr) : Node(parent) { while(add(p)); }
 	Expression(XMLParser& in, Node* parent = nullptr);
     Expression(Term* term, Node* parent = nullptr) : Node(parent), terms(1, term) {}
+    Expression(Node* factor, Node* parent = nullptr) : Node(parent), terms(1, new Term(factor)) { 
+		factor->setParent(terms[0]);
+	}
 	~Expression() { freeVector(terms); }
 
 	std::string toString() const;
@@ -294,15 +299,18 @@ public:
 	Complex getNodeValue() const;
 	Node* findNode(int x, int y);
 
-	int getTermIndex(Node* term) { return distance(terms.cbegin(), find(terms, term)); }
+	int getTermIndex(Term* term) { return distance(terms.cbegin(), find(terms, term)); }
+	void setParent() { for ( auto t : terms ) ((Node*) t)->setParent(this); }
 
-	static Node* getTerm(Equation& eqn, std::string text, Node* parent);
-	static Node* getTerm(Parser& p, Node* parent);
+	static Term* getTerm(Equation& eqn, std::string text, Expression* parent = nullptr);
+	static Term* getTerm(Parser& p, Expression* parent);
 	static Node* parse(Parser& p, Node* parent);
 	static Node* xml_in(XMLParser& in, Node* parent);
 
 	friend class Equation;
 	friend class FactorIterator;
+
+	using TermVector = std::vector<Term*>;
 protected:
 	Node* downLeft()  { return terms.front(); } 
 	Node* downRight() { return terms.back(); }
@@ -310,7 +318,7 @@ protected:
 	Node* getRightSibling(Node* node);
 
 private:
-	NodeVector terms;	// Expression owns this tree
+	TermVector terms;	// Expression owns this tree
 
 	bool add(Parser& p);
 	bool add(XMLParser& in);

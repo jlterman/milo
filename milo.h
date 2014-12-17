@@ -107,7 +107,6 @@ public:
 
 	void setParent(Node* parent) { m_parent = parent; }
 	Node* getParent() const { return m_parent; }
-	Term* getParentTerm();
 
 	void setSelect(Select s) { m_select = s; }
 	Select getSelect() const { return m_select; }
@@ -182,7 +181,8 @@ private:
 public:
 	NodeIterator(Node* node, Equation& eqn) : m_node(node) {}
 
-	Node* operator*() { return m_node; }
+	Node*& operator*() { return m_node; }
+	Node*& operator->() { return m_node; }
 	bool operator==(const NodeIterator& rhs) { return m_node == rhs.m_node; }
 	bool operator!=(const NodeIterator& rhs) { return m_node != rhs.m_node; }
 
@@ -207,7 +207,8 @@ class FactorIterator : public std::iterator< std::bidirectional_iterator_tag, No
 public:
     FactorIterator(Node* node);
 
-	Node* operator*() { return m_node; }
+	Node*& operator*() { return m_node; }
+	Node*& operator->() { return m_node; }
 	bool operator==(const FactorIterator& rhs) { return m_node == rhs.m_node; }
 	bool operator!=(const FactorIterator& rhs) { return m_node != rhs.m_node; }
 
@@ -239,33 +240,37 @@ public:
 	void setCurrentInput(int in_sn);
 	void addInput(Input* in) { m_inputs.push_back(in); }
 	bool handleChar(int ch);
-	void setSelectStart(Node* node) { m_selectStart = node; }
-	void setSelectEnd(Node* node)   { m_selectEnd = node; }
+	void setSelectStart(FactorIterator start) { m_selectStart = start; }
+	void setSelectEnd(FactorIterator end)   { m_selectEnd = end; }
 	void clearSelect();
 	void setSelect(Node* start, Node* end = nullptr);
+	void setSelect(FactorIterator start) { m_selectStart = start; }
 	Node* findNode(Draw& draw, int x, int y);
 
 	NodeIterator begin() { return NodeIterator(m_root->first(), *this); }
 	NodeIterator end()   { return NodeIterator(nullptr, *this); }
 	NodeIterator last()  { return NodeIterator(m_root->last(), *this); }
 	FactorIterator insert(FactorIterator it, Node* node);
+	FactorIterator insert(FactorIterator it, std::string text);
+	FactorIterator insert(FactorIterator it, Term* term);
 	FactorIterator erase(FactorIterator it);
+	void replace(FactorIterator it, Node* node);
+	void replace(FactorIterator it, Term* term);
 
 private:
 	Node* m_root = nullptr; // Equation owns this tree
 
 	std::vector<Input*> m_inputs;
 	int m_input_index = -1;
-	Node* m_selectStart = nullptr;
-	Node* m_selectEnd = nullptr;
+	FactorIterator m_selectStart = nullptr;
+	FactorIterator m_selectEnd = nullptr;
 
 	Input* getCurrentInput() { 
 		return (m_input_index < 0) ? nullptr : m_inputs[m_input_index];
 	}
 	void nextInput();
-	void disableCurrentInput();
-	void disableInput(Input* in);
-	bool handleBackspace();
+	FactorIterator disableCurrentInput();
+	FactorIterator disableInput(Input* in);
 	void setSelect(Draw& draw);
 	void factor(std::string text, NodeVector& factors, Node* parent);
 	void xml_out(XML& xml) const;
