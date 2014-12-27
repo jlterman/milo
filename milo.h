@@ -25,9 +25,9 @@ class Equation;
 using NodeVector = std::vector<Node*>;
 
 template <class T>
-inline auto find(const std::vector<T>& v, const T& val) -> decltype( v.begin() )
+inline auto find(const std::vector<T>& v, const T& val) -> decltype( v.cbegin() )
 {
-	return std::find(v.begin(), v.end(), val);
+	return std::find(v.cbegin(), v.cend(), val);
 }
 
 template <class T>
@@ -35,6 +35,26 @@ inline void freeVector(std::vector<T*> v)
 {
 	for ( auto p : v ) { delete p; }
 	v.clear();
+}
+
+template <class T>
+inline void mergeVectors(std::vector<T>& a, std::vector<T>& b)
+{
+	a.reserve(a.size() + b.size());
+	for ( auto e : b ) { a.insert(a.end(), e); }
+	b.clear();
+}
+
+template <class T>
+inline void eraseElement(std::vector<T>& v, int index)
+{
+	v.erase((index < 0 ? v.end() : v.begin()) + index);
+}
+
+template <class T>
+inline void insertElement(std::vector<T>& v, int index, T e)
+{
+	v.insert((index < 0 ? v.end() : v.begin()) + index, e);
 }
 
 template <class T>
@@ -206,6 +226,7 @@ class FactorIterator : public std::iterator< std::bidirectional_iterator_tag, No
 
 public:
     FactorIterator(Node* node);
+    FactorIterator(NodeIterator n) : FactorIterator(*n) {}
 
 	Node*& operator*() { return m_node; }
 	Node*& operator->() { return m_node; }
@@ -217,8 +238,16 @@ public:
 	FactorIterator& operator--()   { prev(); return *this; }
 	FactorIterator operator--(int) { FactorIterator tmp(*this); prev(); return tmp; }
 
+private:
 	bool isBegin() { return m_factor_index == 0 && m_term_index == 0; }
 	bool isEnd()   { return m_node == nullptr; }
+	bool isBeginTerm() { return m_factor_index == 0; }
+	bool isEndTerm();
+
+	void getNode(int factor, int term);
+
+	FactorIterator getBegin() { FactorIterator tmp(*this); tmp.getNode(0, 0); return tmp; }
+	FactorIterator getEnd() { FactorIterator tmp(*this); tmp.getNode(-1, -1); return tmp; }
 	
 	friend class Equation;
 };
@@ -239,42 +268,45 @@ public:
 	void getCursorOrig(int& x, int& y);
 	void setCurrentInput(int in_sn);
 	void addInput(Input* in) { m_inputs.push_back(in); }
+	void removeInput(Input* in);
 	bool handleChar(int ch);
-	void setSelectStart(FactorIterator start) { m_selectStart = start; }
-	void setSelectEnd(FactorIterator end)   { m_selectEnd = end; }
+	void setSelectStart(Node* start) { m_selectStart = start; }
+	void setSelectEnd(Node* end)   { m_selectEnd = end; }
 	void clearSelect();
 	void setSelect(Node* start, Node* end = nullptr);
-	void setSelect(FactorIterator start) { m_selectStart = start; }
 	Node* findNode(Draw& draw, int x, int y);
 
 	NodeIterator begin() { return NodeIterator(m_root->first(), *this); }
 	NodeIterator end()   { return NodeIterator(nullptr, *this); }
 	NodeIterator last()  { return NodeIterator(m_root->last(), *this); }
-	FactorIterator insert(FactorIterator it, Node* node);
+
 	FactorIterator insert(FactorIterator it, std::string text);
-	FactorIterator insert(FactorIterator it, Term* term);
-	FactorIterator erase(FactorIterator it);
-	void replace(FactorIterator it, Node* node);
-	void replace(FactorIterator it, Term* term);
+	FactorIterator erase(FactorIterator it, bool free = true);
 
 private:
 	Node* m_root = nullptr; // Equation owns this tree
 
 	std::vector<Input*> m_inputs;
 	int m_input_index = -1;
-	FactorIterator m_selectStart = nullptr;
-	FactorIterator m_selectEnd = nullptr;
+	Node* m_selectStart = nullptr;
+	Node* m_selectEnd = nullptr;
 
 	Input* getCurrentInput() { 
 		return (m_input_index < 0) ? nullptr : m_inputs[m_input_index];
 	}
 	void nextInput();
 	FactorIterator disableCurrentInput();
-	FactorIterator disableInput(Input* in);
 	void setSelect(Draw& draw);
 	void factor(std::string text, NodeVector& factors, Node* parent);
 	void xml_out(XML& xml) const;
 	void eraseSelection(Node* node);
+
+	static FactorIterator insert(FactorIterator it, Node* node);
+	static FactorIterator insert(FactorIterator it, Term* term);
+	FactorIterator back_erase(FactorIterator it);
+	FactorIterator forward_erase(FactorIterator it);
+	static void replace(FactorIterator it, Node* node, bool free = true);
+	static void replace(FactorIterator it, Term* term, bool free = true);
 
 	static Node* xml_in(XMLParser& in);
 };

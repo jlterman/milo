@@ -300,7 +300,7 @@ public:
 	Node* findNode(int x, int y);
 
 	int getTermIndex(Term* term) { return distance(terms.cbegin(), find(terms, term)); }
-	void setParent() { for ( auto t : terms ) ((Node*) t)->setParent(this); }
+	void setParent() { for ( auto t : terms ) t->setParent(this); }
 
 	static Term* getTerm(Equation& eqn, std::string text, Expression* parent = nullptr);
 	static Term* getTerm(Parser& p, Expression* parent);

@@ -69,7 +69,7 @@ public:
 	}
 
 	int getChar(int y, int x) {
-		//curs_set(2);
+		curs_set(2);
 		mvaddch(y + m_yOrig, x + m_xOrig, ' '); 
 		move(y + m_yOrig, x + m_xOrig);
 		int ch = getch();
@@ -127,6 +127,7 @@ int main(int argc, char* argv[])
 		DrawCurses::getInstance().out();
 		int xCursor = 0, yCursor = 0;
 		eqn->getCursorOrig(xCursor, yCursor);
+		move(0,0);
 		int ch = (eqn->blink()) ? draw.getChar(yCursor, xCursor - 1) : getch();
 
 		string mkey;
