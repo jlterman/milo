@@ -562,6 +562,7 @@ bool Expression::add(XMLParser& in)
 	if (!in.peek(XMLParser::HEADER, "term")) return false;
 
 	Term* term = new Term(in, this);
+	in.setSelect(term);
 	terms.push_back(term);
 	return true;
 }

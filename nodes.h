@@ -50,6 +50,7 @@ public:
 	std::string toString() const { return m_first->toString() + m_op + m_second->toString(); }
 	bool isLeaf() const { return false; }
 	Node* findNode(int x, int y);
+	int numFactors() { return m_first->numFactors() + m_second->numFactors(); }
 
 	static Node* parse(Parser& p, Node* one, Node* parent);
 	static Node* xml_in(XMLParser& in, char op, const std::string& name, Node* parent);
@@ -120,6 +121,7 @@ public:
 	bool isLeaf() const { return false; }
 	Complex getNodeValue() const;
 	Node* findNode(int x, int y);
+	int numFactors() { return m_arg->numFactors() + 1; }
 
 	Function(const std::string& name, func_ptr fp, Node* node, 
 			 Node* parent, bool neg = false, Node::Select s = Node::Select::NONE) : 
@@ -260,6 +262,7 @@ public:
 	bool isFactor() const { return false; }
 	Complex getNodeValue() const;
 	Node* findNode(int x, int y);
+	int numFactors();
 
 	int getFactorIndex(Node* node) { return distance(factors.cbegin(), find(factors, node)); }
 	void setParent() { for ( auto f : factors ) f->setParent(this); }
@@ -298,6 +301,7 @@ public:
 	bool isLeaf() const { return false; }
 	Complex getNodeValue() const;
 	Node* findNode(int x, int y);
+	int numFactors();
 
 	int getTermIndex(Term* term) { return distance(terms.cbegin(), find(terms, term)); }
 	void setParent() { for ( auto t : terms ) t->setParent(this); }

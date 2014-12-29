@@ -116,9 +116,16 @@ int main(int argc, char* argv[])
 {
 	LOG_TRACE_CLEAR();
 	LOG_TRACE_MSG("Starting milo_ncurses...");
+
 	DrawCurses& draw = DrawCurses::getInstance();
 	EqnUndoList eqns;
-	Equation* eqn = new Equation("#");
+	Equation* eqn;
+	if (argc > 1) {
+		ifstream in(argv[1]);
+		eqn = new Equation(in);
+	}
+	else
+		eqn = new Equation("#");
 	eqns.save(eqn);
 
 	bool fRunning = true;
@@ -147,6 +154,15 @@ int main(int argc, char* argv[])
 					fChanged = false;
 					break;
 				}
+			    case 19: { // ctrl-s typed
+					string store;
+					eqn->xml_out(store);
+					fstream out("eqn.xml", fstream::out | fstream::trunc);
+					out << store << endl;
+					out.close();
+					fChanged = false;
+					break;
+				}
 			    case 26: { // ctrl-z typed
 					Equation* undo_eqn = eqns.undo();
 					if (undo_eqn) {
@@ -164,6 +180,7 @@ int main(int argc, char* argv[])
 							LOG_TRACE_MSG("mouse click at: " + to_string(event.x) + ", " + 
 												 to_string(event.y));
 							Node* node = eqn->findNode(draw, event.x, event.y);
+							if (node == nullptr) break;
 							eqn->setSelect(node);
 							LOG_TRACE_MSG(string("found node: ") + typeid(node).name() + ": " + 
 										  node->toString());

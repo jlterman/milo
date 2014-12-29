@@ -29,16 +29,14 @@ void Equation::setSelect(Draw& draw)
 		draw.setSelect(m_selectStart);
 	}
 	else if (m_selectStart != nullptr) {
-		int x0 = 0, y0 = 0, x = 0, y = 0;
 		auto it = FactorIterator(m_selectStart);
 		auto end = FactorIterator(m_selectEnd);
+		int x0 = it->getOrigX(), y0 = it->getOrigY(), x = 0, y = 0;
 		do {
-			if (x0 < it->getOrigX()) x0 = it->getOrigX();
-			if (y0 < it->getOrigY()) y0 = it->getOrigY();
-			if (x < it->getSizeX()) x = it->getSizeX();
-			if (y < it->getSizeY()) y = it->getSizeY();
+			x = it->getOrigX() - x0 + it->getSizeX();
+			y = max(y, it->getSizeY() - it->getBaseLine());
 		}
-		while (++it != end);
+		while (it++ != end);
 
 		draw.setSelect(x, y, x0, y0);
 	}
@@ -536,22 +534,26 @@ void Equation::eraseSelection(Node* node)
 	if (m_selectStart == m_root) {
 		delete m_root;
 		if (node == nullptr) node = new Input(*this, string(), true);
-		Term* term = new Term(node);
-		Expression* expr = new Expression(term);
-		term->setParent(expr);
-		m_root = expr;
+		m_root = new Expression(node);
 	}
-	else if (m_selectStart == m_selectEnd) {
-		auto it = erase(m_selectStart);
-		insert(it, node);
-	}
-	else {
+	else if (m_selectStart == m_selectEnd && m_selectStart->isFactor()) {
 		auto it = FactorIterator(m_selectStart);
-		for (it = erase(it); it != m_selectEnd; it = forward_erase(it));
+		it = insert(it, node);
+		erase(it);
+	}
+	else if (m_selectStart == m_selectEnd && node != nullptr) {
+		Term* term = dynamic_cast<Term*>(m_selectStart);
+		freeVector(term->factors);
+		term->factors.push_back(node);
+	}
+	else if (m_selectStart != m_selectEnd) {
+		auto end = FactorIterator(m_selectEnd);
+		auto it = FactorIterator(m_selectStart);
+		for (it = erase(it); it != end; it = forward_erase(it));
 		if (node == nullptr) erase(it);
 		                else replace(it, node);
 	}
-	m_selectStart = m_selectEnd = nullptr;
+	clearSelect();
 }
 
 bool Equation::handleChar(int ch)
@@ -583,26 +585,24 @@ bool Equation::handleChar(int ch)
 				if (!n.isEnd()) setSelect(*n); else fResult = false;
 				break;
 			}
+		    case Key::SRIGHT:
 		    case Key::SLEFT: {
 				auto start = FactorIterator(m_selectStart);
-				if (start.isBegin()) {
-					fResult = false;
-				}
-				else {
-					--start;
-					m_selectStart = *start;
-					
-				}
-			}
-		    case Key::SRIGHT: {
 				auto end = FactorIterator(m_selectEnd);
-				if ((++end).isEnd()) {
+				auto last = end.getLast();
+
+				if ((ch == Key::SLEFT && start.isBegin()) ||
+					(ch == Key::SRIGHT && (end == last))) {
 					fResult = false;
 				}
-				else {
-					++end;
-					m_selectEnd = *end;
+				else if (ch == Key::SLEFT) {
+					--start;
 				}
+				else if (ch == Key::SRIGHT) {
+					++end;
+				}
+				setSelect(*start, *end);
+				break;
 			}
 		    case Key::UP: {
 				NodeIterator n{m_selectStart, *this};
@@ -629,11 +629,23 @@ bool Equation::handleChar(int ch)
 			}
 	        case ' ': {
 				if (m_selectStart->getParent() == nullptr) return false;
-				
-				Node* parent = m_selectStart->getParent();
-				while (parent && !parent->isFactor()) { parent = parent->getParent(); }
+
+				Node* parent = nullptr;
+				int num = 0;
+				if (m_selectStart != m_selectEnd) {
+					FactorIterator end(m_selectEnd);
+					for (auto it = FactorIterator(m_selectStart); it != end; ++it) {
+						num += it->numFactors();
+					}
+					parent = m_selectStart->getParent()->getParent();
+				}
+				else {
+					num = m_selectStart->numFactors();
+					parent = m_selectStart->getParent();
+				}
+
+				while (parent && parent->numFactors() == num) { parent = parent->getParent(); }
 				if (parent == nullptr) return false;
-				
 				setSelect(parent);
 				break;
 			}
@@ -677,9 +689,10 @@ bool Equation::handleChar(int ch)
 					insert(in_pos, Expression::getTerm(*this, string(1, (char)ch)+"#"));
 				}
 				else {
-					insert(in_pos, Expression::getTerm(*this, in->m_typed));
+					bool sign = in->getParent()->getSign();
+					insert(in_pos, Expression::getTerm(*this, in->m_typed), sign);
 					in->m_typed.clear();
-					if (ch == '-') in->getParent()->negative();
+					if (!sign^(ch == '-')) in->getParent()->negative();
 				}
 				break;
 			}
@@ -728,7 +741,8 @@ bool Equation::handleChar(int ch)
 					fResult = false;
 				}
 				else {
-					delete in;
+					auto pos = disableCurrentInput();
+					setSelect(*pos);
 				}
 				break;
 			}
@@ -739,8 +753,15 @@ bool Equation::handleChar(int ch)
 	}
 	else {
 		switch(ch) {
+		    case Key::UP:
+		    case Key::LEFT:
 	        case ' ': {
 				setSelect(m_root->first());
+				break;
+			}
+		    case Key::RIGHT:
+		    case Key::DOWN: {
+				setSelect(m_root->last());
 				break;
 			}
             default:
@@ -768,8 +789,8 @@ FactorIterator Equation::disableCurrentInput()
 	if (!in->m_typed.empty()) {
 		pos = insert(pos, in->m_typed);
 	}
-	pos = erase(pos, false);
-	delete in;
+	removeInput(in);
+	pos = erase(pos);
 	return pos;
 }
 
@@ -842,20 +863,21 @@ FactorIterator Equation::insert(FactorIterator it, Node* node)
 	insertElement(it.m_pTerm->factors, it.m_factor_index, node);
 	node->setParent(it.m_pTerm);
 	it.m_node = node;
-	return it;
+	return ++it;
 }
 
 FactorIterator Equation::insert(FactorIterator it, string text)
 {
 	NodeVector factors;
 	factor(text, factors, it.m_pTerm);
-	for ( auto f : factors ) { it = insert(it, f); ++it; }	
+	for ( auto f : factors ) { it = insert(it, f); }	
 	return it;
 }
 
-FactorIterator Equation::insert(FactorIterator it, Term* term)
+FactorIterator Equation::insert(FactorIterator it, Term* term, bool sign)
 {
 	insertElement(it.m_gpExpr->terms, it.m_term_index, term);
+	if (!sign) term->negative();
 	term->setParent(it.m_gpExpr);
 	++it.m_term_index;
 	return it;
@@ -946,6 +968,13 @@ Node* Term::findNode(int x, int y)
 	return node;
 }
 
+int Term::numFactors()
+{ 
+	int n = 0; 
+	for ( auto f : factors ) { n += f->numFactors(); }
+	return n;
+}
+
 Node* Expression::findNode(int x, int y)
 {
 	Node* node = nullptr;
@@ -954,6 +983,13 @@ Node* Expression::findNode(int x, int y)
 		if (node != nullptr) break;
 	}
 	return node;
+}
+
+int Expression::numFactors()
+{ 
+	int n = 0; 
+	for ( auto t : terms ) { n += t->numFactors(); }
+	return n;
 }
 
 void NodeIterator::next()
@@ -983,10 +1019,10 @@ FactorIterator::FactorIterator(Node* node) : m_node(node)
 
 void FactorIterator::getNode(int factor, int term)
 {
-	m_term_index = term + (term < 0) ? m_gpExpr->terms.size() : 0;
+	m_term_index = term + (term < 0 ? m_gpExpr->terms.size() : 0);
 	m_pTerm = m_gpExpr->terms[m_term_index];
 
-	m_factor_index = factor + (factor < 0) ? m_pTerm->factors.size() : 0;
+	m_factor_index = factor + (factor < 0 ? m_pTerm->factors.size() : 0);
 	m_node = m_pTerm->factors[m_factor_index];
 }
 
@@ -1032,7 +1068,7 @@ bool FactorIterator::isEndTerm()
 { 
 	if (m_gpExpr == nullptr) throw logic_error("null iterator");
 
-	return m_term_index == m_pTerm->factors.size() - 1;
+	return m_factor_index == m_pTerm->factors.size() - 1;
 }
 
 void EqnUndoList::save(Equation* eqn)

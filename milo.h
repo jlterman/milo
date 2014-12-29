@@ -31,7 +31,7 @@ inline auto find(const std::vector<T>& v, const T& val) -> decltype( v.cbegin() 
 }
 
 template <class T>
-inline void freeVector(std::vector<T*> v)
+inline void freeVector(std::vector<T*>& v)
 {
 	for ( auto p : v ) { delete p; }
 	v.clear();
@@ -105,6 +105,7 @@ public:
 	virtual bool isFactor() const { return true; }
 	virtual Complex getNodeValue() const=0;
 	virtual Node* findNode(int x, int y);
+	virtual int numFactors() { return 1; }
 
 	Node* first();
 	Node* last();
@@ -247,7 +248,7 @@ private:
 	void getNode(int factor, int term);
 
 	FactorIterator getBegin() { FactorIterator tmp(*this); tmp.getNode(0, 0); return tmp; }
-	FactorIterator getEnd() { FactorIterator tmp(*this); tmp.getNode(-1, -1); return tmp; }
+	FactorIterator getLast() { FactorIterator tmp(*this); tmp.getNode(-1, -1); return tmp; }
 	
 	friend class Equation;
 };
@@ -302,7 +303,7 @@ private:
 	void eraseSelection(Node* node);
 
 	static FactorIterator insert(FactorIterator it, Node* node);
-	static FactorIterator insert(FactorIterator it, Term* term);
+	static FactorIterator insert(FactorIterator it, Term* term, bool sign = true);
 	FactorIterator back_erase(FactorIterator it);
 	FactorIterator forward_erase(FactorIterator it);
 	static void replace(FactorIterator it, Node* node, bool free = true);
