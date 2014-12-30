@@ -487,7 +487,7 @@ Node* Expression::getRightSibling(Node* node)
 int Input::input_sn = -1;
 
 Input::Input(Equation& eqn, std::string txt, bool current, Node* parent, bool neg, Node::Select s) :
-	Node(parent, neg, s), m_typed(txt), m_sn(++input_sn), m_active(true), m_current(current), m_eqn(eqn)
+	Node(parent, neg, s), m_typed(txt), m_sn(++input_sn), m_current(current), m_eqn(eqn)
 {
 	eqn.addInput(this);
 	if (current) eqn.setCurrentInput(m_sn);
@@ -511,12 +511,10 @@ void Input::asciiArt(Draw& draw) const
 
 string Input::toString() const
 {
-	if (m_active) {
-		if (m_typed.empty()) return (m_current ? "#" : "?");
+	if (m_typed.empty()) 
+		return (m_current ? "#" : "?");
+	else 
 		return "[" + m_typed  + "]";
-	}
-	else
-		return m_typed;
 }
 
 Complex Input::getNodeValue() const

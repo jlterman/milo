@@ -31,11 +31,9 @@ public:
 private:
 	std::string m_typed;
 	int m_sn;
-	bool m_active;
 	bool m_current;
 	Equation& m_eqn;
 
-	void disable() { m_active = false; }
 	void setCurrent(bool current) { m_current = current; }
 
 	static int input_sn;

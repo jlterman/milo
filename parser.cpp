@@ -417,29 +417,16 @@ void Number::xml_out(XML& xml) const {
 
 void Input::xml_out(XML& xml) const
 {
-	bool fAllAlphaNum = true;
-	for ( char c : m_typed ) {  fAllAlphaNum *= (isalnum(c) || c =='.'); }
-	if (fAllAlphaNum && m_active) {
-		vector<string> attributes;
-		if (m_typed.length() > 0) {
-			attributes.emplace_back("text");
-			attributes.push_back(m_typed);
-		}
-		if (m_current) {
-			attributes.emplace_back("current");
-			attributes.emplace_back("true");
-		}		
-		xml.header(this, name, true, attributes);
+	vector<string> attributes;
+	if (m_typed.length() > 0) {
+		attributes.emplace_back("text");
+		attributes.push_back(m_typed);
 	}
-	else {
-		Equation eqn("?");
-		Parser p(m_typed, eqn);
-		while (p.peek()) {
-			Term* term = Expression::getTerm(p, nullptr);
-			term->xml_out(xml);
-			delete term;
-		}
-	}
+	if (m_current) {
+		attributes.emplace_back("current");
+		attributes.emplace_back("true");
+	}		
+	xml.header(this, name, true, attributes);
 }
 
 void Term::xml_out(XML& xml) const {
@@ -710,7 +697,7 @@ Expression::Expression(XMLParser& in, Node* parent) : Node(in, parent, name)
 }
 
 Input::Input(Parser& p, Node* parent) : 
-	Node(parent), m_sn(++input_sn), m_active(true), m_current(false), m_typed(""), m_eqn(p.getEqn())
+	Node(parent), m_sn(++input_sn), m_current(false), m_typed(""), m_eqn(p.getEqn())
 {
 	p.getEqn().addInput(this);
 	char c = p.next();
