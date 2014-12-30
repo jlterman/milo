@@ -56,34 +56,33 @@ private:
 class XMLParser
 {
 public:
-	enum { HEADER=1, FOOTER=2, ATOM=4, NAME=8, VALUE=16, END=32 };
+	enum { CLEAR=0, HEADER=1, FOOTER=2, ATOM=4 };
+	typedef Node* (*createPtr)(XMLParser&, Node*);
 
 	XMLParser(istream& in, Equation& eqn);
 	~XMLParser();
 
-	bool peek(const int state, const string& tag = string());
-	string next();
-	void next(string& name, string& value);
-
-	bool next(const int state, const string& tag = string()) { 
-		bool r = peek(state, tag); next(); return r;
-	}
+	void next();
+	bool next(int state, const string& tag = string()) { next(); return getState(state, tag); }
 	bool getState(int state, const string& tag = string()) const;
-	const string& getTag() const { return m_tags[m_pos]; }
-	bool EOL() const { return m_pos == m_tags.size(); }
-	const map<string, string> getAttributes(bool& fNeg, Node::Select& select);
+	const string& getTag() const { return m_tag; }
+	bool getAttribute(const string& name, string& value);
+	bool hasAttributes() { return m_attributes.size() != 0; }
 	Equation& getEqn() const { return m_eqn; }
-	void setSelect(Node* node);
+	Node* getFactor(Node* parent);
 	
-	static Node* parse(XMLParser& in, Node* parent = nullptr);
 private:
 	Equation& m_eqn;
 	vector<string> m_tags;
 	size_t m_pos;
+	map<string, string> m_attributes;
 	int m_state;
+	string m_tag;
 
+	static const map<string, createPtr> create_factors;
+
+	bool EOL() const { return m_pos == m_tags.size(); }
 	void parse(istream& in);
-    void peek(string& tag, int& state);
 };
 
 char Parser::next()
@@ -179,141 +178,12 @@ void XML::footer(const string& tag)
 XMLParser::XMLParser(istream& in, Equation& eqn) : m_pos(0), m_eqn(eqn) 
 { 
 	parse(in);  
-	if (!next(HEADER|END, "document")) throw logic_error("bad format");
+	if (!next(HEADER, "document")) throw logic_error("bad format");
 }
 
 XMLParser::~XMLParser()
 {
-	if (!next(FOOTER|END, "document")) throw logic_error("bad format");
-}
-
-const map<string, string> XMLParser::getAttributes(bool& fNeg, Node::Select& select)
-{
-	map<string, string> attributes;
-	fNeg = false;
-	select = Node::Select::NONE;
-
-	if (getState(END)) return attributes;
-
-	do {
-		string name, value;
-		next(name, value);
-		
-		if (name.compare("negative") == 0) {
-			if (value.compare("true") && value.compare("false"))
-				throw logic_error("bad format");
-			fNeg = (value.compare("true") == 0);
-		}
-		else if (name.compare("select") == 0) {
-			auto pos = find(Node::select_tags, value);
-			if (pos == Node::select_tags.end()) throw logic_error("bad format");
-			select = (Node::Select) distance(Node::select_tags.begin(), pos);
-		}
-		else 
-			attributes.emplace(name, value);
-	}
-	while (!peek(END));
-	next();
-	return attributes;
-}
-
-void XMLParser::peek(string& tag, int& state)
-{
-	tag = m_tags[m_pos];
-	if (tag.find("</", 0) == 0) {
-		tag.erase(0, 2);
-		tag.erase(tag.find('>'));
-		state = FOOTER|END;
-		return;
-	}
-	if (tag.front() == '<') {
-		tag.erase(tag.begin());
-		size_t pos = tag.rfind("/>");
-		if (pos != string::npos) {
-			tag.erase(pos);
-			state = HEADER|ATOM|END;
-			return;
-		}
-		if (tag.back() == '>') {
-			tag.erase(tag.end() - 1);
-			state = HEADER|END;
-			return;
-		}
-		state = HEADER;
-		return;
-	}
-	if (tag.compare(">") == 0) {
-		state = END;
-		return;
-	}
-	if (tag.compare("/>") == 0) {
-		state = ATOM|END;
-		return;
-	}
-	if (tag.find("=\"", 0) == 0) {
-		state = VALUE;
-		tag.erase(0, 2);
-		tag.erase(tag.end() - 1);
-		return;
-	}
-	state = NAME;
-	return;
-}
-
-bool XMLParser::peek(const int state, const string& tag)
-{
-	string p_tag;
-	int p_state;
-	peek(p_tag, p_state);
-	return (tag.empty() || tag.compare(p_tag) == 0) && (state&p_state);
-}
-
-bool XMLParser::getState(int state, const string& tag) const
-{
-	return (tag.empty() || tag.compare(m_tags[m_pos]) == 0) && (state&m_state);	
-}
-
-string XMLParser::next()
-{
-	if (EOL()) throw range_error("xml exhausted");
-
-	string tag;
-	peek(tag, m_state);
-	++m_pos;
-
-#if 0
-	string log = "XML read in: " + tag;
-	if (m_state&HEADER) log += " HEADER";
-	if (m_state&FOOTER) log += " FOOTER";
-	if (m_state&ATOM) log += " ATOM";
-	if (m_state&NAME) log += " NAME";
-	if (m_state&VALUE) log += " VALUE";
-	if (m_state&END) log += " END";
-	LOG_TRACE_MSG(log);
-#endif
-
-	return tag;
-}
-						  
-void XMLParser::next(string& name, string& value)
-{
-	name = next();
-	if (!getState(XMLParser::NAME)) throw logic_error("bad format");
-	value = next();
-	if (!getState(XMLParser::VALUE)) throw logic_error("bad format");
-}
-
-void XMLParser::setSelect(Node* node)
-{
-	switch (node->getSelect()) {
-	    case Node::Select::START: m_eqn.setSelectStart(node); break;
-	    case Node::Select::END  : m_eqn.setSelectEnd(node);   break;
-	    case Node::Select::ALL  : m_eqn.setSelectStart(node);
-                     		      m_eqn.setSelectEnd(node);
-						          break;
-	    case Node::Select::NONE:
-	                    default: break;
-	}
+	if (!next(FOOTER, "document")) throw logic_error("bad format");
 }
 
 void XMLParser::parse(istream& in)
@@ -338,234 +208,125 @@ void XMLParser::parse(istream& in)
 	}
 }
 
-Node* XMLParser::parse(XMLParser& in, Node* parent)
+void XMLParser::next()
 {
-	Node*    node = Expression::xml_in(in, parent);
-	if (!node) node = Function::xml_in(in, parent);
-	if (!node) node = Constant::xml_in(in, parent);
-	if (!node) node = Variable::xml_in(in, parent);
-	if (!node) node = Number::xml_in(in, parent);
-	if (!node) node = Input::xml_in(in, parent);
-	if (!node) node = Binary::xml_in(in, '/', "divide", parent);
-	if (!node) node = Binary::xml_in(in, '^', "power", parent);
-	if (!node) return nullptr;
+	if (EOL()) throw logic_error("out of xml");
 
-	in.setSelect(node);
-	return node;
+	m_tag = m_tags[m_pos++];
+	m_attributes.clear();
+	m_state = CLEAR;
+	if (m_tag.find("</", 0) == 0) {
+		m_tag.erase(0, 2);
+		m_tag.erase(m_tag.find('>'));
+		m_state = FOOTER;
+		return;
+	}
+	if (m_tag.front() == '<') {
+		m_tag.erase(m_tag.begin());
+		size_t pos = m_tag.rfind("/>");
+		if (pos != string::npos) {
+			m_tag.erase(pos);
+			m_state = HEADER|ATOM;
+			return;
+		}
+		if (m_tag.back() == '>') {
+			m_tag.erase(m_tag.end() - 1);
+			m_state = HEADER;
+			return;
+		}
+	}
+	m_state = HEADER;
+	while (m_tags[m_pos].rfind(">") == string::npos) {
+		if (m_tags[m_pos].find("=\"", 0) == 0) throw logic_error("bad format");
+		string name = m_tags[m_pos];
+		++m_pos;
+		if (m_tags[m_pos].find("=\"", 0) != 0) throw logic_error("bad format");
+		string value = m_tags[m_pos].substr(2, m_tags[m_pos].size() - 3);
+		m_attributes.emplace(name, value);
+		++m_pos;
+	}
+	if (m_tags[m_pos++].compare("/>") == 0) m_state |= ATOM;
+	return;
 }
 
-Node* Equation::xml_in(XMLParser& in)
+bool XMLParser::getState(int state, const string& tag) const
 {
-	Node* root;
-	if (in.next(XMLParser::HEADER|XMLParser::END, "equation")) {
-		root = new Expression(in);
-		in.setSelect(root);
-	}
-	else
-		throw logic_error("bad format");
+	return ((state&m_state) != 0) && (tag.empty() || (tag.compare(m_tag) == 0));
+}
 
-	if (!in.next(XMLParser::FOOTER|XMLParser::END, "equation"))
-		throw logic_error("bad format");
-	return root;
+bool XMLParser::getAttribute(const string& name, string& value)
+{
+	if (m_attributes.find(name) == m_attributes.end()) return false;
+
+	value = m_attributes.at(name);
+	m_attributes.erase(name);
+	return true;
+}
+
+Node* XMLParser::getFactor(Node* parent)
+{
+	next();
+	if (create_factors.find(m_tag) == create_factors.end()) return nullptr;
+	auto cp = create_factors.at(m_tag);
+	return cp(*this, parent);
+}
+
+Node::Node(XMLParser& in, Node* parent, const string& name) : 
+	m_parent(parent), m_sign(true), m_select(NONE)
+{
+	if (!in.getState(XMLParser::HEADER, name)) 
+		throw logic_error("bad header: expected: " + name + ", got: " + in.getTag());
+
+	string value;
+	if (in.getAttribute("negative", value)) {
+		if (value.compare("true") && value.compare("false")) throw logic_error("bad format");
+		m_sign = (value.compare("false") == 0);
+	}
+	if (in.getAttribute("select", value)) {
+		auto pos = find(select_tags, value);
+		if (pos == select_tags.end()) throw logic_error("bad format");
+		m_select = (Select) distance(select_tags.begin(), pos);
+	}
+	in.getEqn().setSelect(this);
 }
 
 Equation::Equation(istream& is)
 {
 	XMLParser in(is, *this);
-	m_root = xml_in(in);
+	if (!in.next(XMLParser::HEADER, "equation") ||
+		!in.next(XMLParser::HEADER, Expression::name)) throw logic_error("bad format");
+
+	m_root = new Expression(in, nullptr);
+
+	if (!in.next(XMLParser::FOOTER, "equation")) throw logic_error("bad format");
 }
 
-Node* Function::xml_in(XMLParser& in, Node* parent)
+const string Expression::name = "expression";
+const string   Function::name = "function";
+const string   Constant::name = "constant";
+const string   Variable::name = "variable";
+const string     Number::name = "number";
+const string     Divide::name = "divide";
+const string      Input::name = "input";
+const string      Power::name = "power";
+const string       Term::name = "term";
+
+template <class T>
+Node* create(XMLParser& in, Node* parent)
 {
-	if (functions.empty()) { init_functions();	}
-
-	if (!in.peek(XMLParser::HEADER, "function")) return nullptr;
-	if (in.next(XMLParser::END, "function")) throw logic_error("bad format");
-	
-	bool fNeg = false;
-	Node::Select select;
-	string fname;
-	func_ptr fp = nullptr;
-
-	for ( auto m : in.getAttributes(fNeg, select) ) {
-		if (m.first.compare("name") == 0) {
-			for ( auto f : functions ) {
-				if (f.first.compare(m.second) == 0) {
-					fname = f.first;
-					fp = f.second;
-				}
-			}
-			if (fname.empty() || fp == nullptr) throw logic_error("bad format");
-		}
-		else
-			throw logic_error("bad format");
-	}
-	Node* arg = new Expression(in);
-	in.setSelect(arg);
-	
-	if (!in.next(XMLParser::FOOTER|XMLParser::END, "function"))
-		throw logic_error("bad format");
-
-	return new Function(fname, fp, arg, parent, fNeg, select);
+	return new T(in, parent);
 }
 
-Node* Binary::xml_in(XMLParser& in, char op, const string& name, Node* parent)
-{
-	if (!in.peek(XMLParser::HEADER, name)) return nullptr;
-	in.next();
-	bool fNeg = false;
-	Node::Select select;
-	if (!in.getAttributes(fNeg, select).empty()) throw logic_error("bad format");
-
-	Node* one = XMLParser::parse(in);
-	Node* two = XMLParser::parse(in);
-	
-	if (!in.next(XMLParser::FOOTER|XMLParser::END, name))
-		throw logic_error("bad format");
-
-	if (name.compare("divide") == 0) 
-		return new Divide(one, two, parent, fNeg, select);
-	else if (name.compare("power") == 0)
-		return new Power(one, two, parent, fNeg, select);
-	else
-		throw logic_error("bad format");
-}
-
-Node* Variable::xml_in(XMLParser& in, Node* parent)
-{
-	if (!in.peek(XMLParser::HEADER, "variable")) return nullptr;
-	if (in.next(XMLParser::END, "variable")) throw logic_error("bad format");
-
-	bool fNeg = false;
-	Node::Select select;
-	char var_name;
-	for ( auto m : in.getAttributes(fNeg, select) ) {
-		if (m.first.compare("name") == 0) {
-			if (m.second.empty()) throw logic_error("bad format");
-			var_name = m.second[0];
-		}
-		else
-			throw logic_error("bad format");
-	}
-	if (!in.getState(XMLParser::ATOM|XMLParser::END)) throw logic_error("bad format");
-	return new Variable(var_name, parent, fNeg, select);
-}
-
-Node* Constant::xml_in(XMLParser& in, Node* parent)
-{
-	if (constants.empty()) { init_constants();	}
-
-	if (!in.peek(XMLParser::HEADER, "constant")) return nullptr;
-	if (in.next(XMLParser::END, "constant")) throw logic_error("bad format");
-	
-	char cname;
-	Complex value;
-
-	bool fNeg = false;
-	Node::Select select;
-	for ( auto m : in.getAttributes(fNeg, select) ) {
-		if (m.first.compare("name") == 0 && m.second.length() == 1) {
-			auto it = constants.find(m.second[0]);
-			if (it != constants.end()) {
-				cname = m.second[0];
-				value = it->second;
-			}
-			if (!cname || isZero(value)) throw logic_error("bad format");
-		}
-		else
-			throw logic_error("bad format");
-	}
-	if (!in.getState(XMLParser::ATOM|XMLParser::END))  throw logic_error("bad format");
-	return new Constant(cname, value, parent, fNeg, select);
-}
-
-Node* Number::xml_in(XMLParser& in, Node* parent)
-{
-	if (!in.peek(XMLParser::HEADER, "number")) return nullptr;
-	if (in.next(XMLParser::END, "number")) throw logic_error("bad format");
-	
-	bool fNeg = false;
-	Node::Select select;
-	string real = "0", imag = "0";
-	for ( auto m : in.getAttributes(fNeg, select) ) {
-		if (m.first.compare("real") == 0) {
-			real = m.second;
-		}
-		else if (m.first.compare("imag") == 0) {
-			imag = m.second;
-		}
-		else
-			throw logic_error("bad format");
-	}
-	if (!in.getState(XMLParser::ATOM|XMLParser::END))  throw logic_error("bad format");
-	return new Number(real, imag, parent, fNeg, select);
-}
-
-Node* Input::xml_in(XMLParser& in, Node* parent)
-{
-	if (!in.peek(XMLParser::HEADER|XMLParser::ATOM, "input")) return nullptr;
-	in.next();
-
-	bool fNeg = false;
-	Node::Select select;
-	bool fCurrent = false;
-	string text;
-	for ( auto m : in.getAttributes(fNeg, select) ) {
-		if (m.first.compare("current") == 0) {
-			if ((m.second.compare("true") && m.second.compare("false")))
-				throw logic_error("bad format");
-			fCurrent = m.second.compare("true") == 0;
-		}
-		else if (m.first.compare("text") == 0) {
-			if (m.second.empty()) throw logic_error("bad format");
-			text = m.second;
-		}
-		else
-			throw logic_error("bad format");
-	}
-	if (!in.getState(XMLParser::ATOM|XMLParser::END)) throw logic_error("bad format");
-	return new Input(in.getEqn(), text, fCurrent, parent, fNeg, select);
-}
-
-Term::Term(XMLParser& in, Expression* parent) : Node(parent)
-{
-	if (!in.next(XMLParser::HEADER, "term")) throw logic_error("bad format");
-
-	bool fNeg = false;
-	Node::Select select;
-	if ( !in.getAttributes(fNeg, select).empty() ) throw logic_error("bad format");
-	if (fNeg) negative();
-	if (select) setSelect(select);
-	while (add(in));
-
-	if (!in.next(XMLParser::FOOTER|XMLParser::END, "term")) throw logic_error("bad format");
-}
-
-Term* Term::xml_in(XMLParser& in, Expression* parent)
-{
-	if (!in.peek(XMLParser::HEADER, "term")) return nullptr;
-
-	return new Term(in, parent);
-}
-
-bool Term::add(XMLParser& in)
-{
-	Node* node = XMLParser::parse(in, this);
-	if (!node) return false;
-
-	factors.push_back(node);
-	return true;
-}
-
-bool Expression::add(XMLParser& in)
-{
-	if (!in.peek(XMLParser::HEADER, "term")) return false;
-
-	Term* term = new Term(in, this);
-	in.setSelect(term);
-	terms.push_back(term);
-	return true;
-}
+const map<string, XMLParser::createPtr> XMLParser::create_factors =
+	{ { Expression::name, create<Expression> },
+	  {   Function::name, create<Function> },
+	  {   Constant::name, create<Constant> },
+	  {   Variable::name, create<Variable> },
+	  {     Number::name, create<Number> },
+	  {     Divide::name, create<Divide> },
+	  {      Input::name, create<Input> },
+	  {      Power::name, create<Power> },
+	};
 
 Term* Expression::getTerm(Equation& eqn, string text, Expression* parent)
 {
@@ -605,27 +366,6 @@ Node* Expression::parse(Parser& p, Node* parent) {
 	return new Expression(p, parent);
 }
 
-Expression::Expression(XMLParser& in, Node* parent) : Node(parent)
-{
-	if (!in.next(XMLParser::HEADER, "expression")) throw logic_error("bad format");
-
-	bool fNeg = false;
-	Node::Select select;
-	if ( !in.getAttributes(fNeg, select).empty() ) throw logic_error("bad format");
-	if (fNeg) negative();
-	if (select) setSelect(select);
-	while (add(in));
-
-	if (!in.next(XMLParser::FOOTER|XMLParser::END, "expression")) throw logic_error("bad format");
-}
-
-Node* Expression::xml_in(XMLParser& in, Node* parent)
-{
-	if (!in.peek(XMLParser::HEADER, "expression")) return nullptr;
-
-	return new Expression(in, parent);
-}
-
 void Equation::xml_out(XML& xml) const
 {
 	xml.header("equation");
@@ -648,28 +388,28 @@ void Equation::xml_out(string& str) const
 
 void Function::xml_out(XML& xml) const 
 {
-	xml.header(this, "function", false, {"name", m_name});
+	xml.header(this, name, false, {"name", m_name});
 	m_arg->xml_out(xml);
-	xml.footer("function");
+	xml.footer(name);
 }
 
-void Binary::xml_out(const string& tag, XML& xml) const {
-	xml.header(this, tag);
+void Binary::xml_out(XML& xml) const {
+	xml.header(this, getName());
 	m_first->xml_out(xml);
 	m_second->xml_out(xml);
-	xml.footer(tag);
+	xml.footer(getName());
 }
 
 void Variable::xml_out(XML& xml) const {
-	xml.header(this, "variable", true, { "name", string(1, m_name) });
+	xml.header(this, name, true, { "name", string(1, m_name) });
 }
 
 void Constant::xml_out(XML& xml) const {
-	xml.header(this, "constant", true, { "name", string(1, m_name) });
+	xml.header(this, name, true, { "name", string(1, m_name) });
 }
 
 void Number::xml_out(XML& xml) const {
-	xml.header(this, "number", true, 
+	xml.header(this, name, true, 
 			   { "real", toString(m_value.real(), true), 
 				 "imag", toString(m_value.imag(), true)
 			   });
@@ -689,7 +429,7 @@ void Input::xml_out(XML& xml) const
 			attributes.emplace_back("current");
 			attributes.emplace_back("true");
 		}		
-		xml.header(this, "input", true, attributes);
+		xml.header(this, name, true, attributes);
 	}
 	else {
 		Equation eqn("?");
@@ -703,15 +443,15 @@ void Input::xml_out(XML& xml) const
 }
 
 void Term::xml_out(XML& xml) const {
-	xml.header(this, "term", false);
+	xml.header(this, name, false);
 	for ( auto n : factors ) { n->xml_out(xml); }
-	xml.footer("term");
+	xml.footer(name);
 }
 
 void Expression::xml_out(XML& xml) const {
-	xml.header(this, "expression", false);
+	xml.header(this, name, false);
 	for ( auto n : terms ) { n->xml_out(xml); }
-	xml.footer("expression");
+	xml.footer(name);
 }
 
 Equation::Equation(string eq)
@@ -729,8 +469,6 @@ void Equation::factor(string text, NodeVector& factors, Node* parent)
 }
 
 Node* Function::parse(Parser& p, Node* parent) {
-	if (functions.empty()) { init_functions();	}
-
 	if (!isalpha(p.peek()) ) return nullptr;
 
 	for ( auto m : functions ) { 
@@ -779,8 +517,6 @@ Constant::Constant(Parser& p, Node* parent) :
 
 Node* Constant::parse(Parser& p, Node* parent)
 {
-	if (constants.empty()) init_constants();
-
 	char c = p.peek();
 	if ( constants.find(c) != constants.end() ) {
 		return new Constant(p, parent);
@@ -864,6 +600,113 @@ bool Term::add(Parser& p)
 
 	factors.push_back(node);
 	return true;
+}
+
+Function::Function(XMLParser& in, Node* parent) : Node(in, parent, name)
+{
+	if (in.getAttribute("name", m_name)) {
+		if (functions.find(m_name) == functions.end()) throw logic_error("function not found");
+		m_func = functions.at(m_name);
+	}
+	else
+		throw logic_error("bad format");
+
+	if (in.hasAttributes()) throw logic_error("bad format");
+
+	m_arg  = in.getFactor(this);
+
+	if (!in.next(XMLParser::FOOTER, name)) throw logic_error("bad format");
+}
+
+Binary::Binary(XMLParser& in, Node* parent, const string& name) : Node(in, parent, name)
+{
+	if (in.hasAttributes()) throw logic_error("bad format");
+
+	m_first  = in.getFactor(this);
+	m_second = in.getFactor(this);
+
+	if (!in.next(XMLParser::FOOTER, name)) throw logic_error("bad format");
+}
+
+Variable::Variable(XMLParser& in, Node* parent) : Node(in, parent, name)
+{
+	if (!in.getState(XMLParser::ATOM, name)) throw logic_error("bad format");
+
+	string value;
+	if (in.getAttribute("name", value)) {
+		m_name = value[0];
+	}
+	else
+		throw logic_error("bad format");
+
+	if (in.hasAttributes()) throw logic_error("bad format");
+}
+
+Constant::Constant(XMLParser& in, Node* parent) : Node(in, parent, name)
+{
+	if (!in.getState(XMLParser::ATOM, name)) throw logic_error("bad format");
+
+	string value;
+	if (in.getAttribute("name", value)) {
+		m_name = value[0];
+
+		if (constants.find(m_name) == constants.end()) throw logic_error("bad format");
+	}
+	else
+		throw logic_error("bad format");
+
+	if (in.hasAttributes()) throw logic_error("bad format");
+}
+
+Number::Number(XMLParser& in, Node* parent) : Node(in, parent, name), m_imag_pos(-1)
+{
+	if (!in.getState(XMLParser::ATOM, name)) throw logic_error("bad format");
+
+	string real = "0", imag = "0";
+	in.getAttribute("real", real);
+	in.getAttribute("imag", imag);
+
+	m_value = Complex(stod(real), stod(imag));
+	m_isInteger = isInteger(real) && isInteger(imag);
+
+	if (in.hasAttributes()) throw logic_error("bad format");
+}
+
+Input::Input(XMLParser& in, Node* parent) : Node(in, parent, name), m_eqn(in.getEqn())
+{
+	if (!in.getState(XMLParser::ATOM, name)) throw logic_error("bad format");
+
+	string value;
+	if (in.getAttribute("current", value)) {
+		if (value.compare("true") && value.compare("false")) throw logic_error("bad format");
+		m_current = (value.compare("true") == 0);
+	}
+	if (in.getAttribute("text", value)) {
+		m_typed = value;
+	}
+	if (in.hasAttributes()) throw logic_error("bad format");
+}
+
+Term::Term(XMLParser& in, Node* parent) : Node(in, parent, name)
+{
+	if (!in.getState(XMLParser::HEADER, name)) throw logic_error("bad format");
+	if (in.hasAttributes()) throw logic_error("bad format");
+	
+	while (Node* factor = in.getFactor(this)) { 
+		factors.push_back(factor);
+	}
+	if (!in.getState(XMLParser::FOOTER, name)) throw logic_error("bad format");	
+}
+
+Expression::Expression(XMLParser& in, Node* parent) : Node(in, parent, name)
+{
+	if (!in.getState(XMLParser::HEADER, name)) throw logic_error("bad format");
+	if (in.hasAttributes()) throw logic_error("bad format");
+	
+	while (in.next(XMLParser::HEADER, Term::name)) { 
+		terms.push_back(new Term(in, this));
+	}
+	if (!in.getState(XMLParser::FOOTER, name)) throw logic_error("bad format");	
 }
 
 Input::Input(Parser& p, Node* parent) : 

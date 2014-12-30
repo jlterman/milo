@@ -4,6 +4,7 @@
 #include <map>
 #include <limits>
 #include <typeinfo>
+#include <regex>
 
 #include "milo.h"
 #include "milo_key.h"
@@ -185,8 +186,6 @@ Complex Power::getNodeValue() const
 	return pow(a, b);
 }
 
-Function::func_map Function::functions;
-
 Complex Function::sinZ(Complex z)
 {
 	return sin(z);
@@ -213,14 +212,13 @@ Complex Function::expZ(Complex z) {
 	return exp(z);
 }
 
-void Function::init_functions()
-{
-	functions.emplace("sin", &sinZ);
-	functions.emplace("cos", &cosZ);
-	functions.emplace("tan", &tanZ);
-	functions.emplace("log", &logZ);
-	functions.emplace("exp", &expZ);
-}
+const Function::func_map Function::functions = {
+	{ "sin", &sinZ },
+	{ "cos", &cosZ },
+	{ "tan", &tanZ },
+	{ "log", &logZ },
+	{ "exp", &expZ }
+};
 
 void Function::calcSize() 
 {
@@ -247,14 +245,11 @@ Complex Function::getNodeValue() const
 	return m_func(arg);
 }
 
-Constant::const_map Constant::constants;
-
-void Constant::init_constants()
-{
-	constants.emplace('e', Complex(exp(1.0), 0));
-	constants.emplace('P', Complex(4*atan(1.0), 0));
-	constants.emplace('i', Complex(0, 1));
-}
+const Constant::const_map Constant::constants = {
+	{ 'e', Complex(exp(1.0), 0) },
+	{ 'P', Complex(4*atan(1.0), 0) },
+	{ 'i', Complex(0, 1) },
+};
 
 void Constant::calcSize() 
 {
@@ -702,9 +697,7 @@ bool Equation::handleChar(int ch)
 
 				if (!in->m_typed.empty()) in_pos = disableCurrentInput();
 				Expression* upper = new Expression(in_pos.m_pTerm);
-				in_pos.m_pTerm->setParent(upper);
 				Expression* lower = new Expression(new Input(*this, string(), true));
-				lower->setParent();
 				
 				Divide* d = new Divide(upper, lower, nullptr);
 				Term* divide_term = new Term(d, nullptr, fNeg);
@@ -724,8 +717,6 @@ bool Equation::handleChar(int ch)
 				a = new Expression(a_factor);
 
 				Expression* b = new Expression(new Input(*this, string(), true));
-				b->setParent();
-				
 				Power* p = new Power(a, b, in->getParent());
 				replace(in_pos, p, false);
 				break;
@@ -843,6 +834,19 @@ void Equation::setSelect(Node* start, Node* end)
 		m_selectEnd = end;
 		start->setSelect(Node::Select::START);
 		end->setSelect(Node::Select::END);
+	}
+}
+
+void Equation::setSelectFromNode(Node* node)
+{
+	switch (node->getSelect()) {
+	    case Node::Select::START: setSelectStart(node); break;
+	    case Node::Select::END  : setSelectEnd(node);   break;
+	    case Node::Select::ALL  : setSelectStart(node);
+                     		      setSelectEnd(node);
+						          break;
+	    case Node::Select::NONE :
+	                    default : break;
 	}
 }
 

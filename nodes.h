@@ -13,6 +13,7 @@ public:
     Input(Parser& p, Node* parent = nullptr);
     Input(Equation& eqn, std::string txt = std::string(), bool current = false, Node* parent = nullptr,
 		  bool neg = false, Node::Select s = Node::Select::NONE);
+	Input(XMLParser& in, Node* parent);
 	~Input() {}
 
 	std::string toString() const;
@@ -23,7 +24,8 @@ public:
 	Complex getNodeValue() const;
 
 	static Node* parse(Parser& p, Node* parent = nullptr);
-	static Node* xml_in(XMLParser& in, Node* parent);
+
+	static const std::string name;
 
 	friend class Equation;
 private:
@@ -44,17 +46,17 @@ class Binary : public Node
 public:
 	Binary(char op, Node* one, Node* two, Node* parent, bool neg, Node::Select s) : 
 	    Node(parent, neg, s), m_op(op), m_first(one), m_second(two) {}
-
+	Binary(XMLParser& in, Node* parent, const std::string& name);
 	virtual ~Binary() { delete m_first; delete m_second; }
 
 	std::string toString() const { return m_first->toString() + m_op + m_second->toString(); }
 	bool isLeaf() const { return false; }
 	Node* findNode(int x, int y);
 	int numFactors() { return m_first->numFactors() + m_second->numFactors(); }
+	virtual const std::string& getName() const=0;
 
 	static Node* parse(Parser& p, Node* one, Node* parent);
-	static Node* xml_in(XMLParser& in, char op, const std::string& name, Node* parent);
-	void xml_out(const std::string& tag, XML& xml) const;
+	void xml_out(XML& xml) const;
 
 protected:
 	Node* m_first;  // Binary own this tree
@@ -77,13 +79,16 @@ public:
 	{ 
 		one->setParent(this); two->setParent(this); 
 	}
+    Divide(XMLParser& in, Node* parent) : Binary(in, parent, name) {}
 	~Divide() {}
 
-	void xml_out(XML& xml) const { Binary::xml_out("divide", xml); }
 	void calcSize();
 	void calcOrig(int x, int y);
 	void asciiArt(Draw& draw) const;
 	Complex getNodeValue() const;
+	const std::string& getName() const { return name; }
+
+	static const std::string name;
 };
 
 class Power : public Binary
@@ -94,13 +99,16 @@ public:
 	{ 
 		one->setParent(this); two->setParent(this);
 	}
+    Power(XMLParser& in, Node* parent) : Binary(in, parent, name) {}
 	~Power() {}
 
-	void xml_out(XML& xml) const { Binary::xml_out("power", xml); }
 	void calcSize();
 	void calcOrig(int x, int y);
 	void asciiArt(Draw& draw) const;
 	Complex getNodeValue() const;
+	const std::string& getName() const { return name; }
+
+	static const std::string name;
 };
 
 class Function : public Node
@@ -110,7 +118,6 @@ public:
 	using func_map = std::map<std::string, func_ptr>;
 
 	static Node* parse(Parser& p, Node* parent);
-	static Node* xml_in(XMLParser& in, Node* parent);
 
 	std::string toString() const { return m_name + m_arg->toString(); }
 	void xml_out(XML& xml) const;
@@ -123,6 +130,8 @@ public:
 	Node* findNode(int x, int y);
 	int numFactors() { return m_arg->numFactors() + 1; }
 
+	static const std::string name;
+
 	Function(const std::string& name, func_ptr fp, Node* node, 
 			 Node* parent, bool neg = false, Node::Select s = Node::Select::NONE) : 
     	Node(parent, neg, s), m_name(name), m_func(fp), m_arg(node) 
@@ -130,7 +139,7 @@ public:
 		m_arg->setParent(this); 
 	}
 
-	Function()=delete;
+	Function(XMLParser& in, Node* parent);
 	~Function() { delete m_arg; }
 
 private:
@@ -142,9 +151,8 @@ private:
 	std::string m_name;
 	func_ptr m_func;
 
-	static func_map functions;
+	static const func_map functions;
 
-	static void init_functions();
 	static Complex sinZ(Complex z);
 	static Complex cosZ(Complex z);
 	static Complex tanZ(Complex z);
@@ -158,6 +166,7 @@ public:
 	Constant(Parser& p, Node* parent);
     Constant(char name, Complex value, Node* parent, bool neg = false, Node::Select s = Node::Select::NONE) : 
 	    Node(parent, neg, s), m_name(name), m_value(value) {}
+	Constant(XMLParser& in, Node* parent);
 	~Constant() {}
 
 	using const_map = std::map<char, Complex>;
@@ -167,17 +176,16 @@ public:
 	void calcSize();
 	void calcOrig(int x, int y);
 	void asciiArt(Draw& draw) const;
-	Complex getNodeValue() const { return constants[m_name]; }
+	Complex getNodeValue() const { return constants.at(m_name); }
+
+	static const std::string name;
 
 	static Node* parse(Parser& p, Node* parent);
-	static Node* xml_in(XMLParser& in, Node* parent);
 
 private:
 	char m_name;
 	Complex m_value;
-	static const_map constants;
-
-	static void init_constants();
+	static const const_map constants;
 };
 
 class Variable : public Node
@@ -185,7 +193,11 @@ class Variable : public Node
 public:
 	Variable(Parser& p, Node* parent);
     Variable(char name, Node* parent, bool neg = false, Node::Select s = Node::Select::NONE) : 
-	Node(parent, neg, s), m_name(name) { values.emplace(name, Complex(0, 0)); }
+	    Node(parent, neg, s), m_name(name)
+    { 
+		values.emplace(name, Complex(0, 0)); 
+	}
+	Variable(XMLParser& in, Node* parent);
 	~Variable() {}
 
 	using var_map = std::map<char, Complex>;
@@ -197,8 +209,9 @@ public:
 	void asciiArt(Draw& draw) const;
 	Complex getNodeValue() const { return values[m_name]; }
 
+	static const std::string name;
+
 	static Node* parse(Parser& p, Node* parent);
-	static Node* xml_in(XMLParser& in, Node* parent);
 	static void setValue(char name, Complex value);
 
 private:
@@ -215,6 +228,7 @@ public:
 		   bool neg = false, Node::Select s = Node::Select::NONE) :
 	    Node(parent, neg, s), m_value(Complex(stod(real), stod(imaginary))), m_imag_pos(-1),
 		m_isInteger(isInteger(real) && isInteger(imaginary)) {}
+	Number(XMLParser& in, Node* parent);
 	~Number() {}
 
 	double getReal(Parser& p);
@@ -228,8 +242,9 @@ public:
 	void asciiArt(Draw& draw) const;
 	Complex getNodeValue() const { return m_value; }
 
+	static const std::string name;
+
 	static Node* parse(Parser& p, Node* parent);
-	static Node* xml_in(XMLParser& in, Node* parent);
 
 private:
 	std::string getInteger(Parser& p);
@@ -243,14 +258,16 @@ class Term : public Node
 {
 public:
     Term(Parser& p, Expression* parent = nullptr) : Node((Node*) parent) { while(add(p)); }
-	Term(XMLParser& in, Expression* parent = nullptr);
+	Term(XMLParser& in, Node* parent = nullptr);
     Term(NodeVector f, Expression* parent) : Node((Node*) parent) { factors.swap(f); }
     Term(Node* node, Expression* parent = nullptr, bool fNeg = false) : 
-	    Node((Node*) parent, fNeg), factors(1, node) {}
+	    Node((Node*) parent, fNeg), factors(1, node) 
+	{
+		node->setParent(this);
+	}
 	~Term() { freeVector(factors); }
 	
 	static Node* parse(Parser& p, Node* parent = nullptr);
-	static Term* xml_in(XMLParser& in, Expression* parent);
 
 	std::string toString() const;
 	void xml_out(XML& xml) const;
@@ -263,6 +280,8 @@ public:
 	Complex getNodeValue() const;
 	Node* findNode(int x, int y);
 	int numFactors();
+
+	static const std::string name;
 
 	int getFactorIndex(Node* node) { return distance(factors.cbegin(), find(factors, node)); }
 	void setParent() { for ( auto f : factors ) f->setParent(this); }
@@ -279,7 +298,6 @@ private:
 	NodeVector factors; // Term owns this tree
 
 	bool add(Parser& p);
-	bool add(XMLParser& in);
 };
 
 class Expression : public Node
@@ -287,8 +305,13 @@ class Expression : public Node
 public:
 	Expression(Parser& p, Node* parent = nullptr) : Node(parent) { while(add(p)); }
 	Expression(XMLParser& in, Node* parent = nullptr);
-    Expression(Term* term, Node* parent = nullptr) : Node(parent), terms(1, term) {}
-    Expression(Node* factor, Node* parent = nullptr) : Node(parent), terms(1, new Term(factor)) { 
+    Expression(Term* term, Node* parent = nullptr) : Node(parent), terms(1, term)
+	{ 
+		term->setParent(this);
+	}
+    Expression(Node* factor, Node* parent = nullptr) : 
+	    Node(parent), terms(1, new Term(factor, this))
+	{ 
 		factor->setParent(terms[0]);
 	}
 	~Expression() { freeVector(terms); }
@@ -303,13 +326,14 @@ public:
 	Node* findNode(int x, int y);
 	int numFactors();
 
+	static const std::string name;
+
 	int getTermIndex(Term* term) { return distance(terms.cbegin(), find(terms, term)); }
 	void setParent() { for ( auto t : terms ) t->setParent(this); }
 
 	static Term* getTerm(Equation& eqn, std::string text, Expression* parent = nullptr);
 	static Term* getTerm(Parser& p, Expression* parent);
 	static Node* parse(Parser& p, Node* parent);
-	static Node* xml_in(XMLParser& in, Node* parent);
 
 	friend class Equation;
 	friend class FactorIterator;
@@ -325,5 +349,4 @@ private:
 	TermVector terms;	// Expression owns this tree
 
 	bool add(Parser& p);
-	bool add(XMLParser& in);
 };

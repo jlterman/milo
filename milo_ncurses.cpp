@@ -117,8 +117,6 @@ int main(int argc, char* argv[])
 	LOG_TRACE_CLEAR();
 	LOG_TRACE_MSG("Starting milo_ncurses...");
 
-	DrawCurses& draw = DrawCurses::getInstance();
-	EqnUndoList eqns;
 	Equation* eqn;
 	if (argc > 1) {
 		ifstream in(argv[1]);
@@ -126,6 +124,9 @@ int main(int argc, char* argv[])
 	}
 	else
 		eqn = new Equation("#");
+
+	DrawCurses& draw = DrawCurses::getInstance();
+	EqnUndoList eqns;
 	eqns.save(eqn);
 
 	bool fRunning = true;

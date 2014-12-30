@@ -93,6 +93,8 @@ public:
 
     Node(Node* parent = nullptr, bool fNeg = false, Select s = NONE ) : 
 	    m_parent(parent), m_sign(!fNeg), m_select(s) {}
+	Node(XMLParser& in, Node* parent, const std::string& name);
+
 	virtual ~Node() {}
 
 	virtual void xml_out(XML& xml) const=0;
@@ -105,7 +107,7 @@ public:
 	virtual bool isFactor() const { return true; }
 	virtual Complex getNodeValue() const=0;
 	virtual Node* findNode(int x, int y);
-	virtual int numFactors() { return 1; }
+	virtual int numFactors() const { return 1; }
 
 	Node* first();
 	Node* last();
@@ -275,6 +277,7 @@ public:
 	void setSelectEnd(Node* end)   { m_selectEnd = end; }
 	void clearSelect();
 	void setSelect(Node* start, Node* end = nullptr);
+	void setSelectFromNode(Node* node);
 	Node* findNode(Draw& draw, int x, int y);
 
 	NodeIterator begin() { return NodeIterator(m_root->first(), *this); }
@@ -308,8 +311,6 @@ private:
 	FactorIterator forward_erase(FactorIterator it);
 	static void replace(FactorIterator it, Node* node, bool free = true);
 	static void replace(FactorIterator it, Term* term, bool free = true);
-
-	static Node* xml_in(XMLParser& in);
 };
 
 class EqnUndoList
