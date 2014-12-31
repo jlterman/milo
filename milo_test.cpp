@@ -4,12 +4,12 @@
 
 using namespace std;
 
-class DrawString : public Draw
+class AsciiGraphics : public Graphics
 {
 public:
-	DrawString(ostream& os) : Draw(), m_os(os) {}
+	AsciiGraphics(ostream& os) : Graphics(), m_os(os) {}
 
-	~DrawString() { }
+	~AsciiGraphics() { }
 
 	void parenthesis(int x_size, int y_size, int x0, int y0);
 	void horiz_line(int x_size, int x0, int y0) { for (int i = 0; i < x_size; ++i) at(x0 + i, y0, '-'); }
@@ -19,7 +19,7 @@ public:
 	void out();
 
 	virtual void set(int x, int y, int x0 = 0, int y0 = 0) { 
-		Draw::set(x, y, x0, y0);
+		Graphics::set(x, y, x0, y0);
 		for (int i = 0; i < y; ++i) {
 			m_field.emplace_back(x, ' ');
 			m_colors.emplace_back(x, Color::BLACK);
@@ -31,12 +31,12 @@ private:
 	ostream& m_os;
 };
 
-void DrawString::at(int x, int y, const string& s, Color color)
+void AsciiGraphics::at(int x, int y, const string& s, Color color)
 {
 	for (int n = 0; n < s.length(); ++n) { m_field[y][x + n] = s[n]; m_colors[y][x + n] = color; }
 }
 
-void DrawString::out()
+void AsciiGraphics::out()
 { 
 	for (int i = 0; i < m_ySize; ++i ) {
 		for (int j = 0; j < m_xSize; ++j) {
@@ -48,7 +48,7 @@ void DrawString::out()
 	}
  }
 
-void DrawString::parenthesis(int x_size, int y_size, int x0, int y0)
+void AsciiGraphics::parenthesis(int x_size, int y_size, int x0, int y0)
 {
 	if (y_size == 1) {
 		at(x0, y0, '(');
@@ -69,7 +69,7 @@ void DrawString::parenthesis(int x_size, int y_size, int x0, int y0)
 
 int main(int argc, char* argv[])
 {
-	DrawString gc(cout);
+	AsciiGraphics gc(cout);
 
 	if (string(argv[1]).rfind(".xml") != string::npos) {
 		ifstream in(argv[1]);

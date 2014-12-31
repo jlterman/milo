@@ -13,7 +13,7 @@
 
 using Complex = std::complex<double>;
 
-class Draw;
+class Graphics;
 class XML;
 class XMLParser;
 class Parser;
@@ -101,7 +101,7 @@ public:
 	virtual std::string toString() const=0;
 	virtual void calcSize()=0;
 	virtual void calcOrig(int x, int y)=0;
-	virtual void draw(Draw& draw) const=0;
+	virtual void draw(Graphics& gc) const=0;
 	virtual bool drawParenthesis() const { return false; }
 	virtual bool isLeaf() const { return true; }
 	virtual bool isFactor() const { return true; }
@@ -152,11 +152,11 @@ private:
 	Select m_select;
 };
 
-class Draw
+class Graphics
 {
 public:
-    Draw() {}
-	virtual ~Draw() {}
+    Graphics() {}
+	virtual ~Graphics() {}
 
 	enum Color { BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE };
 
@@ -266,7 +266,7 @@ public:
 	std::string toString() const { return m_root->toString(); }
 	void xml_out(std::ostream& os) const;
 	void xml_out(std::string& str) const;
-	void draw(Draw& draw);
+	void draw(Graphics& gc);
 
 	Equation* clone();
 	bool blink() { return m_input_index >= 0; }
@@ -280,7 +280,7 @@ public:
 	void clearSelect();
 	void setSelect(Node* start, Node* end = nullptr);
 	void setSelectFromNode(Node* node);
-	Node* findNode(Draw& draw, int x, int y);
+	Node* findNode(Graphics& gc, int x, int y);
 
 	NodeIterator begin() { return NodeIterator(m_root->first(), *this); }
 	NodeIterator end()   { return NodeIterator(nullptr, *this); }
@@ -302,7 +302,7 @@ private:
 	}
 	void nextInput();
 	FactorIterator disableCurrentInput();
-	void setSelect(Draw& draw);
+	void setSelect(Graphics& gc);
 	void factor(std::string text, NodeVector& factors, Node* parent);
 	void xml_out(XML& xml) const;
 	void eraseSelection(Node* node);

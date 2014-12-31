@@ -5,10 +5,10 @@
 
 using namespace std;
 
-class DrawCurses : public Draw
+class CursesGraphics : public Graphics
 {
 public:
-	DrawCurses() { 
+	CursesGraphics() { 
 		if (!init) {
 			initscr(); raw(); noecho(); //curs_set(0);
 			keypad(stdscr, TRUE);
@@ -18,13 +18,13 @@ public:
 				start_color();/* Start color */
 				init_color(COLOR_WHITE, 1000, 1000, 1000);
 				assume_default_colors(COLOR_BLACK, COLOR_WHITE);
-				for (int i = Draw::Color::RED; i <= Draw::Color::WHITE; ++i)
+				for (int i = Graphics::Color::RED; i <= Graphics::Color::WHITE; ++i)
 					init_pair(i, COLOR_BLACK + i, COLOR_WHITE);
 			}
 			init = true;
 		}
 	}
-	~DrawCurses() { endwin(); }
+	~CursesGraphics() { endwin(); }
 
 	void at(int x, int y, int c, Color color = BLACK) {
 		if (c == 'P') c = ACS_PI;
@@ -49,7 +49,7 @@ public:
 	void set(int x, int y, int x0 = 0, int y0 = 0) { 
 		int row, col;
 		getmaxyx(stdscr, row, col);
-		Draw::set(x, y, (col - x)/2, (row - y)/2);
+		Graphics::set(x, y, (col - x)/2, (row - y)/2);
 		clear();
 	}
 
@@ -60,7 +60,7 @@ public:
 	void parenthesis(int x_size, int y_size, int x0, int y0);
 
 	void setSelect(int x, int y, int x0, int y0) { 
-		Draw::setSelect(x, y, x0, y0);
+		Graphics::setSelect(x, y, x0, y0);
 		for (int j = 0; j < y; ++j) mvchgat(m_yOrig + y0 + j, m_xOrig + x0, x, A_REVERSE, 0, NULL);
 	}
 
@@ -78,8 +78,8 @@ public:
 		return ch;
 	}
 
-	static DrawCurses& getInstance() {
-		static DrawCurses draw;
+	static CursesGraphics& getInstance() {
+		static CursesGraphics draw;
 		
 		return draw;
 	}
@@ -89,10 +89,10 @@ private:
 	static bool m_has_colors;
 };
 
-bool DrawCurses::init = false;
-bool DrawCurses::m_has_colors = false;
+bool CursesGraphics::init = false;
+bool CursesGraphics::m_has_colors = false;
 
-void DrawCurses::parenthesis(int x_size, int y_size, int x0, int y0)
+void CursesGraphics::parenthesis(int x_size, int y_size, int x0, int y0)
 {
 	if (y_size == 1) {
 		at(x0, y0, '[');
@@ -125,7 +125,7 @@ int main(int argc, char* argv[])
 	else
 		eqn = new Equation("#");
 
-	DrawCurses& gc = DrawCurses::getInstance();
+	CursesGraphics& gc = CursesGraphics::getInstance();
 	EqnUndoList eqns;
 	eqns.save(eqn);
 

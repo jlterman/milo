@@ -12,22 +12,22 @@
 
 using namespace std;
 
-void Equation::draw(Draw& draw)
+void Equation::draw(Graphics& gc)
 {
 	m_root->calcSize();
 	m_root->calcOrig(0, 0);
-	draw.set(m_root);
-	setSelect(draw);
-	m_root->draw(draw);
+	gc.set(m_root);
+	setSelect(gc);
+	m_root->draw(gc);
 }
 
-void Equation::setSelect(Draw& draw)
+void Equation::setSelect(Graphics& gc)
 {
 	if (m_selectStart == nullptr && m_selectEnd == nullptr) {
-		draw.setSelect(0, 0, 0, 0);
+		gc.setSelect(0, 0, 0, 0);
 	}
 	else if (m_selectStart != nullptr && m_selectStart == m_selectEnd) {
-		draw.setSelect(m_selectStart);
+		gc.setSelect(m_selectStart);
 	}
 	else if (m_selectStart != nullptr) {
 		auto it = FactorIterator(m_selectStart);
@@ -39,7 +39,7 @@ void Equation::setSelect(Draw& draw)
 		}
 		while (it++ != end);
 
-		draw.setSelect(x, y, x0, y0);
+		gc.setSelect(x, y, x0, y0);
 	}
 }
 
@@ -144,11 +144,11 @@ void Divide::calcOrig(int x, int y)
 }
 
 
-void Divide::draw(Draw& draw) const
+void Divide::draw(Graphics& gc) const
 {
-	draw.horiz_line(getSizeX(), getOrigX(), getOrigY() + getBaseLine());
-	m_first->draw(draw);
-	m_second->draw(draw);
+	gc.horiz_line(getSizeX(), getOrigX(), getOrigY() + getBaseLine());
+	m_first->draw(gc);
+	m_second->draw(gc);
 }
 
 Complex Divide::getNodeValue() const
@@ -174,10 +174,10 @@ void Power::calcOrig(int x, int y)
 	m_second->calcOrig(x + m_first->getSizeX(), y);
 }
 
-void Power::draw(Draw& draw) const
+void Power::draw(Graphics& gc) const
 {
-	m_first->draw(draw);
-	m_second->draw(draw);
+	m_first->draw(gc);
+	m_second->draw(gc);
 }
 
 Complex Power::getNodeValue() const
@@ -234,10 +234,10 @@ void Function::calcOrig(int x, int y)
 	m_arg->calcOrig(x + m_name.length(), y);
 }
 
-void Function::draw(Draw & draw) const
+void Function::draw(Graphics& gc) const
 {
-	draw.at(getOrigX(), getOrigY() + getBaseLine(), m_name, Draw::Color::GREEN);
-	m_arg->draw(draw);
+	gc.at(getOrigX(), getOrigY() + getBaseLine(), m_name, Graphics::Color::GREEN);
+	m_arg->draw(gc);
 }
 
 Complex Function::getNodeValue() const
@@ -263,9 +263,9 @@ void Constant::calcOrig(int x, int y)
 	setOrig(x, y);
 }
 
-void Constant::draw(Draw& draw) const
+void Constant::draw(Graphics& gc) const
 {
-	draw.at(getOrigX(), getOrigY(), m_name);
+	gc.at(getOrigX(), getOrigY(), m_name);
 }
 
 Variable::var_map Variable::values;
@@ -281,9 +281,9 @@ void Variable::calcOrig(int x, int y)
 	setOrig(x, y);
 }
 
-void Variable::draw(Draw& draw) const
+void Variable::draw(Graphics& gc) const
 {
-	draw.at(getOrigX(), getOrigY() + getBaseLine(), m_name);
+	gc.at(getOrigX(), getOrigY() + getBaseLine(), m_name);
 }
 
 void Variable::setValue(char name, Complex value)
@@ -343,12 +343,12 @@ void Number::calcOrig(int x, int y)
 	setOrig(x, y);
 }
 
-void Number::draw(Draw& draw) const
+void Number::draw(Graphics& gc) const
 {
-	draw.at(getOrigX(), getOrigY(), toString());
+	gc.at(getOrigX(), getOrigY(), toString());
 
 	if (m_imag_pos != string::npos) 
-		draw.at(getOrigX() + m_imag_pos, getOrigY(), 'i', Draw::Color::RED);
+		gc.at(getOrigX() + m_imag_pos, getOrigY(), 'i', Graphics::Color::RED);
 }
 
 void Term::calcSize() 
@@ -373,9 +373,9 @@ void Term::calcOrig(int x, int y)
 	}
 }
 
-void Term::draw(Draw& draw) const
+void Term::draw(Graphics& gc) const
 {
-	for ( auto n : factors ) n->draw(draw);
+	for ( auto n : factors ) n->draw(gc);
 }
 
 string Term::toString() const
@@ -439,14 +439,14 @@ void Expression::calcOrig(int x, int y)
 	}
 }
 
-void Expression::draw(Draw& draw) const
+void Expression::draw(Graphics& gc) const
 {
-	if (getParent() && getParent()->drawParenthesis()) draw.parenthesis(this);
+	if (getParent() && getParent()->drawParenthesis()) gc.parenthesis(this);
 	for ( auto n : terms ) {
-		if (n != terms[0] || !n->getSign()) draw.at(n->getOrigX() - 1, 
+		if (n != terms[0] || !n->getSign()) gc.at(n->getOrigX() - 1, 
 													n->getOrigY() + n->getBaseLine(),
 													n->getSign() ? '+' : '-');
-		n->draw(draw); 
+		n->draw(gc); 
 	}
 }
 
@@ -505,9 +505,9 @@ void Input::calcOrig(int x, int y)
 	setOrig(x, y);
 }
 
-void Input::draw(Draw& draw) const
+void Input::draw(Graphics& gc) const
 {
-	draw.at(getOrigX(), getOrigY(), m_typed + "?");
+	gc.at(getOrigX(), getOrigY(), m_typed + "?");
 }
 
 string Input::toString() const
@@ -849,9 +849,9 @@ void Equation::setSelectFromNode(Node* node)
 	}
 }
 
-Node* Equation::findNode(Draw& draw, int x, int y)
+Node* Equation::findNode(Graphics& gc, int x, int y)
 {
-	draw.relativeOrig(x, y);
+	gc.relativeOrig(x, y);
 	Node* node = m_root->findNode(x, y);
 	if (node != nullptr && typeid(node) == typeid(Input)) {
 		delete node;
