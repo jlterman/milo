@@ -92,7 +92,7 @@ public:
 	static const std::vector<std::string> select_tags;
 
     Node(Node* parent = nullptr, bool fNeg = false, Select s = NONE ) : 
-	    m_parent(parent), m_sign(!fNeg), m_select(s) {}
+	    m_parent(parent), m_sign(!fNeg), m_select(s), m_nth(1) {}
 	Node(XMLParser& in, Node* parent, const std::string& name);
 
 	virtual ~Node() {}
@@ -101,7 +101,7 @@ public:
 	virtual std::string toString() const=0;
 	virtual void calcSize()=0;
 	virtual void calcOrig(int x, int y)=0;
-	virtual void asciiArt(Draw& draw) const=0;
+	virtual void draw(Draw& draw) const=0;
 	virtual bool drawParenthesis() const { return false; }
 	virtual bool isLeaf() const { return true; }
 	virtual bool isFactor() const { return true; }
@@ -113,6 +113,7 @@ public:
 	Node* last();
 	Node* getNextLeft();
 	Node* getNextRight();
+	int getNth() const { return m_nth; }
 	void negative() { m_sign = !m_sign; }
 	bool getSign() const { return m_sign; }
 	int getSignValue() const { return m_sign ? 1 : -1; }
@@ -145,6 +146,7 @@ private:
 	int m_xOrig;
 	int m_yOrig;
 	bool m_sign;
+	int m_nth;
 	Node* m_parent;
 	int m_base;
 	Select m_select;
@@ -264,7 +266,7 @@ public:
 	std::string toString() const { return m_root->toString(); }
 	void xml_out(std::ostream& os) const;
 	void xml_out(std::string& str) const;
-	void asciiArt(Draw& draw);
+	void draw(Draw& draw);
 
 	Equation* clone();
 	bool blink() { return m_input_index >= 0; }

@@ -107,6 +107,7 @@ void XML::header_start(const Node* node, const string& tag)
 	m_os << "<" << tag;
 	if (!node->getSign()) m_os << " negative=\"true\"";
 	if (node->getSelect()) m_os << " select=\"" << Node::select_tags[node->getSelect()] << "\"";
+	if (node->getNth() != 1) m_os << " nth=\"" << node->getNth() << "\"";
 }
 
 void XML::header(const Node* node, const string& tag, bool atomic)
@@ -272,7 +273,7 @@ Node* XMLParser::getFactor(Node* parent)
 }
 
 Node::Node(XMLParser& in, Node* parent, const string& name) : 
-	m_parent(parent), m_sign(true), m_select(NONE)
+	m_parent(parent), m_sign(true), m_select(NONE), m_nth(1)
 {
 	if (!in.getState(XMLParser::HEADER, name)) 
 		throw logic_error("bad header: expected: " + name + ", got: " + in.getTag());
@@ -286,6 +287,10 @@ Node::Node(XMLParser& in, Node* parent, const string& name) :
 		auto pos = find(select_tags, value);
 		if (pos == select_tags.end()) throw logic_error("bad format");
 		m_select = (Select) distance(select_tags.begin(), pos);
+	}
+	if (in.getAttribute("nth", value)) {
+		if (!isInteger(value)) throw logic_error("bad format");
+		m_nth = atoi(value.c_str());
 	}
 	in.getEqn().setSelect(this);
 }

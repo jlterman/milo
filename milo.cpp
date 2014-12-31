@@ -12,13 +12,13 @@
 
 using namespace std;
 
-void Equation::asciiArt(Draw& draw)
+void Equation::draw(Draw& draw)
 {
 	m_root->calcSize();
 	m_root->calcOrig(0, 0);
 	draw.set(m_root);
 	setSelect(draw);
-	m_root->asciiArt(draw);
+	m_root->draw(draw);
 }
 
 void Equation::setSelect(Draw& draw)
@@ -69,9 +69,10 @@ bool isZero(Complex z) {
 
 bool isInteger(const string& s)
 {
-	bool fInteger = true;
-	for ( char c : s ) { fInteger *= isdigit(c); }
-	return fInteger;
+	auto c = s.begin();
+	if (*c == '+' || *c == '-') ++c;
+	while(c != s.end() && isdigit(*c)) { ++c; }
+	return (c == s.end());
 }
 
 const vector<string> Node::select_tags = { "NONE", "START", "END", "ALL" };
@@ -143,11 +144,11 @@ void Divide::calcOrig(int x, int y)
 }
 
 
-void Divide::asciiArt(Draw& draw) const
+void Divide::draw(Draw& draw) const
 {
 	draw.horiz_line(getSizeX(), getOrigX(), getOrigY() + getBaseLine());
-	m_first->asciiArt(draw);
-	m_second->asciiArt(draw);
+	m_first->draw(draw);
+	m_second->draw(draw);
 }
 
 Complex Divide::getNodeValue() const
@@ -173,10 +174,10 @@ void Power::calcOrig(int x, int y)
 	m_second->calcOrig(x + m_first->getSizeX(), y);
 }
 
-void Power::asciiArt(Draw& draw) const
+void Power::draw(Draw& draw) const
 {
-	m_first->asciiArt(draw);
-	m_second->asciiArt(draw);
+	m_first->draw(draw);
+	m_second->draw(draw);
 }
 
 Complex Power::getNodeValue() const
@@ -233,10 +234,10 @@ void Function::calcOrig(int x, int y)
 	m_arg->calcOrig(x + m_name.length(), y);
 }
 
-void Function::asciiArt(Draw & draw) const
+void Function::draw(Draw & draw) const
 {
 	draw.at(getOrigX(), getOrigY() + getBaseLine(), m_name, Draw::Color::GREEN);
-	m_arg->asciiArt(draw);
+	m_arg->draw(draw);
 }
 
 Complex Function::getNodeValue() const
@@ -262,7 +263,7 @@ void Constant::calcOrig(int x, int y)
 	setOrig(x, y);
 }
 
-void Constant::asciiArt(Draw& draw) const
+void Constant::draw(Draw& draw) const
 {
 	draw.at(getOrigX(), getOrigY(), m_name);
 }
@@ -280,9 +281,9 @@ void Variable::calcOrig(int x, int y)
 	setOrig(x, y);
 }
 
-void Variable::asciiArt(Draw& draw) const
+void Variable::draw(Draw& draw) const
 {
-	draw.at(getOrigX(), getOrigY(), m_name);
+	draw.at(getOrigX(), getOrigY() + getBaseLine(), m_name);
 }
 
 void Variable::setValue(char name, Complex value)
@@ -342,7 +343,7 @@ void Number::calcOrig(int x, int y)
 	setOrig(x, y);
 }
 
-void Number::asciiArt(Draw& draw) const
+void Number::draw(Draw& draw) const
 {
 	draw.at(getOrigX(), getOrigY(), toString());
 
@@ -372,9 +373,9 @@ void Term::calcOrig(int x, int y)
 	}
 }
 
-void Term::asciiArt(Draw& draw) const
+void Term::draw(Draw& draw) const
 {
-	for ( auto n : factors ) n->asciiArt(draw);
+	for ( auto n : factors ) n->draw(draw);
 }
 
 string Term::toString() const
@@ -438,14 +439,14 @@ void Expression::calcOrig(int x, int y)
 	}
 }
 
-void Expression::asciiArt(Draw& draw) const
+void Expression::draw(Draw& draw) const
 {
 	if (getParent() && getParent()->drawParenthesis()) draw.parenthesis(this);
 	for ( auto n : terms ) {
 		if (n != terms[0] || !n->getSign()) draw.at(n->getOrigX() - 1, 
 													n->getOrigY() + n->getBaseLine(),
 													n->getSign() ? '+' : '-');
-		n->asciiArt(draw); 
+		n->draw(draw); 
 	}
 }
 
@@ -504,7 +505,7 @@ void Input::calcOrig(int x, int y)
 	setOrig(x, y);
 }
 
-void Input::asciiArt(Draw& draw) const
+void Input::draw(Draw& draw) const
 {
 	draw.at(getOrigX(), getOrigY(), m_typed + "?");
 }

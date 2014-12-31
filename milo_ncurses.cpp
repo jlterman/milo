@@ -125,18 +125,18 @@ int main(int argc, char* argv[])
 	else
 		eqn = new Equation("#");
 
-	DrawCurses& draw = DrawCurses::getInstance();
+	DrawCurses& gc = DrawCurses::getInstance();
 	EqnUndoList eqns;
 	eqns.save(eqn);
 
 	bool fRunning = true;
 	while (fRunning) {
-		eqn->asciiArt(draw);
-		DrawCurses::getInstance().out();
+		eqn->draw(gc);
+		gc.out();
 		int xCursor = 0, yCursor = 0;
 		eqn->getCursorOrig(xCursor, yCursor);
 		move(0,0);
-		int ch = (eqn->blink()) ? draw.getChar(yCursor, xCursor - 1) : getch();
+		int ch = (eqn->blink()) ? gc.getChar(yCursor, xCursor - 1) : getch();
 
 		string mkey;
 		if (ch < 32) mkey = "ctrl-" + string(1, (char) ch+'@');
@@ -180,7 +180,7 @@ int main(int argc, char* argv[])
 						if(event.bstate & BUTTON1_PRESSED) {
 							LOG_TRACE_MSG("mouse click at: " + to_string(event.x) + ", " + 
 												 to_string(event.y));
-							Node* node = eqn->findNode(draw, event.x, event.y);
+							Node* node = eqn->findNode(gc, event.x, event.y);
 							if (node == nullptr) break;
 							eqn->setSelect(node);
 							LOG_TRACE_MSG(string("found node: ") + typeid(node).name() + ": " + 

@@ -20,7 +20,7 @@ public:
 	void xml_out(XML& xml) const;
 	void calcSize();
 	void calcOrig(int x, int y);
-	void asciiArt(Draw& draw) const;
+	void draw(Draw& draw) const;
 	Complex getNodeValue() const;
 
 	static Node* parse(Parser& p, Node* parent = nullptr);
@@ -47,7 +47,7 @@ public:
 	Binary(XMLParser& in, Node* parent, const std::string& name);
 	virtual ~Binary() { delete m_first; delete m_second; }
 
-	std::string toString() const { return m_first->toString() + m_op + m_second->toString(); }
+	std::string toString() const { return m_first->toString() + std::string(1, m_op) + m_second->toString(); }
 	bool isLeaf() const { return false; }
 	Node* findNode(int x, int y);
 	int numFactors() { return m_first->numFactors() + m_second->numFactors(); }
@@ -77,12 +77,12 @@ public:
 	{ 
 		one->setParent(this); two->setParent(this); 
 	}
-    Divide(XMLParser& in, Node* parent) : Binary(in, parent, name) {}
+    Divide(XMLParser& in, Node* parent) : Binary(in, parent, name) { m_op = '/'; }
 	~Divide() {}
 
 	void calcSize();
 	void calcOrig(int x, int y);
-	void asciiArt(Draw& draw) const;
+	void draw(Draw& draw) const;
 	Complex getNodeValue() const;
 	const std::string& getName() const { return name; }
 
@@ -97,12 +97,12 @@ public:
 	{ 
 		one->setParent(this); two->setParent(this);
 	}
-    Power(XMLParser& in, Node* parent) : Binary(in, parent, name) {}
+    Power(XMLParser& in, Node* parent) : Binary(in, parent, name) { m_op = '^'; }
 	~Power() {}
 
 	void calcSize();
 	void calcOrig(int x, int y);
-	void asciiArt(Draw& draw) const;
+	void draw(Draw& draw) const;
 	Complex getNodeValue() const;
 	const std::string& getName() const { return name; }
 
@@ -121,7 +121,7 @@ public:
 	void xml_out(XML& xml) const;
 	void calcSize();
 	void calcOrig(int x, int y);
-	void asciiArt(Draw& draw) const;
+	void draw(Draw& draw) const;
 	bool drawParenthesis() const { return true; }
 	bool isLeaf() const { return false; }
 	Complex getNodeValue() const;
@@ -173,7 +173,7 @@ public:
 	void xml_out(XML& xml) const;
 	void calcSize();
 	void calcOrig(int x, int y);
-	void asciiArt(Draw& draw) const;
+	void draw(Draw& draw) const;
 	Complex getNodeValue() const { return constants.at(m_name); }
 
 	static const std::string name;
@@ -204,7 +204,7 @@ public:
 	void xml_out(XML& xml) const;
 	void calcSize();
 	void calcOrig(int x, int y);
-	void asciiArt(Draw& draw) const;
+	void draw(Draw& draw) const;
 	Complex getNodeValue() const { return values[m_name]; }
 
 	static const std::string name;
@@ -237,7 +237,7 @@ public:
 	void xml_out(XML& xml) const;
 	void calcSize();
 	void calcOrig(int x, int y);
-	void asciiArt(Draw& draw) const;
+	void draw(Draw& draw) const;
 	Complex getNodeValue() const { return m_value; }
 
 	static const std::string name;
@@ -271,7 +271,7 @@ public:
 	void xml_out(XML& xml) const;
 	void calcSize();
 	void calcOrig(int x, int y);
-	void asciiArt(Draw& draw) const;
+	void draw(Draw& draw) const;
 	bool drawParenthesis() const { return true; }
 	bool isLeaf() const { return false; }
 	bool isFactor() const { return false; }
@@ -318,7 +318,7 @@ public:
 	void xml_out(XML& xml) const;
 	void calcSize();
 	void calcOrig(int x, int y);
-	void asciiArt(Draw& draw) const;
+	void draw(Draw& draw) const;
 	bool isLeaf() const { return false; }
 	Complex getNodeValue() const;
 	Node* findNode(int x, int y);

@@ -69,7 +69,18 @@ void DrawString::parenthesis(int x_size, int y_size, int x0, int y0)
 
 int main(int argc, char* argv[])
 {
-	DrawString draw(cout);
+	DrawString gc(cout);
+
+	if (string(argv[1]).rfind(".xml") != string::npos) {
+		ifstream in(argv[1]);
+		Equation eqn(in);
+		cout << eqn.toString() << endl;
+		cout << "------------" << endl;
+		eqn.draw(gc);
+		gc.out();
+		return 0;
+	}
+
 	Equation eqn(argv[1]);
 	cout << "---------" << endl;
 	cout << eqn.toString() << endl;
@@ -78,8 +89,8 @@ int main(int argc, char* argv[])
 	eqn.xml_out(xml);
 	cout << xml;
 	cout << "---------" << endl;
-	eqn.asciiArt(draw);
-	draw.out();
+	eqn.draw(gc);
+	gc.out();
 	cout << "---------" << endl;
 	istringstream in(xml);
 	Equation new_eqn(in);
