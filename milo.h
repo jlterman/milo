@@ -99,8 +99,8 @@ public:
 
 	virtual void xml_out(XML& xml) const=0;
 	virtual std::string toString() const=0;
-	virtual void calcSize()=0;
-	virtual void calcOrig(int x, int y)=0;
+	virtual void calcSize(Graphics& gc)=0;
+	virtual void calcOrig(Graphics& gc, int x, int y)=0;
 	virtual void draw(Graphics& gc) const=0;
 	virtual bool drawParenthesis() const { return false; }
 	virtual bool isLeaf() const { return true; }
@@ -166,6 +166,12 @@ public:
 	virtual void at(int x, int y, const std::string& s, Color color = BLACK)=0;
 	virtual void out()=0;
    
+	virtual int getTextHeight()=0;
+	virtual int getTextLength(const std::string& s)=0;
+	virtual int getCharLength(char c)=0;
+	virtual int getParenthesisWidth(int height = 1)=0;
+	virtual int getDivideLineHeight()=0;
+
 	virtual void set(int x, int y, int x0 = 0, int y0 = 0) { 
 		m_xSize = x; m_ySize = y; m_xOrig = x0, m_yOrig = y0;
 	}

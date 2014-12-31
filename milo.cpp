@@ -14,8 +14,8 @@ using namespace std;
 
 void Equation::draw(Graphics& gc)
 {
-	m_root->calcSize();
-	m_root->calcOrig(0, 0);
+	m_root->calcSize(gc);
+	m_root->calcOrig(gc, 0, 0);
 	gc.set(m_root);
 	setSelect(gc);
 	m_root->draw(gc);
@@ -126,21 +126,21 @@ Node* Node::getNextRight()
 }
 
 
-void Divide::calcSize()
+void Divide::calcSize(Graphics& gc)
 {
-	m_first->calcSize();
-	m_second->calcSize();
-	setSize( max(m_first->getSizeX(), m_second->getSizeX()),
-					 m_first->getSizeY() + 1 + m_second->getSizeY() );
-	setBaseLine(m_first->getSizeY());
+	m_first->calcSize(gc);
+	m_second->calcSize(gc);
+	setSize(max(m_first->getSizeX(), m_second->getSizeX()),
+			m_first->getSizeY() + gc.getDivideLineHeight() + m_second->getSizeY());
+	setBaseLine(m_first->getSizeY() + gc.getDivideLineHeight()/2);
 }
 
-void Divide::calcOrig(int x, int y)
+void Divide::calcOrig(Graphics& gc, int x, int y)
 {
 	setOrig(x, y);
-	m_first->calcOrig(x + (getSizeX() - m_first->getSizeX())/2, y);
-	m_second->calcOrig(x + (getSizeX() - m_second->getSizeX())/2, 
-				 		   y + m_first->getSizeY() + 1);
+	m_first->calcOrig(gc, x + (getSizeX() - m_first->getSizeX())/2, y);
+	m_second->calcOrig(gc, x + (getSizeX() - m_second->getSizeX())/2, 
+					       y + m_first->getSizeY() + gc.getDivideLineHeight());
 }
 
 
@@ -158,20 +158,20 @@ Complex Divide::getNodeValue() const
 	return a / b;
 }
 
-void Power::calcSize()
+void Power::calcSize(Graphics& gc)
 {
-	m_first->calcSize();
-	m_second->calcSize();
+	m_first->calcSize(gc);
+	m_second->calcSize(gc);
 	setSize(m_first->getSizeX() + m_second->getSizeX(),
-				m_first->getSizeY() + m_second->getSizeY());
+			m_first->getSizeY() + m_second->getSizeY() - gc.getTextHeight()/2);
 	setBaseLine(m_second->getSizeY());
 }
 
-void Power::calcOrig(int x, int y)
+void Power::calcOrig(Graphics& gc, int x, int y)
 {
 	setOrig(x, y);
-	m_first->calcOrig(x, y + m_second->getSizeY());
-	m_second->calcOrig(x + m_first->getSizeX(), y);
+	m_first->calcOrig(gc, x, y + m_second->getSizeY());
+	m_second->calcOrig(gc, x + m_first->getSizeX(), y - gc.getTextHeight()/2);
 }
 
 void Power::draw(Graphics& gc) const
@@ -221,17 +221,17 @@ const Function::func_map Function::functions = {
 	{ "exp", &expZ }
 };
 
-void Function::calcSize() 
+void Function::calcSize(Graphics& gc) 
 {
-	m_arg->calcSize();
-	setSize(m_name.length() + m_arg->getSizeX(), m_arg->getSizeY());
+	m_arg->calcSize(gc);
+	setSize(gc.getTextLength(m_name) + m_arg->getSizeX(), m_arg->getSizeY());
 	setBaseLine(m_arg->getSizeY()/2);
 }
 
-void Function::calcOrig(int x, int y)
+void Function::calcOrig(Graphics& gc, int x, int y)
 {
 	setOrig(x, y);
-	m_arg->calcOrig(x + m_name.length(), y);
+	m_arg->calcOrig(gc, x + gc.getTextLength(m_name), y);
 }
 
 void Function::draw(Graphics& gc) const
@@ -252,13 +252,13 @@ const Constant::const_map Constant::constants = {
 	{ 'i', Complex(0, 1) },
 };
 
-void Constant::calcSize() 
+void Constant::calcSize(Graphics& gc) 
 {
-	setSize(1, 1);
+	setSize(gc.getCharLength(m_name), gc.getTextHeight());
 	setBaseLine(0);
 }
 
-void Constant::calcOrig(int x, int y)
+void Constant::calcOrig(Graphics& gc, int x, int y)
 {
 	setOrig(x, y);
 }
@@ -270,13 +270,13 @@ void Constant::draw(Graphics& gc) const
 
 Variable::var_map Variable::values;
 
-void Variable::calcSize() 
+void Variable::calcSize(Graphics& gc) 
 {
-	setSize(1, 1);
+	setSize(gc.getCharLength(m_name), gc.getTextHeight());
 	setBaseLine(0);
 }
 
-void Variable::calcOrig(int x, int y)
+void Variable::calcOrig(Graphics& gc, int x, int y)
 {
 	setOrig(x, y);
 }
@@ -330,15 +330,15 @@ string Number::toString() const
 		return toString(m_value.imag(), false);
 }
 
-void Number::calcSize() 
+void Number::calcSize(Graphics& gc) 
 {
 	string n = toString();
 	m_imag_pos = n.find('i');
-	setSize(n.length(), 1);
+	setSize(gc.getTextLength(n), gc.getTextHeight());
 	setBaseLine(0);
 }
 
-void Number::calcOrig(int x, int y)
+void Number::calcOrig(Graphics& gc, int x, int y)
 {
 	setOrig(x, y);
 }
@@ -351,11 +351,11 @@ void Number::draw(Graphics& gc) const
 		gc.at(getOrigX() + m_imag_pos, getOrigY(), 'i', Graphics::Color::RED);
 }
 
-void Term::calcSize() 
+void Term::calcSize(Graphics& gc) 
 {
 	int x = 0, b = 0, y = 0;
 	for ( auto n : factors ) { 
-		n->calcSize(); 
+		n->calcSize(gc); 
 		x += n->getSizeX();
 		y = max(y, n->getSizeY() - n->getBaseLine());
 		b = max(b, n->getBaseLine());
@@ -364,11 +364,11 @@ void Term::calcSize()
 	setBaseLine(b);
 }
 
-void Term::calcOrig(int x, int y)
+void Term::calcOrig(Graphics& gc, int x, int y)
 {
 	setOrig(x, y);
 	for ( auto n : factors ) {
-		n->calcOrig(x, y + getBaseLine() - n->getBaseLine());
+		n->calcOrig(gc, x, y + getBaseLine() - n->getBaseLine());
 		x += n->getSizeX();
 	}
 }
@@ -412,29 +412,29 @@ Complex Term::getNodeValue() const
 	return value;
 }
 
-void Expression::calcSize() 
+void Expression::calcSize(Graphics& gc) 
 {
 	int x = 0, b = 0, y = 0;
-	if (getParent() && getParent()->drawParenthesis()) x += 1;
 	for ( auto n : terms ) { 
-		if (n != terms[0] || !n->getSign()) x += 1;
-		n->calcSize(); 
+		if (n != terms[0] || !n->getSign()) x += gc.getCharLength('-');
+		n->calcSize(gc); 
 		x += n->getSizeX();
 		y = max(y, n->getSizeY() - n->getBaseLine());
 		b = max(b, n->getBaseLine());
 	}
-	if (getParent() && getParent()->drawParenthesis()) x += 1;
+	if (getParent() && getParent()->drawParenthesis()) x += 2*gc.getParenthesisWidth(y+b);
+
 	setSize(x, y + b);
 	setBaseLine(b);
 }
 
-void Expression::calcOrig(int x, int y)
+void Expression::calcOrig(Graphics& gc, int x, int y)
 {
 	setOrig(x, y);
-	if (getParent() && getParent()->drawParenthesis()) x += 1;
+	if (getParent() && getParent()->drawParenthesis()) x += gc.getParenthesisWidth(getSizeY());
 	for ( auto n : terms ) {
-		if (n != terms[0] || !n->getSign()) x+=1;
-		n->calcOrig(x, y + getBaseLine() - n->getBaseLine());
+		if (n != terms[0] || !n->getSign()) x += gc.getCharLength('-');
+		n->calcOrig(gc, x, y + getBaseLine() - n->getBaseLine());
 		x += n->getSizeX();
 	}
 }
@@ -444,8 +444,8 @@ void Expression::draw(Graphics& gc) const
 	if (getParent() && getParent()->drawParenthesis()) gc.parenthesis(this);
 	for ( auto n : terms ) {
 		if (n != terms[0] || !n->getSign()) gc.at(n->getOrigX() - 1, 
-													n->getOrigY() + n->getBaseLine(),
-													n->getSign() ? '+' : '-');
+												  n->getOrigY() + n->getBaseLine(),
+												  n->getSign() ? '+' : '-');
 		n->draw(gc); 
 	}
 }
@@ -494,13 +494,13 @@ Input::Input(Equation& eqn, std::string txt, bool current, Node* parent, bool ne
 	if (current) eqn.setCurrentInput(m_sn);
 }
 
-void Input::calcSize()
+void Input::calcSize(Graphics& gc)
 {
-	setSize(m_typed.length() + 1, 1);
+	setSize(gc.getTextLength(m_typed) + gc.getCharLength('?'), 1);
 	setBaseLine(0);	
 }
 
-void Input::calcOrig(int x, int y)
+void Input::calcOrig(Graphics& gc, int x, int y)
 {
 	setOrig(x, y);
 }

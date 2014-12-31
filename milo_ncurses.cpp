@@ -26,6 +26,12 @@ public:
 	}
 	~CursesGraphics() { endwin(); }
 
+	int getTextHeight() { return 1; }
+	int getTextLength(const std::string& s) { return s.length(); }
+	int getCharLength(char c) { return 1; }
+	int getParenthesisWidth(int height = 1) { return 1; }
+	int getDivideLineHeight() { return 1; }
+
 	void at(int x, int y, int c, Color color = BLACK) {
 		if (c == 'P') c = ACS_PI;
 		if (m_select.inside(x, y)) c |= A_REVERSE;

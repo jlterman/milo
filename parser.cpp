@@ -292,7 +292,7 @@ Node::Node(XMLParser& in, Node* parent, const string& name) :
 		if (!isInteger(value)) throw logic_error("bad format");
 		m_nth = atoi(value.c_str());
 	}
-	in.getEqn().setSelect(this);
+	in.getEqn().setSelectFromNode(this);
 }
 
 Equation::Equation(istream& is)

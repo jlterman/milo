@@ -11,6 +11,12 @@ public:
 
 	~AsciiGraphics() { }
 
+	int getTextHeight() { return 1; }
+	int getTextLength(const std::string& s) { return s.length(); }
+	int getCharLength(char c) { return 1; }
+	int getParenthesisWidth(int height = 1) { return 1; }
+	int getDivideLineHeight() { return 1; }
+
 	void parenthesis(int x_size, int y_size, int x0, int y0);
 	void horiz_line(int x_size, int x0, int y0) { for (int i = 0; i < x_size; ++i) at(x0 + i, y0, '-'); }
 	void at(int x, int y, int c, Color color = BLACK) { m_field[y][x] = c; m_colors[y][x] = color; }
