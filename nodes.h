@@ -18,10 +18,6 @@ public:
 
 	std::string toString() const;
 	void xml_out(XML& xml) const;
-	void calcSize(Graphics& gc);
-	void calcOrig(Graphics& gc, int x, int y);
-	void draw(Graphics& gc) const;
-	Complex getNodeValue() const;
 
 	static Node* parse(Parser& p, Node* parent = nullptr);
 
@@ -33,6 +29,12 @@ private:
 	int m_sn;
 	bool m_current;
 	Equation& m_eqn;
+	Frame m_internal;
+
+	Frame calcSize(Graphics& gc);
+	void calcOrig(Graphics& gc, int x, int y);
+	void drawNode(Graphics& gc) const;
+	Complex getNodeValue() const;
 
 	void setCurrent(bool current) { m_current = current; }
 
@@ -50,7 +52,7 @@ public:
 	std::string toString() const { return m_first->toString() + std::string(1, m_op) + m_second->toString(); }
 	bool isLeaf() const { return false; }
 	Node* findNode(int x, int y);
-	int numFactors() { return m_first->numFactors() + m_second->numFactors(); }
+	int numFactors() const { return m_first->numFactors() + m_second->numFactors(); }
 	virtual const std::string& getName() const=0;
 
 	static Node* parse(Parser& p, Node* one, Node* parent);
@@ -60,6 +62,7 @@ protected:
 	Node* m_first;  // Binary own this tree
 	Node* m_second; // Binary own this tree
 	char m_op;
+	Frame m_internal;
 
 private:
 	Node* downLeft()  { return m_first; }
@@ -75,14 +78,18 @@ public:
     Divide(Node* one, Node* two, Node* parent, bool neg = false, Node::Select s = Node::Select::NONE) : 
 	    Binary('/', one, two, parent, neg, s) 
 	{ 
-		one->setParent(this); two->setParent(this); 
+		m_first->setParent(this); m_second->setParent(this); 
+		m_first->setDrawParenthesis(false); m_second->setDrawParenthesis(false);
 	}
-    Divide(XMLParser& in, Node* parent) : Binary(in, parent, name) { m_op = '/'; }
+    Divide(XMLParser& in, Node* parent) : Binary(in, parent, name)
+	{ 
+		m_op = '/'; m_first->setDrawParenthesis(false); m_second->setDrawParenthesis(false);
+	}
 	~Divide() {}
 
-	void calcSize(Graphics& gc);
+	Frame calcSize(Graphics& gc);
 	void calcOrig(Graphics& gc, int x, int y);
-	void draw(Graphics& gc) const;
+	void drawNode(Graphics& gc) const;
 	Complex getNodeValue() const;
 	const std::string& getName() const { return name; }
 
@@ -95,67 +102,22 @@ public:
     Power(Node* one, Node* two, Node* parent, bool neg = false, Node::Select s = Node::Select::NONE) : 
 	    Binary('^', one, two, parent, neg, s) 
 	{ 
-		one->setParent(this); two->setParent(this);
+		m_first->setParent(this); m_second->setParent(this);
+		m_first->setDrawParenthesis(m_first->numFactors()>1); m_second->setDrawParenthesis(false);
 	}
-    Power(XMLParser& in, Node* parent) : Binary(in, parent, name) { m_op = '^'; }
+    Power(XMLParser& in, Node* parent) : Binary(in, parent, name)
+	{ 
+		m_op = '^'; m_first->setDrawParenthesis(m_first->numFactors()>1); m_second->setDrawParenthesis(false);
+	}
 	~Power() {}
 
-	void calcSize(Graphics& gc);
+	Frame calcSize(Graphics& gc);
 	void calcOrig(Graphics& gc, int x, int y);
-	void draw(Graphics& gc) const;
+	void drawNode(Graphics& gc) const;
 	Complex getNodeValue() const;
 	const std::string& getName() const { return name; }
 
 	static const std::string name;
-};
-
-class Function : public Node
-{
-public:
-	typedef Complex (*func_ptr)(Complex);
-	using func_map = std::map<std::string, func_ptr>;
-
-	static Node* parse(Parser& p, Node* parent);
-
-	std::string toString() const { return m_name + m_arg->toString(); }
-	void xml_out(XML& xml) const;
-	void calcSize(Graphics& gc);
-	void calcOrig(Graphics& gc, int x, int y);
-	void draw(Graphics& gc) const;
-	bool drawParenthesis() const { return true; }
-	bool isLeaf() const { return false; }
-	Complex getNodeValue() const;
-	Node* findNode(int x, int y);
-	int numFactors() { return m_arg->numFactors() + 1; }
-
-	static const std::string name;
-
-	Function(const std::string& name, func_ptr fp, Node* node, 
-			 Node* parent, bool neg = false, Node::Select s = Node::Select::NONE) : 
-    	Node(parent, neg, s), m_name(name), m_func(fp), m_arg(node) 
-	{ 
-		m_arg->setParent(this); 
-	}
-
-	Function(XMLParser& in, Node* parent);
-	~Function() { delete m_arg; }
-
-private:
-	Node* downLeft()  { return m_arg->first(); }
-	Node* downRight() { return m_arg->last(); }
-
-private:
-	Node* m_arg;       // Function own this tree
-	std::string m_name;
-	func_ptr m_func;
-
-	static const func_map functions;
-
-	static Complex sinZ(Complex z);
-	static Complex cosZ(Complex z);
-	static Complex tanZ(Complex z);
-	static Complex logZ(Complex z);
-	static Complex expZ(Complex z);
 };
 
 class Constant : public Node
@@ -171,9 +133,9 @@ public:
 
 	std::string toString() const { return std::string() + m_name; }
 	void xml_out(XML& xml) const;
-	void calcSize(Graphics& gc);
+	Frame calcSize(Graphics& gc);
 	void calcOrig(Graphics& gc, int x, int y);
-	void draw(Graphics& gc) const;
+	void drawNode(Graphics& gc) const;
 	Complex getNodeValue() const { return constants.at(m_name); }
 
 	static const std::string name;
@@ -183,6 +145,7 @@ public:
 private:
 	char m_name;
 	Complex m_value;
+	Frame m_internal;
 	static const const_map constants;
 };
 
@@ -202,9 +165,9 @@ public:
 
 	std::string toString() const { return std::string() + m_name; }
 	void xml_out(XML& xml) const;
-	void calcSize(Graphics& gc);
+	Frame calcSize(Graphics& gc);
 	void calcOrig(Graphics& gc, int x, int y);
-	void draw(Graphics& gc) const;
+	void drawNode(Graphics& gc) const;
 	Complex getNodeValue() const { return values[m_name]; }
 
 	static const std::string name;
@@ -214,6 +177,7 @@ public:
 
 private:
 	char m_name;
+	Frame m_internal;
 
 	static var_map values;
 };
@@ -235,9 +199,9 @@ public:
 	std::string toString(double value, bool real = true) const;
 	std::string toString() const;
 	void xml_out(XML& xml) const;
-	void calcSize(Graphics& gc);
+	Frame calcSize(Graphics& gc);
 	void calcOrig(Graphics& gc, int x, int y);
-	void draw(Graphics& gc) const;
+	void drawNode(Graphics& gc) const;
 	Complex getNodeValue() const { return m_value; }
 
 	static const std::string name;
@@ -250,6 +214,8 @@ private:
 	Complex m_value;
 	bool m_isInteger;
 	size_t m_imag_pos;
+	std::string m_number;
+	Frame m_internal;
 };
 
 class Term : public Node
@@ -269,15 +235,14 @@ public:
 
 	std::string toString() const;
 	void xml_out(XML& xml) const;
-	void calcSize(Graphics& gc);
+	Frame calcSize(Graphics& gc);
 	void calcOrig(Graphics& gc, int x, int y);
-	void draw(Graphics& gc) const;
-	bool drawParenthesis() const { return true; }
+	void drawNode(Graphics& gc) const;
 	bool isLeaf() const { return false; }
 	bool isFactor() const { return false; }
 	Complex getNodeValue() const;
 	Node* findNode(int x, int y);
-	int numFactors();
+	int numFactors() const;
 
 	static const std::string name;
 
@@ -294,6 +259,7 @@ private:
 	Node* getRightSibling(Node* node);
 
 	NodeVector factors; // Term owns this tree
+	Frame m_internal;
 
 	bool add(Parser& p);
 };
@@ -301,28 +267,34 @@ private:
 class Expression : public Node
 {
 public:
-	Expression(Parser& p, Node* parent = nullptr) : Node(parent) { while(add(p)); }
 	Expression(XMLParser& in, Node* parent = nullptr);
+
+    Expression(Parser& p, Node* parent = nullptr) : Node(parent)
+	{
+		while(add(p)); setDrawParenthesis(true);
+	}
+
     Expression(Term* term, Node* parent = nullptr) : Node(parent), terms(1, term)
 	{ 
-		term->setParent(this);
+		term->setParent(this); setDrawParenthesis(true);
 	}
+
     Expression(Node* factor, Node* parent = nullptr) : 
 	    Node(parent), terms(1, new Term(factor, this))
 	{ 
-		factor->setParent(terms[0]);
+		factor->setParent(terms[0]); setDrawParenthesis(true);
 	}
 	~Expression() { freeVector(terms); }
 
 	std::string toString() const;
 	void xml_out(XML& xml) const;
-	void calcSize(Graphics& gc);
+	Frame calcSize(Graphics& gc);
 	void calcOrig(Graphics& gc, int x, int y);
-	void draw(Graphics& gc) const;
+	void drawNode(Graphics& gc) const;
 	bool isLeaf() const { return false; }
 	Complex getNodeValue() const;
 	Node* findNode(int x, int y);
-	int numFactors();
+	int numFactors() const;
 
 	static const std::string name;
 
@@ -337,14 +309,59 @@ public:
 	friend class FactorIterator;
 
 	using TermVector = std::vector<Term*>;
-protected:
+private:
 	Node* downLeft()  { return terms.front(); } 
 	Node* downRight() { return terms.back(); }
 	Node* getLeftSibling(Node* node);
 	Node* getRightSibling(Node* node);
 
-private:
 	TermVector terms;	// Expression owns this tree
+	Frame m_internal;
 
 	bool add(Parser& p);
+};
+
+class Function : public Node
+{
+public:
+	typedef Complex (*func_ptr)(Complex);
+	using func_map = std::map<std::string, func_ptr>;
+
+	static Node* parse(Parser& p, Node* parent);
+
+	std::string toString() const { return m_name + m_arg->toString(); }
+	void xml_out(XML& xml) const;
+	Frame calcSize(Graphics& gc);
+	void calcOrig(Graphics& gc, int x, int y);
+	void drawNode(Graphics& gc) const;
+	bool isLeaf() const { return false; }
+	Complex getNodeValue() const;
+	Node* findNode(int x, int y);
+	int numFactors() const { return m_arg->numFactors() + 1; }
+
+	static const std::string name;
+
+    Function(const std::string& name, func_ptr fp, Parser& p, Node* parent, 
+			 bool neg = false, Node::Select s = Node::Select::NONE) : 
+	             Node(parent, neg, s), m_name(name), m_func(fp), m_arg(new Expression(p, this)) {}
+
+	Function(XMLParser& in, Node* parent);
+	~Function() { delete m_arg; }
+
+private:
+	Node* downLeft()  { return m_arg->first(); }
+	Node* downRight() { return m_arg->last(); }
+
+	Node* m_arg;       // Function own this tree
+	std::string m_name;
+	func_ptr m_func;
+	Frame m_internal;
+
+	static const func_map functions;
+
+	static Complex sinZ(Complex z);
+	static Complex cosZ(Complex z);
+	static Complex tanZ(Complex z);
+	static Complex logZ(Complex z);
+	static Complex expZ(Complex z);
 };

@@ -61,29 +61,56 @@ template <class T>
 class Rectangle
 {
 public:
-    Rectangle(T x, T y, T x0, T y0) : m_width(x), m_height(y), m_xOrig(x0), m_yOrig(y0) {}
-    Rectangle() : m_width(0), m_height(0), m_xOrig(0), m_yOrig(0) {}
+    Rectangle(T x, T y, T x0, T y0) : m_rect{x, y, x0, y0} {}
+    Rectangle() : m_rect{0, 0, 0, 0} {}
 
-	void set(T x, T y, T x0, T y0) { m_width = x; m_height = y; m_xOrig = x0; m_yOrig = y0; }
+	void set(T x, T y, T x0, T y0) { m_rect = {x, y, x0, y0}; }
+	void setOrigin(T x0, T y0)     { m_rect[X0] = x0; m_rect[Y0] = y0; }
+	void setSize(T x, T y)         { m_rect[WIDTH] = x; m_rect[HEIGHT] = y; }
 
-	bool inside(T x, T y) { 
-		return ( x >= m_xOrig && x < (m_xOrig + m_width) && y >= m_yOrig && y < (m_yOrig + m_height) );
+	bool inside(T x, T y) const { 
+		return ( x >= x0() && x < (x0() + width()) && 
+				 y >= y0() && y < (y0() + height()) );
 	}
 
-	bool intersect(const Rectangle& r) {
-		bool noOverlap = (m_xOrig - r.m_xOrig) > r.m_width ||
-			             (r.m_xOrig - m_xOrig) > m_width ||
-			             (m_yOrig - r.m_yOrig) > r.m_height ||
-			             (r.m_yOrig - m_yOrig) > m_height;
+	int& x0() { return m_rect[X0]; }
+	int& y0() { return m_rect[Y0]; }
+	int& width()   { return m_rect[WIDTH]; }
+	int& height()  { return m_rect[HEIGHT]; }
+
+	int x0() const { return m_rect[X0]; }
+	int y0() const { return m_rect[Y0]; }
+	int width()  const { return m_rect[WIDTH]; }
+	int height() const { return m_rect[HEIGHT]; }
+
+	bool intersect(const Rectangle& r) const {
+		bool noOverlap = (x0() - r.x0()) > r.width() ||
+			             (r.x0() - x0()) > width() ||
+			             (y0() - r.y0()) > r.height() ||
+			             (r.y0() - y0()) > height();
 		return !noOverlap;
 	}
 
+	void merge(const Rectangle& r) {
+		T x0 = min(x0(), r.x0());
+		T y0 = min(y0(), r.y0());
+		T x1 = max(x0() + width(), r.x0() + r.width());
+		T y1 = max(y0() + height(), r.y0() + r.height());
+		set(x1 - x0, y1 - y0, x0, y0);
+	}
+
+	static Rectangle merge(const Rectangle& r1, const Rectangle& r2) {
+		Rectangle r{r1};
+		r.merge(r2);
+		return r;
+	}
+
 private:
-	T m_width;
-	T m_height;
-	T m_xOrig;
-	T m_yOrig;
+	enum { WIDTH, HEIGHT, X0, Y0, SIZE };
+	std::array<T, SIZE> m_rect;
 };
+
+using Box = Rectangle<int>;
 
 class Node 
 {
@@ -91,23 +118,26 @@ public:
 	enum Select { NONE, START, END, ALL };
 	static const std::vector<std::string> select_tags;
 
+	struct Frame { Box box; int base; };
+
     Node(Node* parent = nullptr, bool fNeg = false, Select s = NONE ) : 
-	    m_parent(parent), m_sign(!fNeg), m_select(s), m_nth(1) {}
+	    m_parent(parent), m_sign(!fNeg), m_select(s) {}
 	Node(XMLParser& in, Node* parent, const std::string& name);
 
 	virtual ~Node() {}
+	Node(const Node&)=delete;
+	Node& operator=(const Node&)=delete;
 
 	virtual void xml_out(XML& xml) const=0;
 	virtual std::string toString() const=0;
-	virtual void calcSize(Graphics& gc)=0;
-	virtual void calcOrig(Graphics& gc, int x, int y)=0;
-	virtual void draw(Graphics& gc) const=0;
-	virtual bool drawParenthesis() const { return false; }
 	virtual bool isLeaf() const { return true; }
 	virtual bool isFactor() const { return true; }
-	virtual Complex getNodeValue() const=0;
 	virtual Node* findNode(int x, int y);
 	virtual int numFactors() const { return 1; }
+
+	void calculateSize(Graphics& gc);
+	void calculateOrigin(Graphics& gc, int x, int y);
+	void draw(Graphics& gc) const;
 
 	Node* first();
 	Node* last();
@@ -116,18 +146,9 @@ public:
 	int getNth() const { return m_nth; }
 	void negative() { m_sign = !m_sign; }
 	bool getSign() const { return m_sign; }
-	int getSignValue() const { return m_sign ? 1 : -1; }
-	Complex getValue() { return Complex(getSignValue(), 0)*getNodeValue(); }
+	Complex getValue() const;
 
-	int getSizeX() const { return m_xSize; }
-	int getSizeY() const { return m_ySize; }
-	int getOrigX() const { return m_xOrig; }
-	int getOrigY() const { return m_yOrig; }
-	int  getBaseLine() const { return m_base; }
-
-	void setSize(int x, int y) { m_xSize = x; m_ySize = y; }
-	void setOrig(int x, int y) { m_xOrig = x; m_yOrig = y; }
-	void setBaseLine(int base) { m_base = base; }
+	const Frame& getFrame() const { return m_frame; }
 
 	void setParent(Node* parent) { m_parent = parent; }
 	Node* getParent() const { return m_parent; }
@@ -135,21 +156,26 @@ public:
 	void setSelect(Select s) { m_select = s; }
 	Select getSelect() const { return m_select; }
 
+	void setDrawParenthesis(bool fDrawPar) { m_fDrawParenthesis = fDrawPar; }
+	bool getDrawParenthesis() const { return m_fDrawParenthesis; }
+
 private:
 	virtual Node* downLeft() { return nullptr; }
 	virtual Node* downRight() { return nullptr; }
 	virtual Node* getLeftSibling(Node* node) { return nullptr; }
 	virtual Node* getRightSibling(Node* node) { return nullptr; }
 
-	int m_xSize;
-	int m_ySize;
-	int m_xOrig;
-	int m_yOrig;
+	virtual Frame calcSize(Graphics& gc)=0;
+	virtual void calcOrig(Graphics& gc, int x, int y)=0;
+	virtual void drawNode(Graphics& gc) const=0;
+	virtual Complex getNodeValue() const=0;
+
+	Frame m_frame;
 	bool m_sign;
-	int m_nth;
+	int m_nth = 1;
 	Node* m_parent;
-	int m_base;
 	Select m_select;
+	bool m_fDrawParenthesis = false;
 };
 
 class Graphics
@@ -176,20 +202,18 @@ public:
 		m_xSize = x; m_ySize = y; m_xOrig = x0, m_yOrig = y0;
 	}
 
-	void set(Node* node) { 
-		set(node->getSizeX(), node->getSizeY(), node->getOrigX(), node->getOrigY());
+	void set(const Box& box) { 
+		set(box.width(), box.height(), box.x0(), box.y0());
 	}
 
 	virtual void setSelect(int x, int y, int x0, int y0) { m_select.set(x, y, x0, y0); }
 
-	void setSelect(const Node* node) { 
-		setSelect(node->getSizeX(), node->getSizeY(), node->getOrigX(), node->getOrigY());
+	void setSelect(const Box& box) { 
+		setSelect(box.width(), box.height(), box.x0(), box.y0());
 	}
 
-
-	void parenthesis(const Node* node) { 
-		parenthesis(node->getSizeX(), node->getSizeY(), 
-					node->getOrigX(), node->getOrigY());
+	void parenthesis(const Box& box) {
+		parenthesis(box.width(), box.height(), box.x0(), box.y0());
 	}
 
 	void relativeOrig(int& x, int& y) { x -= m_xOrig; y -= m_yOrig; }
@@ -198,7 +222,7 @@ protected:
 	int m_ySize;
 	int m_xOrig;
 	int m_yOrig;
-	Rectangle<int> m_select;
+	Box m_select;
 };
 
 class NodeIterator : public std::iterator< std::bidirectional_iterator_tag, Node* >

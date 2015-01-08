@@ -302,6 +302,7 @@ Equation::Equation(istream& is)
 		!in.next(XMLParser::HEADER, Expression::name)) throw logic_error("bad format");
 
 	m_root = new Expression(in, nullptr);
+	m_root->setDrawParenthesis(false);
 
 	if (!in.next(XMLParser::FOOTER, "equation")) throw logic_error("bad format");
 }
@@ -450,6 +451,7 @@ Equation::Equation(string eq)
 { 
 	Parser p(eq, *this); 
 	m_root = new Expression(p);
+	m_root->setDrawParenthesis(false);
 }
 
 void Equation::factor(string text, NodeVector& factors, Node* parent)
@@ -465,10 +467,7 @@ Node* Function::parse(Parser& p, Node* parent) {
 
 	for ( auto m : functions ) { 
 		if (p.match(m.first + "(")) {
-			Node* arg = new Expression(p, parent);
-			if (!arg) throw logic_error("bad format");
-
-			return new Function(m.first, m.second, arg, parent);
+			return new Function(m.first, m.second, p, parent);
 		}
 	}
 	return nullptr;
@@ -698,6 +697,7 @@ Expression::Expression(XMLParser& in, Node* parent) : Node(in, parent, name)
 	while (in.next(XMLParser::HEADER, Term::name)) { 
 		terms.push_back(new Term(in, this));
 	}
+	setDrawParenthesis(true);
 	if (!in.getState(XMLParser::FOOTER, name)) throw logic_error("bad format");	
 }
 
