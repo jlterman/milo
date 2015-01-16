@@ -18,6 +18,7 @@ public:
 
 	std::string toString() const;
 	void xml_out(XML& xml) const;
+	int numFactors() const { return m_typed.size(); }
 
 	static Node* parse(Parser& p, Node* parent = nullptr);
 
@@ -163,7 +164,7 @@ public:
 
 	using var_map = std::map<char, Complex>;
 
-	std::string toString() const { return std::string() + m_name; }
+	std::string toString() const { return std::string(1, m_name); }
 	void xml_out(XML& xml) const;
 	Frame calcSize(Graphics& gc);
 	void calcOrig(Graphics& gc, int x, int y);
@@ -186,23 +187,19 @@ class Number : public Node
 {
 public:
     Number(Parser& p, Node* parent) : Node(parent), m_isInteger(true) { getNumber(p); }
-	Number(std::string real, std::string imaginary, Node* parent, 
-		   bool neg = false, Node::Select s = Node::Select::NONE) :
-	    Node(parent, neg, s), m_value(Complex(stod(real), stod(imaginary))), m_imag_pos(-1),
-		m_isInteger(isInteger(real) && isInteger(imaginary)) {}
+	Number(std::string real, Node* parent, bool neg = false, Node::Select s = Node::Select::NONE) :
+	Node(parent, neg, s), m_value(stod(real)), m_isInteger(isInteger(real)) {}
 	Number(XMLParser& in, Node* parent);
 	~Number() {}
 
-	double getReal(Parser& p);
 	void getNumber(Parser& p);
 
-	std::string toString(double value, bool real = true) const;
 	std::string toString() const;
 	void xml_out(XML& xml) const;
 	Frame calcSize(Graphics& gc);
 	void calcOrig(Graphics& gc, int x, int y);
 	void drawNode(Graphics& gc) const;
-	Complex getNodeValue() const { return m_value; }
+	Complex getNodeValue() const { return {m_value, 0}; }
 
 	static const std::string name;
 
@@ -211,10 +208,8 @@ public:
 private:
 	std::string getInteger(Parser& p);
 
-	Complex m_value;
+	double m_value;
 	bool m_isInteger;
-	size_t m_imag_pos;
-	std::string m_number;
 	Frame m_internal;
 };
 

@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <map>
 #include "milo.h"
 
 using namespace std;
@@ -73,21 +74,10 @@ void AsciiGraphics::parenthesis(int x_size, int y_size, int x0, int y0)
 	}
 }
 
-int main(int argc, char* argv[])
+static void test_parse(const string& eqn_str)
 {
 	AsciiGraphics gc(cout);
-
-	if (string(argv[1]).rfind(".xml") != string::npos) {
-		ifstream in(argv[1]);
-		Equation eqn(in);
-		cout << eqn.toString() << endl;
-		cout << "------------" << endl;
-		eqn.draw(gc);
-		gc.out();
-		return 0;
-	}
-
-	Equation eqn(argv[1]);
+	Equation eqn(eqn_str);
 	cout << "---------" << endl;
 	cout << eqn.toString() << endl;
 	cout << "---------" << endl;
@@ -104,4 +94,46 @@ int main(int argc, char* argv[])
 	new_eqn.xml_out(xml2);
 	if (xml.compare(xml2) != 0) cout << xml2; else cout << "XML test passed" << endl; 
 	cout << "---------" << endl;
+}
+
+static void test_xml(const string& fname)
+{
+	AsciiGraphics gc(cout);
+	ifstream in(fname);
+	Equation eqn(in);
+	cout << eqn.toString() << endl;
+	cout << "------------" << endl;
+	eqn.draw(gc);
+	gc.out();
+}
+
+typedef void (*func_ptr)(const string& s);
+
+const map<string, func_ptr> test_funcs = {
+	{ "parse", test_parse },
+	{ "xml",   test_xml },
+};
+
+int main(int argc, char* argv[])
+{
+	map<string, string> args;
+	int i = 1;
+	while (i < argc && argv[i][0] == '-' && argv[i][1] == '-') {
+		string option(argv[i]+2);
+		string arg;
+		if (  test_funcs.find(option) == test_funcs.end() ) {
+			cerr << "Unknown option: " << option << endl;
+			exit(1);
+		}
+		if ((i+1) < argc && argv[i+1][0] != '-') arg = argv[++i];
+		test_funcs.at(option)(arg);
+		++i;
+	}
+	string opt;
+	string arg;
+	for ( auto it : args ) {
+		tie( opt, arg ) = it;
+		auto f = test_funcs.find(opt);
+		test_funcs.at(opt)(arg);
+	}
 }

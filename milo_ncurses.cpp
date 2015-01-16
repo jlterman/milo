@@ -181,16 +181,25 @@ int main(int argc, char* argv[])
 					break;
 			    }
 			    case KEY_MOUSE: {
+					static Node* start = nullptr;
+					static Node* end = nullptr;
 					MEVENT event;
 					if(getmouse(&event) == OK) {
 						if(event.bstate & BUTTON1_PRESSED) {
 							LOG_TRACE_MSG("mouse click at: " + to_string(event.x) + ", " + 
 												 to_string(event.y));
-							Node* node = eqn->findNode(gc, event.x, event.y);
-							if (node == nullptr) break;
-							eqn->setSelect(node);
-							LOG_TRACE_MSG(string("found node: ") + typeid(node).name() + ": " + 
-										  node->toString());
+							start = eqn->findNode(gc, event.x, event.y);
+							if (start == nullptr) break;
+							eqn->setSelect(start);
+							LOG_TRACE_MSG(string("found node: ") + typeid(start).name() + ": " + 
+										  start->toString());
+						}
+						if(event.bstate & BUTTON1_RELEASED) {
+							end = eqn->findNode(gc, event.x, event.y);
+							if (end == nullptr) break;
+							eqn->setSelect(start, end);
+							LOG_TRACE_MSG(string("found node: ") + typeid(end).name() + ": " + 
+										  end->toString());
 						}
 					}
 					break;

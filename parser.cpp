@@ -415,10 +415,7 @@ void Constant::xml_out(XML& xml) const {
 }
 
 void Number::xml_out(XML& xml) const {
-	xml.header(this, name, true, 
-			   { "real", toString(m_value.real(), true), 
-				 "imag", toString(m_value.imag(), true)
-			   });
+	xml.header(this, name, true, { "value", to_string(m_value) });
 }
 
 void Input::xml_out(XML& xml) const
@@ -519,7 +516,7 @@ Node* Constant::parse(Parser& p, Node* parent)
 Node* Number::parse(Parser& p, Node* parent)
 {
 	char c = p.peek();
-	if (isdigit(c) || c == 'i' ) {
+	if (isdigit(c)) {
 		return new Number(p, parent);
 	}
 	else
@@ -533,38 +530,27 @@ string Number::getInteger(Parser& p)
 	return n;
 }
 
-double Number::getReal(Parser& p)
+void Number::getNumber(Parser& p)
 {
 	string n = getInteger(p);
-	if (p.peek() != '.' && p.peek() != 'E') {
-		return stod(n);
+	if (p.peek() != '.' && toupper(p.peek()) != 'E') {
+		m_value = stod(n);
+		return;
 	}
 	char c = p.next();
 	if (c == '.' && isdigit(p.peek())) {
 		n += "." +  getInteger(p);
-		if (p.peek() == 'E') c = p.next();
-		                else c = '\0';
 	}
-	if (c == 'E') {
-		n += 'E';
+	if (toupper(p.peek()) == 'E') {
+		p.next(); n += 'E';
 		if (p.peek() == '-' || p.peek() == '+') n += p.next();
 
 		if (!isdigit(p.peek())) throw logic_error("bad format");
 		n += getInteger(p);
 	}
-	m_isInteger = false;
-	return stod(n);
-}
 
-void Number::getNumber(Parser& p)
-{
-	if (p.peek() == 'i') {
-		char c = p.next();
-		m_value = isdigit(p.peek()) ? Complex(0, getReal(p)) : Complex(0, 1);
-	}
-	else {
-		m_value = Complex(getReal(p), 0);
-	}
+	m_value = stod(n);
+	m_isInteger = isZero(m_value - ((int)m_value));
 }
 
 Node* Term::parse(Parser& p, Node* parent)
@@ -649,16 +635,15 @@ Constant::Constant(XMLParser& in, Node* parent) : Node(in, parent, name)
 	if (in.hasAttributes()) throw logic_error("bad format");
 }
 
-Number::Number(XMLParser& in, Node* parent) : Node(in, parent, name), m_imag_pos(-1)
+Number::Number(XMLParser& in, Node* parent) : Node(in, parent, name)
 {
 	if (!in.getState(XMLParser::ATOM, name)) throw logic_error("bad format");
 
-	string real = "0", imag = "0";
-	in.getAttribute("real", real);
-	in.getAttribute("imag", imag);
+	string real = "0";
+	in.getAttribute("value", real);
 
-	m_value = Complex(stod(real), stod(imag));
-	m_isInteger = isInteger(real) && isInteger(imag);
+	m_value = stod(real);
+	m_isInteger = isInteger(real);
 
 	if (in.hasAttributes()) throw logic_error("bad format");
 }
