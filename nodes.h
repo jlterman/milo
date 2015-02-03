@@ -6,6 +6,9 @@
 bool isZero(double x);
 bool isZero(Complex z);
 bool isInteger(const std::string& n);
+bool isInteger(double value);
+
+using TermVector = std::vector<Term*>;
 
 class Input : public Node
 {
@@ -19,10 +22,13 @@ public:
 	std::string toString() const;
 	void xml_out(XML& xml) const;
 	int numFactors() const { return m_typed.size(); }
+	const std::string& getName() const { return name; }
+	std::type_index getType() const { return type; }
 
 	static Node* parse(Parser& p, Node* parent = nullptr);
 
 	static const std::string name;
+	static const std::type_index type;
 
 	friend class Equation;
 private:
@@ -30,7 +36,7 @@ private:
 	int m_sn;
 	bool m_current;
 	Equation& m_eqn;
-	Frame m_internal;
+	Box m_internal;
 
 	Frame calcSize(Graphics& gc);
 	void calcOrig(Graphics& gc, int x, int y);
@@ -54,7 +60,8 @@ public:
 	bool isLeaf() const { return false; }
 	Node* findNode(int x, int y);
 	int numFactors() const { return m_first->numFactors() + m_second->numFactors(); }
-	virtual const std::string& getName() const=0;
+	Expression* getFirstExpression();
+	Expression* getSecondExpression();
 
 	static Node* parse(Parser& p, Node* one, Node* parent);
 	void xml_out(XML& xml) const;
@@ -63,7 +70,7 @@ protected:
 	Node* m_first;  // Binary own this tree
 	Node* m_second; // Binary own this tree
 	char m_op;
-	Frame m_internal;
+	Box m_internal;
 
 private:
 	Node* downLeft()  { return m_first; }
@@ -93,8 +100,12 @@ public:
 	void drawNode(Graphics& gc) const;
 	Complex getNodeValue() const;
 	const std::string& getName() const { return name; }
+	std::type_index getType() const { return type; }
+	void normalize();
+	bool simplify();
 
 	static const std::string name;
+	static const std::type_index type;
 };
 
 class Power : public Binary
@@ -117,8 +128,17 @@ public:
 	void drawNode(Graphics& gc) const;
 	Complex getNodeValue() const;
 	const std::string& getName() const { return name; }
+	std::type_index getType() const { return type; }
+	void normalize();
+	bool simplify();
+ 
+	static bool simplify(NodeVector& factors);
 
 	static const std::string name;
+	static const std::type_index type;
+
+private:
+	static bool simplify(NodeVector::iterator a, NodeVector::iterator b);
 };
 
 class Constant : public Node
@@ -138,15 +158,17 @@ public:
 	void calcOrig(Graphics& gc, int x, int y);
 	void drawNode(Graphics& gc) const;
 	Complex getNodeValue() const { return constants.at(m_name); }
+	const std::string& getName() const { return name; }
+	std::type_index getType() const { return type; }
 
 	static const std::string name;
+	static const std::type_index type;
 
 	static Node* parse(Parser& p, Node* parent);
-
 private:
 	char m_name;
 	Complex m_value;
-	Frame m_internal;
+	Box m_internal;
 	static const const_map constants;
 };
 
@@ -170,15 +192,18 @@ public:
 	void calcOrig(Graphics& gc, int x, int y);
 	void drawNode(Graphics& gc) const;
 	Complex getNodeValue() const { return values[m_name]; }
+	const std::string& getName() const { return name; }
+	std::type_index getType() const { return type; }
 
 	static const std::string name;
+	static const std::type_index type;
 
 	static Node* parse(Parser& p, Node* parent);
 	static void setValue(char name, Complex value);
 
 private:
 	char m_name;
-	Frame m_internal;
+	Box m_internal;
 
 	static var_map values;
 };
@@ -188,7 +213,9 @@ class Number : public Node
 public:
     Number(Parser& p, Node* parent) : Node(parent), m_isInteger(true) { getNumber(p); }
 	Number(std::string real, Node* parent, bool neg = false, Node::Select s = Node::Select::NONE) :
-	Node(parent, neg, s), m_value(stod(real)), m_isInteger(isInteger(real)) {}
+	    Node(parent, neg, s), m_value(stod(real)), m_isInteger(isInteger(real)) {}
+	Number(int n, Node* parent, bool neg = false, Node::Select s = Node::Select::NONE) :
+	    Node(parent, neg, s), m_value(n), m_isInteger(true) {}
 	Number(XMLParser& in, Node* parent);
 	~Number() {}
 
@@ -200,8 +227,11 @@ public:
 	void calcOrig(Graphics& gc, int x, int y);
 	void drawNode(Graphics& gc) const;
 	Complex getNodeValue() const { return {m_value, 0}; }
+	const std::string& getName() const { return name; }
+	std::type_index getType() const { return type; }
 
 	static const std::string name;
+	static const std::type_index type;
 
 	static Node* parse(Parser& p, Node* parent);
 
@@ -210,7 +240,7 @@ private:
 
 	double m_value;
 	bool m_isInteger;
-	Frame m_internal;
+	Box m_internal;
 };
 
 class Term : public Node
@@ -238,12 +268,25 @@ public:
 	Complex getNodeValue() const;
 	Node* findNode(int x, int y);
 	int numFactors() const;
+	const std::string& getName() const { return name; }
+	std::type_index getType() const { return type; }
+	void normalize();
+	bool simplify();
+	void simplify(Node* ref, Term* new_term);
+
+	static void insertAfterMe(Node* me, Node* node);
+	static bool simplify(TermVector& terms, TermVector::iterator a, TermVector::iterator b);
 
 	static const std::string name;
+	static const std::type_index type;
 
 	int getFactorIndex(Node* node) { return distance(factors.cbegin(), find(factors, node)); }
 	void setParent() { for ( auto f : factors ) f->setParent(this); }
 	void setParent(Expression* parent) { Node::setParent((Node*) parent); }
+
+	static NodeIter begin(Node* me);
+	static NodeIter end(Node* me);
+	static NodeIter pos(Node* me);
 
 	friend class Equation;
 	friend class FactorIterator;
@@ -254,7 +297,7 @@ private:
 	Node* getRightSibling(Node* node);
 
 	NodeVector factors; // Term owns this tree
-	Frame m_internal;
+	Box m_internal;
 
 	bool add(Parser& p);
 };
@@ -290,9 +333,15 @@ public:
 	Complex getNodeValue() const;
 	Node* findNode(int x, int y);
 	int numFactors() const;
+	const std::string& getName() const { return name; }
+	std::type_index getType() const { return type; }
+	void normalize();
+	bool simplify();
 
 	static const std::string name;
+	static const std::type_index type;
 
+	int numTerms() const { return terms.size(); }
 	int getTermIndex(Term* term) { return distance(terms.cbegin(), find(terms, term)); }
 	void setParent() { for ( auto t : terms ) t->setParent(this); }
 
@@ -300,10 +349,12 @@ public:
 	static Term* getTerm(Parser& p, Expression* parent);
 	static Node* parse(Parser& p, Node* parent);
 
+	void add(int n);
+	void add(Expression* old_expr);
+
 	friend class Equation;
 	friend class FactorIterator;
 
-	using TermVector = std::vector<Term*>;
 private:
 	Node* downLeft()  { return terms.front(); } 
 	Node* downRight() { return terms.back(); }
@@ -311,7 +362,7 @@ private:
 	Node* getRightSibling(Node* node);
 
 	TermVector terms;	// Expression owns this tree
-	Frame m_internal;
+	Box m_internal;
 
 	bool add(Parser& p);
 };
@@ -333,8 +384,17 @@ public:
 	Complex getNodeValue() const;
 	Node* findNode(int x, int y);
 	int numFactors() const { return m_arg->numFactors() + 1; }
+	const std::string& getName() const { return name; }
+	std::type_index getType() const { return type; }
+	void normalize() { m_arg->normalize(); }
+	bool less(Node* b) const { 
+		auto bf = dynamic_cast<Function*>(b); 
+		if ( m_name == bf->m_name ) return toString() < bf->toString(); 
+		return m_name > bf-> m_name;
+	}
 
 	static const std::string name;
+	static const std::type_index type;
 
     Function(const std::string& name, func_ptr fp, Parser& p, Node* parent, 
 			 bool neg = false, Node::Select s = Node::Select::NONE) : 
@@ -350,7 +410,7 @@ private:
 	Node* m_arg;       // Function own this tree
 	std::string m_name;
 	func_ptr m_func;
-	Frame m_internal;
+	Box m_internal;
 
 	static const func_map functions;
 

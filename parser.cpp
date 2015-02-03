@@ -173,7 +173,7 @@ void XML::footer(const string& tag)
 		m_os << "</" << close_tag << ">" << endl;
 
 	}
-	while (close_tag.compare(tag) != 0);
+	while (close_tag != tag);
 }
 
 XMLParser::XMLParser(istream& in, Equation& eqn) : m_pos(0), m_eqn(eqn) 
@@ -246,13 +246,13 @@ void XMLParser::next()
 		m_attributes.emplace(name, value);
 		++m_pos;
 	}
-	if (m_tags[m_pos++].compare("/>") == 0) m_state |= ATOM;
+	if (m_tags[m_pos++] == "/>") m_state |= ATOM;
 	return;
 }
 
 bool XMLParser::getState(int state, const string& tag) const
 {
-	return ((state&m_state) != 0) && (tag.empty() || (tag.compare(m_tag) == 0));
+	return ((state&m_state) != 0) && (tag.empty() || (tag == m_tag));
 }
 
 bool XMLParser::getAttribute(const string& name, string& value)
@@ -280,8 +280,8 @@ Node::Node(XMLParser& in, Node* parent, const string& name) :
 
 	string value;
 	if (in.getAttribute("negative", value)) {
-		if (value.compare("true") && value.compare("false")) throw logic_error("bad format");
-		m_sign = (value.compare("false") == 0);
+		if (value != "true" && value != "false") throw logic_error("bad format");
+		m_sign = (value == "false");
 	}
 	if (in.getAttribute("select", value)) {
 		auto pos = find(select_tags, value);
@@ -307,6 +307,27 @@ Equation::Equation(istream& is)
 	if (!in.next(XMLParser::FOOTER, "equation")) throw logic_error("bad format");
 }
 
+Equation& Equation::operator=(const Equation& eqn)
+{
+	m_inputs.clear();
+	m_input_index = -1;
+	delete m_root;
+
+	string store;
+	eqn.xml_out(store);
+
+	istringstream is(store);
+	XMLParser in(is, *this);
+	if (!in.next(XMLParser::HEADER, "equation") ||
+		!in.next(XMLParser::HEADER, Expression::name)) throw logic_error("bad format");
+
+	m_root = new Expression(in, nullptr);
+	m_root->setDrawParenthesis(false);
+
+	if (!in.next(XMLParser::FOOTER, "equation")) throw logic_error("bad format");
+	return *this;
+}
+
 const string Expression::name = "expression";
 const string   Function::name = "function";
 const string   Constant::name = "constant";
@@ -318,7 +339,7 @@ const string      Power::name = "power";
 const string       Term::name = "term";
 
 template <class T>
-Node* create(XMLParser& in, Node* parent)
+static Node* create(XMLParser& in, Node* parent)
 {
 	return new T(in, parent);
 }
@@ -533,7 +554,7 @@ string Number::getInteger(Parser& p)
 void Number::getNumber(Parser& p)
 {
 	string n = getInteger(p);
-	if (p.peek() != '.' && toupper(p.peek()) != 'E') {
+	if (!p.peek() || (p.peek() != '.' && toupper(p.peek()) != 'E')) {
 		m_value = stod(n);
 		return;
 	}
@@ -550,7 +571,7 @@ void Number::getNumber(Parser& p)
 	}
 
 	m_value = stod(n);
-	m_isInteger = isZero(m_value - ((int)m_value));
+	m_isInteger = isInteger(m_value);
 }
 
 Node* Term::parse(Parser& p, Node* parent)
@@ -654,8 +675,8 @@ Input::Input(XMLParser& in, Node* parent) : Node(in, parent, name), m_eqn(in.get
 
 	string value;
 	if (in.getAttribute("current", value)) {
-		if (value.compare("true") && value.compare("false")) throw logic_error("bad format");
-		m_current = (value.compare("true") == 0);
+		if (value != "true" && value != "false") throw logic_error("bad format");
+		m_current = (value == "true");
 	}
 	if (in.getAttribute("text", value)) {
 		m_typed = value;

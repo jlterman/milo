@@ -10,6 +10,7 @@
 #include <vector>
 #include <ctime>
 #include <algorithm>
+#include <typeindex>
 
 using Complex = std::complex<double>;
 
@@ -23,6 +24,7 @@ class Term;
 class Expression;
 class Equation;
 using NodeVector = std::vector<Node*>;
+using NodeIter = NodeVector::iterator;
 
 template <class T>
 inline auto find(const std::vector<T>& v, const T& val) -> decltype( v.cbegin() )
@@ -134,6 +136,11 @@ public:
 	virtual bool isFactor() const { return true; }
 	virtual Node* findNode(int x, int y);
 	virtual int numFactors() const { return 1; }
+	virtual void normalize() {}
+	virtual bool simplify() { return false; }
+	virtual bool less(Node* b) const { return this->toString() < b->toString(); }
+	virtual const std::string& getName() const=0;
+	virtual std::type_index getType() const=0;
 
 	void calculateSize(Graphics& gc);
 	void calculateOrigin(Graphics& gc, int x, int y);
@@ -144,6 +151,9 @@ public:
 	Node* getNextLeft();
 	Node* getNextRight();
 	int getNth() const { return m_nth; }
+	void addNth(int n) { m_nth += n; }
+	void multNth(int n) { m_nth *= n; }
+	void setNth(int n) { m_nth = n; }
 	void negative() { m_sign = !m_sign; }
 	bool getSign() const { return m_sign; }
 	Complex getValue() const;
@@ -171,6 +181,7 @@ private:
 	virtual Complex getNodeValue() const=0;
 
 	Frame m_frame;
+	Box m_parenthesis;
 	bool m_sign;
 	int m_nth = 1;
 	Node* m_parent;
@@ -262,6 +273,7 @@ class FactorIterator : public std::iterator< std::bidirectional_iterator_tag, No
 public:
     FactorIterator(Node* node);
     FactorIterator(NodeIterator n) : FactorIterator(*n) {}
+    FactorIterator(Expression* expr);
 
 	Node*& operator*() { return m_node; }
 	Node*& operator->() { return m_node; }
@@ -273,7 +285,9 @@ public:
 	FactorIterator& operator--()   { prev(); return *this; }
 	FactorIterator operator--(int) { FactorIterator tmp(*this); prev(); return tmp; }
 
-private:
+	void erase();
+	void insert(Node* node);
+
 	bool isBegin() { return m_factor_index == 0 && m_term_index == 0; }
 	bool isEnd()   { return m_node == nullptr; }
 	bool isBeginTerm() { return m_factor_index == 0; }
@@ -292,7 +306,12 @@ class Equation
 public:
 	Equation(std::string eq);
     Equation(std::istream& is);
+	Equation(const Equation& eqn) { *this = eqn; }
+	Equation& operator=(const Equation& eqn);
+	Equation(Equation&& eqn)=delete;
+	Equation& operator=(Equation&& eqn)=delete;
 	~Equation() { delete m_root; }
+
 	std::string toString() const { return m_root->toString(); }
 	void xml_out(std::ostream& os) const;
 	void xml_out(std::string& str) const;
@@ -311,6 +330,8 @@ public:
 	void setSelect(Node* start, Node* end = nullptr);
 	void setSelectFromNode(Node* node);
 	Node* findNode(Graphics& gc, int x, int y);
+	bool simplify() { m_root->normalize(); return m_root->simplify(); }
+	void normalize() { m_root->normalize(); }
 
 	NodeIterator begin() { return NodeIterator(m_root->first(), *this); }
 	NodeIterator end()   { return NodeIterator(nullptr, *this); }

@@ -4,7 +4,6 @@
 #include <map>
 #include <limits>
 #include <typeinfo>
-#include <regex>
 
 #include "milo.h"
 #include "milo_key.h"
@@ -69,10 +68,12 @@ bool isZero(Complex z) {
 
 bool isInteger(const string& s)
 {
-	auto c = s.begin();
-	if (*c == '+' || *c == '-') ++c;
-	while(c != s.end() && isdigit(*c)) { ++c; }
-	return (c == s.end());
+	return isInteger(stod(s));
+}
+
+bool isInteger(double value)
+{
+	return isZero(value - ((int) value));	
 }
 
 const vector<string> Node::select_tags = { "NONE", "START", "END", "ALL" };
@@ -137,12 +138,11 @@ void Node::calculateSize(Graphics& gc)
 {
 	Node::Frame frame = calcSize(gc);
 
-	if (isFactor() && !m_sign) {
-		frame.box.width() += gc.getCharLength('-') + 2*gc.getParenthesisWidth();
-	}
-	else if (m_fDrawParenthesis || (m_nth != 1 && numFactors()>1))
-		frame.box.width() += 2*gc.getParenthesisWidth();
+	m_fDrawParenthesis |= (isFactor() && !m_sign) || m_nth != 1;
+	if (m_fDrawParenthesis)    frame.box.width() += 2*gc.getParenthesisWidth();
+	if (isFactor() && !m_sign) frame.box.width() += gc.getCharLength('-');
 
+	m_parenthesis.setSize(frame.box.width(), frame.box.height());
 	if (m_nth != 1) {
 		string n = to_string(m_nth);
 		frame.box.width() += gc.getTextLength(n);
@@ -156,25 +156,20 @@ void Node::calculateSize(Graphics& gc)
 void Node::calculateOrigin(Graphics& gc, int x, int y)
 {
 	m_frame.box.setOrigin(x, y);
-
-	if (isFactor() && !m_sign) {
-		x += gc.getCharLength('-') + gc.getParenthesisWidth();
-	}
-	else if (m_fDrawParenthesis || (m_nth != 1 && numFactors()>1))
-		x += gc.getParenthesisWidth();
+	m_parenthesis.setOrigin(x, y + (m_nth != 1 ? gc.getTextHeight() : 0));
+	if (m_fDrawParenthesis)    x += gc.getParenthesisWidth();
+	if (isFactor() && !m_sign) x += gc.getCharLength('-');
 
 	calcOrig(gc, x, y);
 }
 
 void Node::draw(Graphics& gc) const
 {
+	if (m_fDrawParenthesis)  gc.parenthesis(m_parenthesis);
 	if (isFactor() && !m_sign) {
 		gc.at(m_frame.box.x0() + gc.getParenthesisWidth(), m_frame.box.y0() + m_frame.base, '-');
-		gc.parenthesis(m_frame.box);
 	}
-	else if (m_fDrawParenthesis || (m_nth != 1 && numFactors()>1)) {
-		gc.parenthesis(this->m_frame.box);
-	}
+
 	if (m_nth != 1) {
 		string n = to_string(m_nth);
 		gc.at(m_frame.box.x0() + m_frame.box.width() - gc.getTextLength(n), m_frame.box.y0(), n);
@@ -186,29 +181,30 @@ Node::Frame Divide::calcSize(Graphics& gc)
 {
 	m_first->calculateSize(gc);
 	m_second->calculateSize(gc);
-	m_internal = { 
+	Frame frame = { 
 		{ max(m_first->getFrame().box.width(), m_second->getFrame().box.width()),
 		  m_first->getFrame().box.height() + gc.getDivideLineHeight() + m_second->getFrame().box.height(), 
 		  0, 0
 		},
 		m_first->getFrame().box.height() + gc.getDivideLineHeight()/2
 	};
-    return m_internal;
+	m_internal = frame.box;
+    return frame;
 }
 
 void Divide::calcOrig(Graphics& gc, int x, int y)
 {
-	m_internal.box.setOrigin(x, y + getFrame().base);
-	m_first->calculateOrigin(gc,  x + (m_internal.box.width() - m_first->getFrame().box.width())/2, y);
-	m_second->calculateOrigin(gc, x + (m_internal.box.width() - m_second->getFrame().box.width())/2,
+	m_internal.setOrigin(x, y);
+	m_first->calculateOrigin(gc,  x + (m_internal.width() - m_first->getFrame().box.width())/2, y);
+	m_second->calculateOrigin(gc, x + (m_internal.width() - m_second->getFrame().box.width())/2,
 							      y + m_first->getFrame().box.height() + gc.getDivideLineHeight());
 }
 
 
 void Divide::drawNode(Graphics& gc) const
 {
-	gc.horiz_line(m_internal.box.width(), m_internal.box.x0(), 
-				  m_internal.box.y0() + m_internal.base - getFrame().base);
+	gc.horiz_line(m_internal.width(), m_internal.x0(), 
+				  m_internal.y0() + getFrame().base);
 	m_first->draw(gc);
 	m_second->draw(gc);
 }
@@ -224,7 +220,7 @@ Node::Frame Power::calcSize(Graphics& gc)
 {
 	m_first->calculateSize(gc);
 	m_second->calculateSize(gc);
-	m_internal = { 
+	Frame frame = { 
 		{ m_first->getFrame().box.width() + m_second->getFrame().box.width(),
 		  m_first->getFrame().box.height() + 
 		  m_second->getFrame().box.height() - 
@@ -232,13 +228,14 @@ Node::Frame Power::calcSize(Graphics& gc)
 		},
 		m_second->getFrame().box.height() - gc.getTextHeight()/2
 	};
-    return m_internal;
+	m_internal = frame.box;
+    return frame;
 }
 
 void Power::calcOrig(Graphics& gc, int x, int y)
 {
-	m_internal.box.setOrigin(x, y + getFrame().base);
-	m_first->calculateOrigin(gc, x, y + m_internal.base);
+	m_internal.setOrigin(x, y);
+	m_first->calculateOrigin(gc, x, y + getFrame().base);
 	m_second->calculateOrigin(gc, x + m_first->getFrame().box.width(), y);
 }
 
@@ -292,25 +289,26 @@ const Function::func_map Function::functions = {
 Node::Frame Function::calcSize(Graphics& gc) 
 {
 	m_arg->calculateSize(gc);
-	m_internal = { 
+	Frame frame = { 
 		{ gc.getTextLength(m_name) + m_arg->getFrame().box.width(),
 		  m_arg->getFrame().box.height(), 0, 0
 		},
 		m_arg->getFrame().box.height()/2
 	};
-    return m_internal;
+	m_internal = frame.box;
+    return frame;
 }
 
 void Function::calcOrig(Graphics& gc, int x, int y)
 {
-	m_internal.box.setOrigin(x, y + getFrame().base);
-	m_arg->calculateOrigin(gc, x + gc.getTextLength(m_name), y);
+	m_internal.setOrigin(x, y + getFrame().base);
+	m_arg->calculateOrigin(gc, x + gc.getTextLength(m_name), 
+						       y + getFrame().base - m_arg->getFrame().base);
 }
 
 void Function::drawNode(Graphics& gc) const
 {
-	gc.at(m_internal.box.x0(), m_internal.box.y0() + m_internal.base - getFrame().base, 
-		  m_name, Graphics::Color::GREEN);
+	gc.at(m_internal.x0(), m_internal.y0(), m_name, Graphics::Color::GREEN);
 	m_arg->draw(gc);
 }
 
@@ -328,36 +326,38 @@ const Constant::const_map Constant::constants = {
 
 Node::Frame Constant::calcSize(Graphics& gc) 
 {
-	m_internal = { { gc.getCharLength(m_name), gc.getTextHeight(), 0, 0 }, 0 };
-    return m_internal;
+    Frame frame = { { gc.getCharLength(m_name), gc.getTextHeight(), 0, 0 }, 0 };
+	m_internal = frame.box;
+    return frame;
 }
 
 void Constant::calcOrig(Graphics& gc, int x, int y)
 {
-	m_internal.box.setOrigin(x, y + getFrame().base);
+	m_internal.setOrigin(x, y + getFrame().base);
 }
 
 void Constant::drawNode(Graphics& gc) const
 {
-	gc.at(m_internal.box.x0(), m_internal.box.y0(), m_name, Graphics::Color::RED);
+	gc.at(m_internal.x0(), m_internal.y0(), m_name, Graphics::Color::RED);
 }
 
 Variable::var_map Variable::values;
 
 Node::Frame Variable::calcSize(Graphics& gc) 
 {
-	m_internal = { { gc.getCharLength(m_name), gc.getTextHeight(), 0, 0 }, 0 };
-    return m_internal;
+	Frame frame = { { gc.getCharLength(m_name), gc.getTextHeight(), 0, 0 }, 0 };
+	m_internal = frame.box;
+    return frame;
 }
 
 void Variable::calcOrig(Graphics& gc, int x, int y)
 {
-	m_internal.box.setOrigin(x, y + getFrame().base);
+	m_internal.setOrigin(x, y + getFrame().base);
 }
 
 void Variable::drawNode(Graphics& gc) const
 {
-	gc.at(m_internal.box.x0(), m_internal.box.y0(), m_name);
+	gc.at(m_internal.x0(), m_internal.y0(), m_name);
 }
 
 void Variable::setValue(char name, Complex value)
@@ -386,18 +386,19 @@ string Number::toString() const
 
 Node::Frame Number::calcSize(Graphics& gc) 
 {
-	m_internal = { { gc.getTextLength(toString()), gc.getTextHeight(), 0, 0 }, 0 };
-    return m_internal;
+	Frame frame = { { gc.getTextLength(toString()), gc.getTextHeight(), 0, 0 }, 0 };
+	m_internal = frame.box;
+    return frame;
 }
 
 void Number::calcOrig(Graphics& gc, int x, int y)
 {
-	m_internal.box.setOrigin(x, y + getFrame().base);
+	m_internal.setOrigin(x, y + getFrame().base);
 }
 
 void Number::drawNode(Graphics& gc) const
 {
-	gc.at(m_internal.box.x0(), m_internal.box.y0(), toString());
+	gc.at(m_internal.x0(), m_internal.y0(), toString());
 }
 
 Node::Frame Term::calcSize(Graphics& gc) 
@@ -409,15 +410,15 @@ Node::Frame Term::calcSize(Graphics& gc)
 		y = max(y, n->getFrame().box.height() - n->getFrame().base);
 		b = max(b, n->getFrame().base);
 	}
-	m_internal = { { x, b + y, 0, 0 }, b };
-    return m_internal;
+    Frame frame = { { x, b + y, 0, 0 }, b };
+	m_internal = frame.box;
+	return frame;
 }
 
 void Term::calcOrig(Graphics& gc, int x, int y)
 {
-	m_internal.box.setOrigin(x, y + getFrame().base);
 	for ( auto n : factors ) {
-		n->calculateOrigin(gc, x, y + m_internal.base - n->getFrame().base);
+		n->calculateOrigin(gc, x, y + getFrame().base - n->getFrame().base);
 		x += n->getFrame().box.width();
 	}
 }
@@ -461,6 +462,27 @@ Complex Term::getNodeValue() const
 	return value;
 }
 
+NodeIter Term::begin(Node* me)
+{
+	if (me->getParent() == nullptr || me->getParent()->getType() != Term::type) throw logic_error("bad parent");
+	Term* term = dynamic_cast<Term*>(me->getParent());
+	return term->factors.begin();
+}
+
+NodeIter Term::end(Node* me)
+{
+	if (me->getParent() == nullptr || me->getParent()->getType() != Term::type) throw logic_error("bad parent");
+	Term* term = dynamic_cast<Term*>(me->getParent());
+	return term->factors.end();
+}
+
+NodeIter Term::pos(Node* me)
+{
+	if (me->getParent() == nullptr || me->getParent()->getType() != Term::type) throw logic_error("bad parent");
+	Term* term = dynamic_cast<Term*>(me->getParent());
+	return find(term->factors.begin(), term->factors.end(), me);
+}
+
 Node::Frame Expression::calcSize(Graphics& gc) 
 {
 	int x = 0, b = 0, y = 0;
@@ -472,25 +494,25 @@ Node::Frame Expression::calcSize(Graphics& gc)
 		b = max(b, n->getFrame().base);
 	}
 	if (!getSign() && (terms.size()>1)) x += 2*gc.getParenthesisWidth(y+b);
-
-	m_internal = { { x, b + y, 0, 0 }, b };
-    return m_internal;
+	
+	Frame frame = { { x, b + y, 0, 0 }, b };
+	m_internal = frame.box;
+	return frame;
 }
 
 void Expression::calcOrig(Graphics& gc, int x, int y)
 {
-	m_internal.box.setOrigin(x, y + getFrame().base);
-	if (!getSign() && (terms.size()>1)) x += gc.getParenthesisWidth(m_internal.box.y0());
+	if (!getSign() && (terms.size()>1)) x += gc.getParenthesisWidth(m_internal.y0());
 	for ( auto n : terms ) {
 		if (n != terms[0] || !n->getSign()) x += gc.getCharLength('-');
-		n->calculateOrigin(gc, x, y + m_internal.base - n->getFrame().base);
+		n->calculateOrigin(gc, x, y + getFrame().base - n->getFrame().base);
 		x += n->getFrame().box.width();
 	}
 }
 
 void Expression::drawNode(Graphics& gc) const
 {
-	if (!getSign() && (terms.size()>1)) gc.parenthesis(m_internal.box);
+	if (!getSign() && (terms.size()>1)) gc.parenthesis(m_internal);
 	for ( auto n : terms ) {
 		if (n != terms[0] || !n->getSign()) {
 			gc.at(n->getFrame().box.x0() - 1, 
@@ -547,18 +569,19 @@ Input::Input(Equation& eqn, std::string txt, bool current, Node* parent, bool ne
 
 Node::Frame Input::calcSize(Graphics& gc)
 {
-	m_internal = { { gc.getTextLength(m_typed) + gc.getCharLength('?'), gc.getTextHeight(), 0, 0}, 0};
-    return m_internal;
+	Frame frame = { { gc.getTextLength(m_typed) + gc.getCharLength('?'), gc.getTextHeight(), 0, 0}, 0};
+	m_internal = frame.box;
+    return frame;
 }
 
 void Input::calcOrig(Graphics& gc, int x, int y)
 {
-	m_internal.box.setOrigin(x, y + getFrame().base);
+	m_internal.setOrigin(x, y + getFrame().base);
 }
 
 void Input::drawNode(Graphics& gc) const
 {
-	gc.at(m_internal.box.x0(), m_internal.box.y0(), m_typed + "?");
+	gc.at(m_internal.x0(), m_internal.y0(), m_typed + "?");
 }
 
 string Input::toString() const
@@ -1070,6 +1093,9 @@ FactorIterator::FactorIterator(Node* node) : m_node(node)
 	m_term_index = m_gpExpr->getTermIndex(m_pTerm);
 }
 
+FactorIterator::FactorIterator(Expression* exp) : FactorIterator(exp->terms[0]->factors[0]) {}
+
+
 void FactorIterator::getNode(int factor, int term)
 {
 	m_term_index = term + (term < 0 ? m_gpExpr->terms.size() : 0);
@@ -1122,6 +1148,31 @@ bool FactorIterator::isEndTerm()
 	if (m_gpExpr == nullptr) throw logic_error("null iterator");
 
 	return m_factor_index == m_pTerm->factors.size() - 1;
+}
+
+void FactorIterator::erase()
+{
+	m_pTerm->factors.erase(m_pTerm->factors.begin() + m_factor_index);
+
+	if (m_factor_index == m_pTerm->factors.size()) {
+		m_factor_index = 0;
+		++m_term_index;
+	}
+	if (m_term_index < m_gpExpr->terms.size()) {
+		m_pTerm = m_gpExpr->terms[m_term_index];
+		m_node = m_pTerm->factors[m_factor_index];
+	}
+	else if (m_term_index == m_gpExpr->terms.size()) {
+		m_node = nullptr; 
+		m_pTerm = m_gpExpr->terms.back();
+		m_factor_index = m_pTerm->factors.size();
+	}
+}
+
+void FactorIterator::insert(Node* node)
+{
+	auto it = m_pTerm->factors.begin() + m_factor_index;
+	m_pTerm->factors.insert(it, node);
 }
 
 void EqnUndoList::save(Equation* eqn)
