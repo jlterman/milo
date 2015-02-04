@@ -4,8 +4,10 @@
 #include <map>
 #include <limits>
 #include <initializer_list>
+
 #include "milo.h"
 #include "nodes.h"
+#include "parser.h"
 
 using namespace std;
 
@@ -53,36 +55,21 @@ private:
 	void header_start(const Node* node, const string& tag);
 };
 
-class XMLParser
+class EqnXMLParser : public XMLParser
 {
 public:
-	enum { CLEAR=0, HEADER=1, FOOTER=2, ATOM=4 };
-	typedef Node* (*createPtr)(XMLParser&, Node*);
+	typedef Node* (*createPtr)(EqnXMLParser&, Node*);
 
-	XMLParser(istream& in, Equation& eqn);
-	~XMLParser();
+	EqnXMLParser(istream& in, Equation& eqn) : XMLParser(in), m_eqn(eqn) {}
+	~EqnXMLParser() {}
 
-	void next();
-	bool next(int state, const string& tag = string()) { next(); return getState(state, tag); }
-	bool getState(int state, const string& tag = string()) const;
-	const string& getTag() const { return m_tag; }
-	bool getAttribute(const string& name, string& value);
-	bool hasAttributes() { return m_attributes.size() != 0; }
 	Equation& getEqn() const { return m_eqn; }
 	Node* getFactor(Node* parent);
 	
 private:
 	Equation& m_eqn;
-	vector<string> m_tags;
-	size_t m_pos;
-	map<string, string> m_attributes;
-	int m_state;
-	string m_tag;
 
 	static const map<string, createPtr> create_factors;
-
-	bool EOL() const { return m_pos == m_tags.size(); }
-	void parse(istream& in);
 };
 
 char Parser::next()
@@ -176,7 +163,7 @@ void XML::footer(const string& tag)
 	while (close_tag != tag);
 }
 
-XMLParser::XMLParser(istream& in, Equation& eqn) : m_pos(0), m_eqn(eqn) 
+XMLParser::XMLParser(istream& in) : m_pos(0)
 { 
 	parse(in);  
 	if (!next(HEADER, "document")) throw logic_error("bad format");
@@ -264,15 +251,15 @@ bool XMLParser::getAttribute(const string& name, string& value)
 	return true;
 }
 
-Node* XMLParser::getFactor(Node* parent)
+Node* EqnXMLParser::getFactor(Node* parent)
 {
 	next();
-	if (create_factors.find(m_tag) == create_factors.end()) return nullptr;
-	auto cp = create_factors.at(m_tag);
+	if (create_factors.find(getTag()) == create_factors.end()) return nullptr;
+	auto cp = create_factors.at(getTag());
 	return cp(*this, parent);
 }
 
-Node::Node(XMLParser& in, Node* parent, const string& name) : 
+Node::Node(EqnXMLParser& in, Node* parent, const string& name) : 
 	m_parent(parent), m_sign(true), m_select(NONE), m_nth(1)
 {
 	if (!in.getState(XMLParser::HEADER, name)) 
@@ -297,7 +284,7 @@ Node::Node(XMLParser& in, Node* parent, const string& name) :
 
 Equation::Equation(istream& is)
 {
-	XMLParser in(is, *this);
+	EqnXMLParser in(is, *this);
 	if (!in.next(XMLParser::HEADER, "equation") ||
 		!in.next(XMLParser::HEADER, Expression::name)) throw logic_error("bad format");
 
@@ -317,7 +304,7 @@ Equation& Equation::operator=(const Equation& eqn)
 	eqn.xml_out(store);
 
 	istringstream is(store);
-	XMLParser in(is, *this);
+	EqnXMLParser in(is, *this);
 	if (!in.next(XMLParser::HEADER, "equation") ||
 		!in.next(XMLParser::HEADER, Expression::name)) throw logic_error("bad format");
 
@@ -339,12 +326,12 @@ const string      Power::name = "power";
 const string       Term::name = "term";
 
 template <class T>
-static Node* create(XMLParser& in, Node* parent)
+static Node* create(EqnXMLParser& in, Node* parent)
 {
 	return new T(in, parent);
 }
 
-const map<string, XMLParser::createPtr> XMLParser::create_factors =
+const map<string, EqnXMLParser::createPtr> EqnXMLParser::create_factors =
 	{ { Expression::name, create<Expression> },
 	  {   Function::name, create<Function> },
 	  {   Constant::name, create<Constant> },
@@ -600,7 +587,7 @@ bool Term::add(Parser& p)
 	return true;
 }
 
-Function::Function(XMLParser& in, Node* parent) : Node(in, parent, name)
+Function::Function(EqnXMLParser& in, Node* parent) : Node(in, parent, name)
 {
 	if (in.getAttribute("name", m_name)) {
 		if (functions.find(m_name) == functions.end()) throw logic_error("function not found");
@@ -616,7 +603,7 @@ Function::Function(XMLParser& in, Node* parent) : Node(in, parent, name)
 	if (!in.next(XMLParser::FOOTER, name)) throw logic_error("bad format");
 }
 
-Binary::Binary(XMLParser& in, Node* parent, const string& name) : Node(in, parent, name)
+Binary::Binary(EqnXMLParser& in, Node* parent, const string& name) : Node(in, parent, name)
 {
 	if (in.hasAttributes()) throw logic_error("bad format");
 
@@ -626,7 +613,7 @@ Binary::Binary(XMLParser& in, Node* parent, const string& name) : Node(in, paren
 	if (!in.next(XMLParser::FOOTER, name)) throw logic_error("bad format");
 }
 
-Variable::Variable(XMLParser& in, Node* parent) : Node(in, parent, name)
+Variable::Variable(EqnXMLParser& in, Node* parent) : Node(in, parent, name)
 {
 	if (!in.getState(XMLParser::ATOM, name)) throw logic_error("bad format");
 
@@ -640,7 +627,7 @@ Variable::Variable(XMLParser& in, Node* parent) : Node(in, parent, name)
 	if (in.hasAttributes()) throw logic_error("bad format");
 }
 
-Constant::Constant(XMLParser& in, Node* parent) : Node(in, parent, name)
+Constant::Constant(EqnXMLParser& in, Node* parent) : Node(in, parent, name)
 {
 	if (!in.getState(XMLParser::ATOM, name)) throw logic_error("bad format");
 
@@ -656,7 +643,7 @@ Constant::Constant(XMLParser& in, Node* parent) : Node(in, parent, name)
 	if (in.hasAttributes()) throw logic_error("bad format");
 }
 
-Number::Number(XMLParser& in, Node* parent) : Node(in, parent, name)
+Number::Number(EqnXMLParser& in, Node* parent) : Node(in, parent, name)
 {
 	if (!in.getState(XMLParser::ATOM, name)) throw logic_error("bad format");
 
@@ -669,7 +656,7 @@ Number::Number(XMLParser& in, Node* parent) : Node(in, parent, name)
 	if (in.hasAttributes()) throw logic_error("bad format");
 }
 
-Input::Input(XMLParser& in, Node* parent) : Node(in, parent, name), m_eqn(in.getEqn())
+Input::Input(EqnXMLParser& in, Node* parent) : Node(in, parent, name), m_eqn(in.getEqn())
 {
 	if (!in.getState(XMLParser::ATOM, name)) throw logic_error("bad format");
 
@@ -684,7 +671,7 @@ Input::Input(XMLParser& in, Node* parent) : Node(in, parent, name), m_eqn(in.get
 	if (in.hasAttributes()) throw logic_error("bad format");
 }
 
-Term::Term(XMLParser& in, Node* parent) : Node(in, parent, name)
+Term::Term(EqnXMLParser& in, Node* parent) : Node(in, parent, name)
 {
 	if (!in.getState(XMLParser::HEADER, name)) throw logic_error("bad format");
 	if (in.hasAttributes()) throw logic_error("bad format");
@@ -695,7 +682,7 @@ Term::Term(XMLParser& in, Node* parent) : Node(in, parent, name)
 	if (!in.getState(XMLParser::FOOTER, name)) throw logic_error("bad format");	
 }
 
-Expression::Expression(XMLParser& in, Node* parent) : Node(in, parent, name)
+Expression::Expression(EqnXMLParser& in, Node* parent) : Node(in, parent, name)
 {
 	if (!in.getState(XMLParser::HEADER, name)) throw logic_error("bad format");
 	if (in.hasAttributes()) throw logic_error("bad format");

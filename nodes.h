@@ -16,7 +16,7 @@ public:
     Input(Parser& p, Node* parent = nullptr);
     Input(Equation& eqn, std::string txt = std::string(), bool current = false, Node* parent = nullptr,
 		  bool neg = false, Node::Select s = Node::Select::NONE);
-	Input(XMLParser& in, Node* parent);
+	Input(EqnXMLParser& in, Node* parent);
 	~Input() {}
 
 	std::string toString() const;
@@ -53,7 +53,7 @@ class Binary : public Node
 public:
 	Binary(char op, Node* one, Node* two, Node* parent, bool neg, Node::Select s) : 
 	    Node(parent, neg, s), m_op(op), m_first(one), m_second(two) {}
-	Binary(XMLParser& in, Node* parent, const std::string& name);
+	Binary(EqnXMLParser& in, Node* parent, const std::string& name);
 	virtual ~Binary() { delete m_first; delete m_second; }
 
 	std::string toString() const { return m_first->toString() + std::string(1, m_op) + m_second->toString(); }
@@ -89,7 +89,7 @@ public:
 		m_first->setParent(this); m_second->setParent(this); 
 		m_first->setDrawParenthesis(false); m_second->setDrawParenthesis(false);
 	}
-    Divide(XMLParser& in, Node* parent) : Binary(in, parent, name)
+    Divide(EqnXMLParser& in, Node* parent) : Binary(in, parent, name)
 	{ 
 		m_op = '/'; m_first->setDrawParenthesis(false); m_second->setDrawParenthesis(false);
 	}
@@ -117,7 +117,7 @@ public:
 		m_first->setParent(this); m_second->setParent(this);
 		m_first->setDrawParenthesis(m_first->numFactors()>1); m_second->setDrawParenthesis(false);
 	}
-    Power(XMLParser& in, Node* parent) : Binary(in, parent, name)
+    Power(EqnXMLParser& in, Node* parent) : Binary(in, parent, name)
 	{ 
 		m_op = '^'; m_first->setDrawParenthesis(m_first->numFactors()>1); m_second->setDrawParenthesis(false);
 	}
@@ -147,7 +147,7 @@ public:
 	Constant(Parser& p, Node* parent);
     Constant(char name, Complex value, Node* parent, bool neg = false, Node::Select s = Node::Select::NONE) : 
 	    Node(parent, neg, s), m_name(name), m_value(value) {}
-	Constant(XMLParser& in, Node* parent);
+	Constant(EqnXMLParser& in, Node* parent);
 	~Constant() {}
 
 	using const_map = std::map<char, Complex>;
@@ -181,7 +181,7 @@ public:
     { 
 		values.emplace(name, Complex(0, 0)); 
 	}
-	Variable(XMLParser& in, Node* parent);
+	Variable(EqnXMLParser& in, Node* parent);
 	~Variable() {}
 
 	using var_map = std::map<char, Complex>;
@@ -216,7 +216,7 @@ public:
 	    Node(parent, neg, s), m_value(stod(real)), m_isInteger(isInteger(real)) {}
 	Number(int n, Node* parent, bool neg = false, Node::Select s = Node::Select::NONE) :
 	    Node(parent, neg, s), m_value(n), m_isInteger(true) {}
-	Number(XMLParser& in, Node* parent);
+	Number(EqnXMLParser& in, Node* parent);
 	~Number() {}
 
 	void getNumber(Parser& p);
@@ -247,7 +247,7 @@ class Term : public Node
 {
 public:
     Term(Parser& p, Expression* parent = nullptr) : Node((Node*) parent) { while(add(p)); }
-	Term(XMLParser& in, Node* parent = nullptr);
+	Term(EqnXMLParser& in, Node* parent = nullptr);
     Term(NodeVector f, Expression* parent) : Node((Node*) parent) { factors.swap(f); }
     Term(Node* node, Expression* parent = nullptr, bool fNeg = false) : 
 	    Node((Node*) parent, fNeg), factors(1, node) 
@@ -305,7 +305,7 @@ private:
 class Expression : public Node
 {
 public:
-	Expression(XMLParser& in, Node* parent = nullptr);
+	Expression(EqnXMLParser& in, Node* parent = nullptr);
 
     Expression(Parser& p, Node* parent = nullptr) : Node(parent)
 	{
@@ -400,7 +400,7 @@ public:
 			 bool neg = false, Node::Select s = Node::Select::NONE) : 
 	             Node(parent, neg, s), m_name(name), m_func(fp), m_arg(new Expression(p, this)) {}
 
-	Function(XMLParser& in, Node* parent);
+	Function(EqnXMLParser& in, Node* parent);
 	~Function() { delete m_arg; }
 
 private:

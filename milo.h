@@ -16,7 +16,7 @@ using Complex = std::complex<double>;
 
 class Graphics;
 class XML;
-class XMLParser;
+class EqnXMLParser;
 class Parser;
 class Node;
 class Input;
@@ -124,7 +124,7 @@ public:
 
     Node(Node* parent = nullptr, bool fNeg = false, Select s = NONE ) : 
 	    m_parent(parent), m_sign(!fNeg), m_select(s) {}
-	Node(XMLParser& in, Node* parent, const std::string& name);
+	Node(EqnXMLParser& in, Node* parent, const std::string& name);
 
 	virtual ~Node() {}
 	Node(const Node&)=delete;
