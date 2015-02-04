@@ -195,9 +195,10 @@ Node::Frame Divide::calcSize(Graphics& gc)
 void Divide::calcOrig(Graphics& gc, int x, int y)
 {
 	m_internal.setOrigin(x, y);
-	m_first->calculateOrigin(gc,  x + (m_internal.width() - m_first->getFrame().box.width())/2, y);
+	m_first->calculateOrigin(gc,  x + (m_internal.width() - m_first->getFrame().box.width())/2, 
+							      y + getFrame().base - m_first->getFrame().box.height());
 	m_second->calculateOrigin(gc, x + (m_internal.width() - m_second->getFrame().box.width())/2,
-							      y + m_first->getFrame().box.height() + gc.getDivideLineHeight());
+							      y + getFrame().base + gc.getDivideLineHeight());
 }
 
 
@@ -236,7 +237,9 @@ void Power::calcOrig(Graphics& gc, int x, int y)
 {
 	m_internal.setOrigin(x, y);
 	m_first->calculateOrigin(gc, x, y + getFrame().base);
-	m_second->calculateOrigin(gc, x + m_first->getFrame().box.width(), y);
+	m_second->calculateOrigin(gc, x + m_first->getFrame().box.width(), 
+							      y + getFrame().base - m_first->getFrame().box.height() 
+                                    + gc.getTextHeight()/2);
 }
 
 void Power::drawNode(Graphics& gc) const
