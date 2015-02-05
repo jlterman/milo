@@ -20,7 +20,7 @@ public:
 	~Input() {}
 
 	std::string toString() const;
-	void xml_out(XML& xml) const;
+	void xml_out(XML::Stream& xml) const;
 	int numFactors() const { return m_typed.size(); }
 	const std::string& getName() const { return name; }
 	std::type_index getType() const { return type; }
@@ -64,7 +64,7 @@ public:
 	Expression* getSecondExpression();
 
 	static Node* parse(Parser& p, Node* one, Node* parent);
-	void xml_out(XML& xml) const;
+	void xml_out(XML::Stream& xml) const;
 
 protected:
 	Node* m_first;  // Binary own this tree
@@ -153,7 +153,7 @@ public:
 	using const_map = std::map<char, Complex>;
 
 	std::string toString() const { return std::string() + m_name; }
-	void xml_out(XML& xml) const;
+	void xml_out(XML::Stream& xml) const;
 	Frame calcSize(Graphics& gc);
 	void calcOrig(Graphics& gc, int x, int y);
 	void drawNode(Graphics& gc) const;
@@ -187,7 +187,7 @@ public:
 	using var_map = std::map<char, Complex>;
 
 	std::string toString() const { return std::string(1, m_name); }
-	void xml_out(XML& xml) const;
+	void xml_out(XML::Stream& xml) const;
 	Frame calcSize(Graphics& gc);
 	void calcOrig(Graphics& gc, int x, int y);
 	void drawNode(Graphics& gc) const;
@@ -222,7 +222,7 @@ public:
 	void getNumber(Parser& p);
 
 	std::string toString() const;
-	void xml_out(XML& xml) const;
+	void xml_out(XML::Stream& xml) const;
 	Frame calcSize(Graphics& gc);
 	void calcOrig(Graphics& gc, int x, int y);
 	void drawNode(Graphics& gc) const;
@@ -259,7 +259,7 @@ public:
 	static Node* parse(Parser& p, Node* parent = nullptr);
 
 	std::string toString() const;
-	void xml_out(XML& xml) const;
+	void xml_out(XML::Stream& xml) const;
 	Frame calcSize(Graphics& gc);
 	void calcOrig(Graphics& gc, int x, int y);
 	void drawNode(Graphics& gc) const;
@@ -325,7 +325,7 @@ public:
 	~Expression() { freeVector(terms); }
 
 	std::string toString() const;
-	void xml_out(XML& xml) const;
+	void xml_out(XML::Stream& xml) const;
 	Frame calcSize(Graphics& gc);
 	void calcOrig(Graphics& gc, int x, int y);
 	void drawNode(Graphics& gc) const;
@@ -376,7 +376,7 @@ public:
 	static Node* parse(Parser& p, Node* parent);
 
 	std::string toString() const { return m_name + m_arg->toString(); }
-	void xml_out(XML& xml) const;
+	void xml_out(XML::Stream& xml) const;
 	Frame calcSize(Graphics& gc);
 	void calcOrig(Graphics& gc, int x, int y);
 	void drawNode(Graphics& gc) const;

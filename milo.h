@@ -12,17 +12,16 @@
 #include <algorithm>
 #include <typeindex>
 
-using Complex = std::complex<double>;
+#include "parser.h"
 
 class Graphics;
-class XML;
-class EqnXMLParser;
-class Parser;
 class Node;
 class Input;
 class Term;
 class Expression;
 class Equation;
+
+using Complex = std::complex<double>;
 using NodeVector = std::vector<Node*>;
 using NodeIter = NodeVector::iterator;
 
@@ -130,7 +129,6 @@ public:
 	Node(const Node&)=delete;
 	Node& operator=(const Node&)=delete;
 
-	virtual void xml_out(XML& xml) const=0;
 	virtual std::string toString() const=0;
 	virtual bool isLeaf() const { return true; }
 	virtual bool isFactor() const { return true; }
@@ -157,6 +155,7 @@ public:
 	void negative() { m_sign = !m_sign; }
 	bool getSign() const { return m_sign; }
 	Complex getValue() const;
+	void out(XML::Stream& xml);
 
 	const Frame& getFrame() const { return m_frame; }
 
@@ -179,6 +178,7 @@ private:
 	virtual void calcOrig(Graphics& gc, int x, int y)=0;
 	virtual void drawNode(Graphics& gc) const=0;
 	virtual Complex getNodeValue() const=0;
+	virtual void xml_out(XML::Stream& xml) const=0;
 
 	Frame m_frame;
 	Box m_parenthesis;
@@ -355,7 +355,7 @@ private:
 	FactorIterator disableCurrentInput();
 	void setSelect(Graphics& gc);
 	void factor(std::string text, NodeVector& factors, Node* parent);
-	void xml_out(XML& xml) const;
+	void xml_out(XML::Stream& xml) const;
 	void eraseSelection(Node* node);
 
 	static FactorIterator insert(FactorIterator it, Node* node);

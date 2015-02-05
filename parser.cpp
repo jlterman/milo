@@ -26,52 +26,6 @@ private:
 	size_t m_pos;
 };
 
-class XML
-{
-public:
-    XML(ostream& os) : 
-	    m_os(os), m_indent(1) { m_os << "<document>" << endl; }
-	~XML() { m_os << "</document>" << endl; }
-
-	void header(const Node* node, const string& tag, bool atomic, initializer_list<string>);
-
-	void header(const Node* node, const string& tag, bool atomic, const vector<string>& att);
-
-	void header(const Node* node, const string& tag, bool atomic = false);
-
-	void header(const string& tag) { 
-		print_indent(); m_os << "<" + tag + ">" << endl; m_indent += 1; m_tags.push_back(tag);
-	}
-
-	void footer(const string& tag);
-private:
-	vector<string> m_tags;
-	int m_indent;
-	ostream& m_os;
-
-	void print_indent() {
-		for (int i = 0; i < m_indent; ++i) m_os << ' ';
-	}
-	void header_start(const Node* node, const string& tag);
-};
-
-class EqnXMLParser : public XMLParser
-{
-public:
-	typedef Node* (*createPtr)(EqnXMLParser&, Node*);
-
-	EqnXMLParser(istream& in, Equation& eqn) : XMLParser(in), m_eqn(eqn) {}
-	~EqnXMLParser() {}
-
-	Equation& getEqn() const { return m_eqn; }
-	Node* getFactor(Node* parent);
-	
-private:
-	Equation& m_eqn;
-
-	static const map<string, createPtr> create_factors;
-};
-
 char Parser::next()
 {
 	if (m_pos < m_expr.length()) return m_expr[m_pos++];
@@ -87,80 +41,6 @@ bool Parser::match(const string& s)
 	}
 	else
 		return false;
-}
-
-void XML::header_start(const Node* node, const string& tag)
-{
-	m_os << "<" << tag;
-	if (!node->getSign()) m_os << " negative=\"true\"";
-	if (node->getSelect()) m_os << " select=\"" << Node::select_tags[node->getSelect()] << "\"";
-	if (node->getNth() != 1) m_os << " nth=\"" << node->getNth() << "\"";
-}
-
-void XML::header(const Node* node, const string& tag, bool atomic)
-{
-	print_indent();
-	header_start(node, tag);
-	m_os << (atomic ? "/>" : ">") << endl;
-	if (!atomic) {
-		m_indent += 1;
-		m_tags.push_back(tag);
-	}
-}
-
-void XML::header(const Node* node, const string& tag, bool atomic, initializer_list<string> children)
-{
-	print_indent();
-	header_start(node, tag);
-	if (children.size()%2 == 1) throw invalid_argument("odd xml tag pairs");
-	auto it = children.begin();
-	while ( it != children.end() ) {
-		string name = *it++;
-		string value = *it++;
-		m_os << " " << name << "=\""<< value << "\"";
-	}
-	if (atomic) {
-		m_os << "/>" << endl;
-		return;
-	}
-	m_os << ">" << endl;
-	m_indent += 1;
-	m_tags.push_back(tag);
-}
-
-void XML::header(const Node* node, const std::string& tag, bool atomic, const vector<string>& children)
-{
-	print_indent();
-	header_start(node, tag);
-	if (children.size()%2 == 1) throw invalid_argument("odd xml tag pairs");
-	auto it = children.begin();
-	while ( it != children.end() ) {
-		string name = *it++;
-		string value = *it++;
-		m_os << " " << name << "=\""<< value << "\"";
-	}
-	if (atomic) {
-		m_os << "/>" << endl;
-		return;
-	}
-	m_os << ">" << endl;
-	m_indent += 1;
-	m_tags.push_back(tag);
-}
-
-
-void XML::footer(const string& tag)
-{
-	string close_tag;
-	do {
-		close_tag = m_tags.back(); m_tags.pop_back();
-
-		m_indent -= 1;
-		print_indent();
-		m_os << "</" << close_tag << ">" << endl;
-
-	}
-	while (close_tag != tag);
 }
 
 XMLParser::XMLParser(istream& in) : m_pos(0)
@@ -251,12 +131,99 @@ bool XMLParser::getAttribute(const string& name, string& value)
 	return true;
 }
 
+namespace XML
+{
+	Stream& operator<<(Stream& xml, Stream::State state)
+	{
+		switch (state) {
+		    case Stream::HEADER_START: {
+				//if (xml.m_state != Stream::END) throw logic_error("bad xml state");
+				break;
+			}
+	        case Stream::HEADER_END: {
+				//if (xml.m_state != Stream::NAME) throw logic_error("bad xml state");
+				xml.m_os << ">" << xml.m_sep; 
+				xml.m_indent += xml.m_indent_step; 
+				state = Stream::END;
+				break;
+			}
+		    case Stream::ATOM_END: {
+				//if (xml.m_state != Stream::NAME) throw logic_error("bad xml state");
+				xml.m_os << "/>" << xml.m_sep;
+				state = Stream::END; 
+				xml.tags.pop();
+				break;
+			}
+	        case Stream::FOOTER: {
+				//if (xml.m_state != Stream::END) throw logic_error("bad xml state");
+				xml.m_indent -= xml.m_indent_step; 
+				if (xml.m_indent > 0) xml.m_os << string(xml.m_indent, ' ');
+				xml.m_os << "</" << xml.tags.top() << ">" << xml.m_sep; 
+				xml.tags.pop();
+				state = Stream::END;
+				break;
+			}
+		    default: {
+				//throw logic_error("bad xml state");
+				break;
+			}
+		}
+		xml.m_state = state;
+		return xml;
+	}
+	
+	Stream& operator<<(Stream& xml, const string& tag)
+	{
+		switch (xml.m_state) {
+	        case Stream::HEADER_START: {
+				if (xml.m_indent > 0) xml.m_os << string(xml.m_indent, ' ');
+				xml.m_os << "<" << tag;
+				xml.tags.push(tag);
+				xml.m_state = Stream::NAME;
+				break;
+			}
+	        case Stream::NAME: {
+			    xml.m_os << " " << tag << ((tag.back() == '=') ? "" : "=");
+			    xml.m_state = Stream::VALUE;
+			    break;
+		    }
+	        case Stream::VALUE: {
+				xml.m_os << "\"" << tag << "\"";
+				xml.m_state = Stream::NAME;
+				break;
+			}
+		    default: {
+				//throw logic_error("bad xml state");
+				break;
+			}
+		}	
+	}
+
+	Stream::Stream(ostream& os, int step, string sep) : 
+		m_sep(sep), m_os(os), m_indent_step(step), m_indent(0), m_state(END)
+	{
+		*this << HEADER_START << "document" << HEADER_END;
+	}
+
+	Stream::~Stream()
+	{ 
+		*this << FOOTER;
+	}
+}
+
 Node* EqnXMLParser::getFactor(Node* parent)
 {
 	next();
 	if (create_factors.find(getTag()) == create_factors.end()) return nullptr;
 	auto cp = create_factors.at(getTag());
 	return cp(*this, parent);
+}
+
+void Node::out(XML::Stream& xml)
+{ 
+	xml << XML::Stream::HEADER_START << getName();
+	if (m_nth != 1) xml << "nth" << to_string(m_nth);
+	xml_out(xml);
 }
 
 Node::Node(EqnXMLParser& in, Node* parent, const string& name) : 
@@ -380,16 +347,16 @@ Node* Expression::parse(Parser& p, Node* parent) {
 	return new Expression(p, parent);
 }
 
-void Equation::xml_out(XML& xml) const
+void Equation::xml_out(XML::Stream& xml) const
 {
-	xml.header("equation");
-	m_root->xml_out(xml);
-	xml.footer("equation");
+	xml << XML::Stream::HEADER_START << "equation" << XML::Stream::HEADER_END;
+	m_root->out(xml);
+	xml << XML::Stream::FOOTER;
 }
 
 void Equation::xml_out(ostream& os) const 
 {
-	XML xml(os);
+	XML::Stream xml(os);
 	xml_out(xml);
 }
 
@@ -400,56 +367,60 @@ void Equation::xml_out(string& str) const
 	str = os.str();
 }
 
-void Function::xml_out(XML& xml) const 
+void Function::xml_out(XML::Stream& xml) const 
 {
-	xml.header(this, name, false, {"name", m_name});
-	m_arg->xml_out(xml);
-	xml.footer(name);
+	xml << "name" << m_name << XML::Stream::HEADER_END;
+	m_arg->out(xml);
+	xml << XML::Stream::FOOTER;
 }
 
-void Binary::xml_out(XML& xml) const {
-	xml.header(this, getName());
-	m_first->xml_out(xml);
-	m_second->xml_out(xml);
-	xml.footer(getName());
+void Binary::xml_out(XML::Stream& xml) const 
+{
+	xml << XML::Stream::HEADER_END;
+	m_first->out(xml);
+	m_second->out(xml);
+	xml << XML::Stream::FOOTER;
 }
 
-void Variable::xml_out(XML& xml) const {
-	xml.header(this, name, true, { "name", string(1, m_name) });
+void Variable::xml_out(XML::Stream& xml) const
+{
+	xml << "name" << string(1, m_name) << XML::Stream::ATOM_END;
 }
 
-void Constant::xml_out(XML& xml) const {
-	xml.header(this, name, true, { "name", string(1, m_name) });
+void Constant::xml_out(XML::Stream& xml) const 
+{
+	xml << "name" << string(1, m_name) << XML::Stream::ATOM_END;
 }
 
-void Number::xml_out(XML& xml) const {
-	xml.header(this, name, true, { "value", to_string(m_value) });
+void Number::xml_out(XML::Stream& xml) const 
+{
+	xml << "value" << to_string(m_value) << XML::Stream::ATOM_END;
 }
 
-void Input::xml_out(XML& xml) const
+void Input::xml_out(XML::Stream& xml) const
 {
 	vector<string> attributes;
-	if (m_typed.length() > 0) {
-		attributes.emplace_back("text");
-		attributes.push_back(m_typed);
+	if (!m_typed.empty()) {
+		xml << "text" << m_typed;
 	}
 	if (m_current) {
-		attributes.emplace_back("current");
-		attributes.emplace_back("true");
+		xml << "current" << "true";
 	}		
-	xml.header(this, name, true, attributes);
+	xml << XML::Stream::ATOM_END;
 }
 
-void Term::xml_out(XML& xml) const {
-	xml.header(this, name, false);
-	for ( auto n : factors ) { n->xml_out(xml); }
-	xml.footer(name);
+void Term::xml_out(XML::Stream& xml) const
+{
+	xml << XML::Stream::HEADER_END;
+	for ( auto n : factors ) { n->out(xml); }
+	xml << XML::Stream::FOOTER;
 }
 
-void Expression::xml_out(XML& xml) const {
-	xml.header(this, name, false);
-	for ( auto n : terms ) { n->xml_out(xml); }
-	xml.footer(name);
+void Expression::xml_out(XML::Stream& xml) const
+{
+	xml << XML::Stream::HEADER_END;
+	for ( auto n : terms ) { n->out(xml); }
+	xml << XML::Stream::FOOTER;
 }
 
 Equation::Equation(string eq)
