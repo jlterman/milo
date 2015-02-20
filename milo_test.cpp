@@ -139,6 +139,8 @@ static void simplify(const string&)
 	eqn.simplify();
 }
 
+static void help(const string&);
+
 typedef void (*func_ptr)(const string& s);
 
 const map<string, func_ptr> test_funcs = {
@@ -150,7 +152,24 @@ const map<string, func_ptr> test_funcs = {
 	{ "xml-out",   xml_out   },
 	{ "normalize", normalize },
 	{ "simplify",  simplify  },
+	{ "help",      help      }
 };
+
+static void help(const string&)
+{
+	cerr << "Options:" << endl;
+	for (auto& m : test_funcs) {
+		cerr << "    --";
+
+		string option = m.first;
+		if (option.back() == ':') {
+			cerr << option.substr(0, option.length() - 1) << " <arg> " << endl;
+		}
+		else {
+			cerr << option << endl;
+		}
+	}
+}
 
 int main(int argc, char* argv[])
 {

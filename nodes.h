@@ -3,6 +3,8 @@
 #include <map>
 #include "milo.h"
 
+class Parser;
+
 bool isZero(double x);
 bool isZero(Complex z);
 bool isInteger(const std::string& n);

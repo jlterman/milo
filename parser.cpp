@@ -7,7 +7,7 @@
 
 #include "milo.h"
 #include "nodes.h"
-#include "parser.h"
+#include "xml.h"
 
 using namespace std;
 
@@ -24,6 +24,23 @@ private:
 	Equation& m_eqn;
 	string m_expr;
 	size_t m_pos;
+};
+
+class EqnXMLParser : public XML::Parser
+{
+public:
+	typedef Node* (*createPtr)(EqnXMLParser&, Node*);
+
+    EqnXMLParser(std::istream& in, Equation& eqn) : XML::Parser(in), m_eqn(eqn) {}
+	~EqnXMLParser() {}
+
+	Equation& getEqn() const { return m_eqn; }
+	Node* getFactor(Node* parent);
+	void assertNoAttributes() { if (hasAttributes()) syntaxError("Unknown attribute"); }
+private:
+	Equation& m_eqn;
+
+	static const std::map<std::string, createPtr> create_factors;
 };
 
 char Parser::next()
@@ -43,185 +60,20 @@ bool Parser::match(const string& s)
 		return false;
 }
 
-XMLParser::XMLParser(istream& in) : m_pos(0)
-{ 
-	parse(in);  
-	if (!next(HEADER, "document")) throw logic_error("bad format");
-}
-
-XMLParser::~XMLParser()
-{
-	if (!next(FOOTER, "document")) throw logic_error("bad format");
-}
-
-void XMLParser::parse(istream& in)
-{
-	string tag;
-	string end;
-	while (in >> tag) {
-		size_t pos = tag.find("=\"", 0);
-		if (pos != string::npos) {
-			end.clear();
-			if (tag.back() == '>') {
-				end = (tag.rfind("/>") != string::npos) ? "/>" : ">";
-				tag.erase(tag.find(end));
-			}
-			m_tags.push_back(tag.substr(0, pos));
-			m_tags.push_back(tag.substr(pos));
-
-			if (!end.empty()) m_tags.push_back(end);
-		}
-		else
-			m_tags.push_back(tag);
-	}
-}
-
-void XMLParser::next()
-{
-	if (EOL()) throw logic_error("out of xml");
-
-	m_tag = m_tags[m_pos++];
-	m_attributes.clear();
-	m_state = CLEAR;
-	if (m_tag.find("</", 0) == 0) {
-		m_tag.erase(0, 2);
-		m_tag.erase(m_tag.find('>'));
-		m_state = FOOTER;
-		return;
-	}
-	if (m_tag.front() == '<') {
-		m_tag.erase(m_tag.begin());
-		size_t pos = m_tag.rfind("/>");
-		if (pos != string::npos) {
-			m_tag.erase(pos);
-			m_state = HEADER|ATOM;
-			return;
-		}
-		if (m_tag.back() == '>') {
-			m_tag.erase(m_tag.end() - 1);
-			m_state = HEADER;
-			return;
-		}
-	}
-	m_state = HEADER;
-	while (m_tags[m_pos].rfind(">") == string::npos) {
-		if (m_tags[m_pos].find("=\"", 0) == 0) throw logic_error("bad format");
-		string name = m_tags[m_pos];
-		++m_pos;
-		if (m_tags[m_pos].find("=\"", 0) != 0) throw logic_error("bad format");
-		string value = m_tags[m_pos].substr(2, m_tags[m_pos].size() - 3);
-		m_attributes.emplace(name, value);
-		++m_pos;
-	}
-	if (m_tags[m_pos++] == "/>") m_state |= ATOM;
-	return;
-}
-
-bool XMLParser::getState(int state, const string& tag) const
-{
-	return ((state&m_state) != 0) && (tag.empty() || (tag == m_tag));
-}
-
-bool XMLParser::getAttribute(const string& name, string& value)
-{
-	if (m_attributes.find(name) == m_attributes.end()) return false;
-
-	value = m_attributes.at(name);
-	m_attributes.erase(name);
-	return true;
-}
-
-namespace XML
-{
-	Stream& operator<<(Stream& xml, Stream::State state)
-	{
-		switch (state) {
-		    case Stream::HEADER_START: {
-				//if (xml.m_state != Stream::END) throw logic_error("bad xml state");
-				break;
-			}
-	        case Stream::HEADER_END: {
-				//if (xml.m_state != Stream::NAME) throw logic_error("bad xml state");
-				xml.m_os << ">" << xml.m_sep; 
-				xml.m_indent += xml.m_indent_step; 
-				state = Stream::END;
-				break;
-			}
-		    case Stream::ATOM_END: {
-				//if (xml.m_state != Stream::NAME) throw logic_error("bad xml state");
-				xml.m_os << "/>" << xml.m_sep;
-				state = Stream::END; 
-				xml.tags.pop();
-				break;
-			}
-	        case Stream::FOOTER: {
-				//if (xml.m_state != Stream::END) throw logic_error("bad xml state");
-				xml.m_indent -= xml.m_indent_step; 
-				if (xml.m_indent > 0) xml.m_os << string(xml.m_indent, ' ');
-				xml.m_os << "</" << xml.tags.top() << ">" << xml.m_sep; 
-				xml.tags.pop();
-				state = Stream::END;
-				break;
-			}
-		    default: {
-				//throw logic_error("bad xml state");
-				break;
-			}
-		}
-		xml.m_state = state;
-		return xml;
-	}
-	
-	Stream& operator<<(Stream& xml, const string& tag)
-	{
-		switch (xml.m_state) {
-	        case Stream::HEADER_START: {
-				if (xml.m_indent > 0) xml.m_os << string(xml.m_indent, ' ');
-				xml.m_os << "<" << tag;
-				xml.tags.push(tag);
-				xml.m_state = Stream::NAME;
-				break;
-			}
-	        case Stream::NAME: {
-			    xml.m_os << " " << tag << ((tag.back() == '=') ? "" : "=");
-			    xml.m_state = Stream::VALUE;
-			    break;
-		    }
-	        case Stream::VALUE: {
-				xml.m_os << "\"" << tag << "\"";
-				xml.m_state = Stream::NAME;
-				break;
-			}
-		    default: {
-				//throw logic_error("bad xml state");
-				break;
-			}
-		}	
-	}
-
-	Stream::Stream(ostream& os, int step, string sep) : 
-		m_sep(sep), m_os(os), m_indent_step(step), m_indent(0), m_state(END)
-	{
-		*this << HEADER_START << "document" << HEADER_END;
-	}
-
-	Stream::~Stream()
-	{ 
-		*this << FOOTER;
-	}
-}
-
 Node* EqnXMLParser::getFactor(Node* parent)
 {
-	next();
+	if (!check(XML::HEADER)) return nullptr;
+
+	next(XML::HEADER);
 	if (create_factors.find(getTag()) == create_factors.end()) return nullptr;
+
 	auto cp = create_factors.at(getTag());
 	return cp(*this, parent);
 }
 
 void Node::out(XML::Stream& xml)
 { 
-	xml << XML::Stream::HEADER_START << getName();
+	xml << XML::HEADER << getName();
 	if (m_nth != 1) xml << "nth" << to_string(m_nth);
 	xml_out(xml);
 }
@@ -229,36 +81,39 @@ void Node::out(XML::Stream& xml)
 Node::Node(EqnXMLParser& in, Node* parent, const string& name) : 
 	m_parent(parent), m_sign(true), m_select(NONE), m_nth(1)
 {
-	if (!in.getState(XMLParser::HEADER, name)) 
-		throw logic_error("bad header: expected: " + name + ", got: " + in.getTag());
+	while (in.check(XML::NAME_VALUE)) in.next(XML::NAME_VALUE);
 
 	string value;
 	if (in.getAttribute("negative", value)) {
-		if (value != "true" && value != "false") throw logic_error("bad format");
+		if (value != "true" && value != "false") in.syntaxError("bad boolean value");
 		m_sign = (value == "false");
 	}
 	if (in.getAttribute("select", value)) {
 		auto pos = find(select_tags, value);
-		if (pos == select_tags.end()) throw logic_error("bad format");
+		if (pos == select_tags.end()) in.syntaxError("unknown select node value");
 		m_select = (Select) distance(select_tags.begin(), pos);
 	}
 	if (in.getAttribute("nth", value)) {
-		if (!isInteger(value)) throw logic_error("bad format");
+		if (!isInteger(value)) in.syntaxError("not an integer");
 		m_nth = atoi(value.c_str());
 	}
 	in.getEqn().setSelectFromNode(this);
 }
 
-Equation::Equation(istream& is)
+void Equation::xml_in(EqnXMLParser& in)
 {
-	EqnXMLParser in(is, *this);
-	if (!in.next(XMLParser::HEADER, "equation") ||
-		!in.next(XMLParser::HEADER, Expression::name)) throw logic_error("bad format");
+	in.next(XML::HEADER, "equation").next(XML::HEADER_END).next(XML::HEADER, Expression::name);
 
 	m_root = new Expression(in, nullptr);
 	m_root->setDrawParenthesis(false);
 
-	if (!in.next(XMLParser::FOOTER, "equation")) throw logic_error("bad format");
+	in.next(XML::FOOTER);
+}
+
+Equation::Equation(istream& is)
+{
+	EqnXMLParser in(is, *this);
+	xml_in(in);
 }
 
 Equation& Equation::operator=(const Equation& eqn)
@@ -272,13 +127,7 @@ Equation& Equation::operator=(const Equation& eqn)
 
 	istringstream is(store);
 	EqnXMLParser in(is, *this);
-	if (!in.next(XMLParser::HEADER, "equation") ||
-		!in.next(XMLParser::HEADER, Expression::name)) throw logic_error("bad format");
-
-	m_root = new Expression(in, nullptr);
-	m_root->setDrawParenthesis(false);
-
-	if (!in.next(XMLParser::FOOTER, "equation")) throw logic_error("bad format");
+	xml_in(in);
 	return *this;
 }
 
@@ -349,9 +198,9 @@ Node* Expression::parse(Parser& p, Node* parent) {
 
 void Equation::xml_out(XML::Stream& xml) const
 {
-	xml << XML::Stream::HEADER_START << "equation" << XML::Stream::HEADER_END;
+	xml << XML::HEADER << "equation" << XML::HEADER_END;
 	m_root->out(xml);
-	xml << XML::Stream::FOOTER;
+	xml << XML::FOOTER;
 }
 
 void Equation::xml_out(ostream& os) const 
@@ -369,58 +218,58 @@ void Equation::xml_out(string& str) const
 
 void Function::xml_out(XML::Stream& xml) const 
 {
-	xml << "name" << m_name << XML::Stream::HEADER_END;
+	xml << XML::NAME_VALUE << "name" << m_name << XML::HEADER_END;
 	m_arg->out(xml);
-	xml << XML::Stream::FOOTER;
+	xml << XML::FOOTER;
 }
 
 void Binary::xml_out(XML::Stream& xml) const 
 {
-	xml << XML::Stream::HEADER_END;
+	xml << XML::HEADER_END;
 	m_first->out(xml);
 	m_second->out(xml);
-	xml << XML::Stream::FOOTER;
+	xml << XML::FOOTER;
 }
 
 void Variable::xml_out(XML::Stream& xml) const
 {
-	xml << "name" << string(1, m_name) << XML::Stream::ATOM_END;
+	xml << XML::NAME_VALUE << "name" << string(1, m_name) << XML::ATOM_END;
 }
 
 void Constant::xml_out(XML::Stream& xml) const 
 {
-	xml << "name" << string(1, m_name) << XML::Stream::ATOM_END;
+	xml << XML::NAME_VALUE << "name" << string(1, m_name) << XML::ATOM_END;
 }
 
 void Number::xml_out(XML::Stream& xml) const 
 {
-	xml << "value" << to_string(m_value) << XML::Stream::ATOM_END;
+	xml << XML::NAME_VALUE << "value" << to_string(m_value) << XML::ATOM_END;
 }
 
 void Input::xml_out(XML::Stream& xml) const
 {
 	vector<string> attributes;
 	if (!m_typed.empty()) {
-		xml << "text" << m_typed;
+		xml << XML::NAME_VALUE << "text" << m_typed;
 	}
 	if (m_current) {
-		xml << "current" << "true";
+		xml << XML::NAME_VALUE << "current" << "true";
 	}		
-	xml << XML::Stream::ATOM_END;
+	xml << XML::ATOM_END;
 }
 
 void Term::xml_out(XML::Stream& xml) const
 {
-	xml << XML::Stream::HEADER_END;
+	xml << XML::HEADER_END;
 	for ( auto n : factors ) { n->out(xml); }
-	xml << XML::Stream::FOOTER;
+	xml << XML::FOOTER;
 }
 
 void Expression::xml_out(XML::Stream& xml) const
 {
-	xml << XML::Stream::HEADER_END;
+	xml << XML::HEADER_END;
 	for ( auto n : terms ) { n->out(xml); }
-	xml << XML::Stream::FOOTER;
+	xml << XML::FOOTER;
 }
 
 Equation::Equation(string eq)
@@ -560,109 +409,115 @@ bool Term::add(Parser& p)
 
 Function::Function(EqnXMLParser& in, Node* parent) : Node(in, parent, name)
 {
+	in.next(XML::HEADER_END);
+
 	if (in.getAttribute("name", m_name)) {
-		if (functions.find(m_name) == functions.end()) throw logic_error("function not found");
+		if (functions.find(m_name) == functions.end()) 
+			in.syntaxError("function name unknown: " + m_name);
 		m_func = functions.at(m_name);
 	}
 	else
-		throw logic_error("bad format");
+		in.syntaxError("function name not found");
 
-	if (in.hasAttributes()) throw logic_error("bad format");
-
+	in.assertNoAttributes();
 	m_arg  = in.getFactor(this);
+	if (m_arg == nullptr) in.syntaxError("header for factor expected");
 
-	if (!in.next(XMLParser::FOOTER, name)) throw logic_error("bad format");
+	in.next(XML::FOOTER);
 }
 
 Binary::Binary(EqnXMLParser& in, Node* parent, const string& name) : Node(in, parent, name)
 {
-	if (in.hasAttributes()) throw logic_error("bad format");
+	in.next(XML::HEADER_END);
+	in.assertNoAttributes();
 
 	m_first  = in.getFactor(this);
-	m_second = in.getFactor(this);
+	if (m_first == nullptr) in.syntaxError("header for factor expected");
 
-	if (!in.next(XMLParser::FOOTER, name)) throw logic_error("bad format");
+	m_second = in.getFactor(this);
+	if (m_second == nullptr) in.syntaxError("header for factor expected");
+
+	in.next(XML::FOOTER);
 }
 
 Variable::Variable(EqnXMLParser& in, Node* parent) : Node(in, parent, name)
 {
-	if (!in.getState(XMLParser::ATOM, name)) throw logic_error("bad format");
-
 	string value;
 	if (in.getAttribute("name", value)) {
 		m_name = value[0];
 	}
 	else
-		throw logic_error("bad format");
+		in.syntaxError("Missing name attribute");
 
-	if (in.hasAttributes()) throw logic_error("bad format");
+	in.assertNoAttributes();
+	in.next(XML::ATOM_END);
 }
 
 Constant::Constant(EqnXMLParser& in, Node* parent) : Node(in, parent, name)
 {
-	if (!in.getState(XMLParser::ATOM, name)) throw logic_error("bad format");
-
 	string value;
 	if (in.getAttribute("name", value)) {
 		m_name = value[0];
 
-		if (constants.find(m_name) == constants.end()) throw logic_error("bad format");
+		if (constants.find(m_name) == constants.end()) 
+			in.syntaxError("Unknown constant name");
 	}
 	else
-		throw logic_error("bad format");
+		in.syntaxError("Missing name attribute");
 
-	if (in.hasAttributes()) throw logic_error("bad format");
+	in.assertNoAttributes();
+	in.next(XML::ATOM_END);
 }
 
 Number::Number(EqnXMLParser& in, Node* parent) : Node(in, parent, name)
 {
-	if (!in.getState(XMLParser::ATOM, name)) throw logic_error("bad format");
-
 	string real = "0";
-	in.getAttribute("value", real);
+	if (!in.getAttribute("value", real)) in.syntaxError("Missing value attribute");
 
 	m_value = stod(real);
 	m_isInteger = isInteger(real);
 
-	if (in.hasAttributes()) throw logic_error("bad format");
+	in.assertNoAttributes();
+	in.next(XML::ATOM_END);
 }
 
 Input::Input(EqnXMLParser& in, Node* parent) : Node(in, parent, name), m_eqn(in.getEqn())
 {
-	if (!in.getState(XMLParser::ATOM, name)) throw logic_error("bad format");
-
 	string value;
 	if (in.getAttribute("current", value)) {
-		if (value != "true" && value != "false") throw logic_error("bad format");
+		if (value != "true" && value != "false") in.syntaxError("bad boolean value");
 		m_current = (value == "true");
 	}
 	if (in.getAttribute("text", value)) {
 		m_typed = value;
 	}
-	if (in.hasAttributes()) throw logic_error("bad format");
+	in.next(XML::ATOM_END);
 }
 
 Term::Term(EqnXMLParser& in, Node* parent) : Node(in, parent, name)
 {
-	if (!in.getState(XMLParser::HEADER, name)) throw logic_error("bad format");
-	if (in.hasAttributes()) throw logic_error("bad format");
-	
+	in.next(XML::HEADER_END);
+	in.assertNoAttributes();
+
 	while (Node* factor = in.getFactor(this)) { 
 		factors.push_back(factor);
 	}
-	if (!in.getState(XMLParser::FOOTER, name)) throw logic_error("bad format");	
+
+	in.next(XML::FOOTER);
 }
 
 Expression::Expression(EqnXMLParser& in, Node* parent) : Node(in, parent, name)
 {
-	if (!in.getState(XMLParser::HEADER, name)) throw logic_error("bad format");
-	if (in.hasAttributes()) throw logic_error("bad format");
+	in.next(XML::HEADER_END);
+	in.assertNoAttributes();
 	
-	while (in.next(XMLParser::HEADER, Term::name)) { 
+	while (in.check(XML::HEADER, Term::name)) { 
+		in.next(XML::HEADER, Term::name);
 		terms.push_back(new Term(in, this));
 	}
 	setDrawParenthesis(true);
-	if (!in.getState(XMLParser::FOOTER, name)) throw logic_error("bad format");	
+
+	in.next(XML::FOOTER);
 }
 
 Input::Input(Parser& p, Node* parent) : 

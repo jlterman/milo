@@ -12,7 +12,7 @@
 #include <algorithm>
 #include <typeindex>
 
-#include "parser.h"
+#include "xml.h"
 
 class Graphics;
 class Node;
@@ -20,6 +20,7 @@ class Input;
 class Term;
 class Expression;
 class Equation;
+class EqnXMLParser;
 
 using Complex = std::complex<double>;
 using NodeVector = std::vector<Node*>;
@@ -356,6 +357,7 @@ private:
 	void setSelect(Graphics& gc);
 	void factor(std::string text, NodeVector& factors, Node* parent);
 	void xml_out(XML::Stream& xml) const;
+	void xml_in(EqnXMLParser& in);
 	void eraseSelection(Node* node);
 
 	static FactorIterator insert(FactorIterator it, Node* node);

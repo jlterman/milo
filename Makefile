@@ -1,4 +1,4 @@
-OBJECTS = parser.o milo.o symbol.o
+OBJECTS = parser.o milo.o symbol.o xml.o
 ARGS    = -g -std=c++11
 
 all: milo_test milo_ncurses
@@ -23,6 +23,9 @@ milo.o: milo.cpp milo.h nodes.h milo_key.h
 
 symbol.o: symbol.cpp milo.h nodes.h
 	g++ $(ARGS) symbol.cpp -c
+
+xml.o: xml.cpp xml.h
+	g++ $(ARGS) xml.cpp -c
 
 milo_key.h: genkey.sh
 	sh genkey.sh
