@@ -12,3 +12,5 @@ xml.o: ../xml.cpp ../xml.h
 xml_test: xml_test.o xml.o
 	g++ xml_test.o xml.o -o xml_test
 
+clean:
+	rm *.o xml_test
