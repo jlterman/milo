@@ -40,10 +40,10 @@ milo_key.h: genkey.sh
 	sh genkey.sh
 
 test: test.o
-	g++ $(ARGS) test.o -o test
+	g++ test.o -o test
 
 test.o: test.cpp
-	g++ $(ARGS) test.cpp -c
+	g++ $(CPPARGS) -g test.cpp -c
 
 clean:
 	rm -f test milo_test milo_ncurses milo_key.h *.o
