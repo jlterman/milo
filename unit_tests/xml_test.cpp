@@ -118,7 +118,9 @@ int main()
 	try {
 		XML::Parser p(in2);
 		p.next(XML::HEADER, "equation").next(XML::HEADER_END);
-		p.next(XML::HEADER, "variable").next(XML::NAME_VALUE).next(XML::ATOM_END);
+		p.next(XML::HEADER, "variable");
+		p.next(XML::NAME_VALUE).next(XML::NAME_VALUE);
+		p.next(XML::ATOM_END);
 		string value;
 		if (!p.getAttribute("name", value) || value != "a") throw logic_error("test did not pass");
 		if (!p.getAttribute("negative", value) || value != "true") throw logic_error("test did not pass");
@@ -186,7 +188,7 @@ int main()
 	}
 	catch (std::exception& e) {
 		string err = e.what();
-		if (err == "Bad xml syntax: FOOTER, document\n<document><equation><variable/></document<<<<<") passed = true;
+		if (err == "Bad xml syntax: FOOTER, document\n<document><equation><variable/></document><<<<<") passed = true;
 		else cout << "Unexpected exception: " << "'" << e.what() << "'" << endl;
 	}
 	cout << "Test #5  " << ( passed ? "passed" : "failed") << endl;

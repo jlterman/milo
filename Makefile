@@ -1,13 +1,15 @@
 OBJECTS = parser.o milo.o symbol.o xml.o
 CPPARGS = -std=c++11
 
-all: milo_test milo_ncurses
+all: debug
+
+exe: milo_test milo_ncurses
 
 debug: ARGS = $(CPPARGS) -g 
-debug: all
+debug: exe
 
 release: ARGS = $(CPPARGS) -O2
-release: all
+release: exe
 
 unit: 
 	cd unit_tests; make clean all

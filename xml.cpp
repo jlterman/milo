@@ -2,6 +2,12 @@
 
 using namespace std;
 
+void trim(string& s)
+{
+	while (isspace(s.front())) s.erase(0, 1);
+	while (isspace(s.back()))  s.erase(s.length() - 1, 1);
+}
+
 namespace XML
 {
 	void FSM::advance(State new_state)
@@ -42,7 +48,6 @@ namespace XML
 			{ HEADER,     "HEADER"     }, 
 			{ HEADER_END, "HEADER_END" }, 
 			{ FOOTER,     "FOOTER"     }, 
-			{ FOOTER_END, "FOOTER_END" }, 
 			{ ATOM_END,   "ATOM_END"   }, 
 			{ NAME_VALUE, "NAME_VALUE" }, 
 			{ ELEMENT,    "ELEMENT"    }, 
@@ -86,16 +91,12 @@ namespace XML
 				if (fsm.finished()) throw logic_error("Too many footers");
 				m_os << "</" << fsm.getTag() << ">";
 				fsm.next(FOOTER);
-				fsm.next(FOOTER_END);
 				break;
 			}
 		    case FINISH: {
 				while (!fsm.finished()) out(FOOTER);
 				break;
 			}
-		    case FOOTER_END:
-				if (fsm.getState() != FOOTER_END) fsm.next(state);
-				break;
 		    default: {
 				throw logic_error("Bad xml state: " + to_string(state));
 				break;
@@ -198,44 +199,90 @@ namespace XML
 		}
 	}
 
-	Parser::Parser(istream& in) : m_pos(0)
+	Parser::Parser(istream& in) : m_pos(-1)
 	{ 
-		tokenize(in);  
+		tokenize(in);
+		m_pos = 0;
 		next(HEADER, "document").next(HEADER_END);
 	}
 	
-	void Parser::tokenize(const string& xml)
+	void Parser::tokenize(string xml)
 	{
-		const regex re_xml("(</?\\w+)\\s*([^/>]*)\\s*(/?>)([^<]*)");
-		const regex re_nws("\\S");
-		smatch matches;
-		
-		string s = xml;
-		while (regex_search (s, matches, re_xml)) {
-			for ( auto it = matches.begin() + 1; it != matches.end(); ++it) {
-				string tag = *it;
-				if (!regex_search(tag, re_nws)) continue;
-				m_tokens.push_back(tag);
-			}
-			s = matches.suffix().str();
+		auto ws = [](char c) { return isspace(c); };
+		if (find_if_not(xml.begin(), xml.end(), ws) == xml.end()) return;
+
+		if (xml.find_first_of("<>\"'") == string::npos) {
+			m_tokens.push_back(xml);
+			return;
 		}
+		trim(xml);
+		if (xml.find("</") == 0 && xml.back() == '>') {
+			m_tokens.push_back(xml);
+			return;
+		}
+		
+		if (xml.front() != '<') syntaxError("Unknown tag : " + xml);
+		auto pos = xml.find(' ');
+		if (pos == string::npos) {
+			m_tokens.push_back(xml);
+			return;
+		}
+		m_tokens.push_back(xml.substr(0, pos));
+		xml.erase(0, pos + 1);
+		while ((pos = xml.find('"', 0)) != string::npos)
+		{
+			pos = xml.find('"', pos + 1);
+			if (pos == string::npos) syntaxError("Unmatched quotes : " + xml);
+			m_tokens.push_back(xml.substr(0, pos + 1));
+			xml.erase(0, pos + 1);
+			trim(xml);
+		}
+		if (!xml.empty()) syntaxError("Extra xml : " + xml);
 	}
 
 	void Parser::tokenize(istream& in)
 	{
-		const regex re_end(">\\s*$");
-		char buffer[1024] = "\0";
+		static char buffer[1024];
+		
 		string xml;
-		while (in.getline(buffer, 1024)) {
-			xml = buffer;
-			xml += "\n";
-			buffer[0] = '\0';
-			while (!regex_search(xml, re_end) && in.getline(buffer, 1024)) {
-				xml += buffer;
-				xml += "\n";
-				buffer[0] = '\0';
+		char end_chr = '<';
+		auto pos = string::npos;
+		
+		while (in.getline(buffer, 1024))
+		{
+			xml += string(buffer) + "\n";
+			
+			while ((pos = xml.find(end_chr)) != string::npos)
+			{
+				switch (end_chr) {
+				    case '<':
+						if (pos > 0) {
+							tokenize(xml.substr(0, pos));
+							xml.erase(0, pos);
+						}
+						end_chr = '>';
+						break;
+				    case '>':
+						if (xml.find("</") == 0) {
+							tokenize(xml.substr(0, pos + 1));
+						}
+						else if ( xml.at(pos - 1) == '/' ) {
+							tokenize(xml.substr(0, pos - 1));
+							m_tokens.push_back("/>");
+						}
+						else {
+							tokenize(xml.substr(0, pos));
+							m_tokens.push_back(">");
+						}
+						++pos;
+						xml.erase(0, pos);
+						end_chr = '<';
+						break;
+				    default:
+						syntaxError("Bad parsing : " + xml);
+						break;
+				}
 			}
-			tokenize(xml);
 		}
 	}
 
@@ -268,42 +315,31 @@ namespace XML
 	void Parser::syntaxError(const string& msg)
 	{
 		string error = msg + "\n";
-		for (int i = 0; i <= m_pos; ++i) { error += m_tokens[i]; }
+		int last = (m_pos == -1) ? m_tokens.size() - 1 : m_pos;
+		for (int i = 0; i <= last; ++i) { error += m_tokens[i]; }
 		error += "<<<<<";
 		throw logic_error(error);
 	}
 
 	void Parser::parse(State& state, string& tag)
 	{
-		const map<State, regex> parser_matches = {
-			{ HEADER,     regex("^<\\w+$")                  },
-			{ FOOTER,     regex("^</\\w+$")                 },
-			{ NAME_VALUE, regex("^(\\w+=\"[^\"]+\"\\s*)+$") },
-			{ ATOM_END,   regex("^/>$")                     },
-			{ END,        regex("^>$")                      },
-		};
-
-		if (EOL()) throw logic_error("Unexpected end of xml in parser");
-		state = ELEMENT;
-		for ( auto& m : parser_matches ) { 
-			if (regex_search(m_tokens[m_pos], m.second)) {
-				state = m.first;
-				break;
-			}
+		if (m_tokens.at(m_pos) == ">") {
+			state = HEADER_END;
 		}
-		switch (state) {
-		    case END:
-				state = (fsm.getState() == FOOTER) ? FOOTER_END : HEADER_END;
-				break;
-		    case HEADER:
-				tag = m_tokens[m_pos].substr(1);
-				break;
-		    case FOOTER:
-				tag = m_tokens[m_pos].substr(2);
-				break;
-		    default:
-				break;
+		else if (m_tokens.at(m_pos) == "/>") {
+			state = ATOM_END;
+		} 
+		else if (m_tokens.at(m_pos).find("</") == 0) {
+			state = FOOTER; tag = m_tokens.at(m_pos).substr(2, m_tokens[m_pos].length() - 3);
 		}
+		else if (m_tokens.at(m_pos).front() == '<') {
+			state = HEADER; tag = m_tokens.at(m_pos).substr(1);
+		}
+		else if (m_tokens.at(m_pos).find('"') != string::npos) {
+			state = NAME_VALUE;
+		}
+		else 
+			state = ELEMENT;
 	}
 
 	void Parser::next()
@@ -336,7 +372,6 @@ namespace XML
 				break;
 			}
 		    case ATOM_END:
-		    case FOOTER_END:
 		    case HEADER_END: {
 				fsm.next(state);
 				break;
@@ -349,7 +384,6 @@ namespace XML
 		if (fsm.getState() == ILLEGAL) 
 			syntaxError("Bad xml syntax: " + to_string(state) + (tag.empty() ? "" : ", " + tag));
 		++m_pos;
-		if (state == FOOTER) next(FOOTER_END);
 	}
 
 	bool Parser::check(State ref_state, const string& ref_tag)

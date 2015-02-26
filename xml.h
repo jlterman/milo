@@ -8,8 +8,8 @@
 #include <regex>
 
 namespace XML {
-	enum State { END=1, HEADER=2, HEADER_END=4, FOOTER=8, FOOTER_END=16, ATOM_END=32,
-				 NAME_VALUE=64, ELEMENT=128, NEW=256, ILLEGAL=512, FINISH=1024 };
+	enum State { END=1, HEADER=2, HEADER_END=4, FOOTER=8, ATOM_END=16, NAME_VALUE=32,
+				 ELEMENT=64, NEW=128, ILLEGAL=256, FINISH=512 };
 	class FSM
 	{
 	public:
@@ -24,14 +24,33 @@ namespace XML {
 		State m_state;
 		std::stack<std::string> m_tags;
 
+		/*
+		 * The array transitions implments the following state machine
+		 * to check XML syntax
+
+                +--------+      NEW  +------------+
+                ^        |       |   |            |
+                |        V       V   V            |
+              FOOTER<----+------>HEADER--------+  |
+                ^        ^        |  |         |  |
+                |        |   +----+  |         |  |
+                |        |   |       |   +---+ |  |
+                |        |   V       V   |   | |  |
+                |      ATOM_END<-NAME_VALUE<-+ |  |
+                |                   |          |  |
+                |                   V          |  |
+                +-----ELEMENT<---HEADER_END<---+  |
+                                    |             |
+                                    +-------------+
+		*/
+
 		const std::vector<std::array<int, 2>> transitions = {
-			{ NEW,                 HEADER                         },
-			{ FOOTER,              FOOTER_END                     },
-			{ ATOM_END|FOOTER_END, FOOTER|HEADER                  },
-			{ HEADER,              NAME_VALUE|HEADER_END|ATOM_END },
-			{ NAME_VALUE,          HEADER_END|ATOM_END|NAME_VALUE },
-			{ HEADER_END,          ELEMENT|HEADER                 },
-			{ ELEMENT,             FOOTER                         }
+			{ NEW,             HEADER                         },
+			{ ATOM_END|FOOTER, FOOTER|HEADER                  },
+			{ HEADER,          NAME_VALUE|HEADER_END|ATOM_END },
+			{ NAME_VALUE,      HEADER_END|ATOM_END|NAME_VALUE },
+			{ HEADER_END,      ELEMENT|HEADER                 },
+			{ ELEMENT,         FOOTER                         }
 		};
 	};
 
@@ -89,7 +108,7 @@ namespace XML {
 		bool EOL() const { return m_pos == m_tokens.size(); }
 		void next();
 		void tokenize(std::istream& in);
-		void tokenize(const std::string& xml);
+		void tokenize(std::string xml);
 		void parse_attributes(const std::string& nv);
 		void parse(State& state, std::string& tag);
 
