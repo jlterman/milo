@@ -222,22 +222,17 @@ namespace XML
 		}
 		
 		if (xml.front() != '<') syntaxError("Unknown tag : " + xml);
-		auto pos = xml.find(' ');
-		if (pos == string::npos) {
+		auto p = find_if(xml.begin(), xml.end(), ws);
+		if (p == xml.end()) {
 			m_tokens.push_back(xml);
 			return;
 		}
+		size_t pos = distance(xml.begin(), p);
 		m_tokens.push_back(xml.substr(0, pos));
 		xml.erase(0, pos + 1);
-		while ((pos = xml.find('"', 0)) != string::npos)
-		{
-			pos = xml.find('"', pos + 1);
-			if (pos == string::npos) syntaxError("Unmatched quotes : " + xml);
-			m_tokens.push_back(xml.substr(0, pos + 1));
-			xml.erase(0, pos + 1);
-			trim(xml);
-		}
-		if (!xml.empty()) syntaxError("Extra xml : " + xml);
+
+		trim(xml);
+		m_tokens.push_back(xml);
 	}
 
 	void Parser::tokenize(istream& in)
@@ -298,11 +293,14 @@ namespace XML
 	
 	void Parser::parse_attributes(const string& nv)
 	{
-		const regex re_nv("(\\w+)=\"([^\"]+)\"");
+		const regex re_nv_all("^(\\w+=\"[^\"]+\"\\s*)+$");
+		if (!regex_match(nv, re_nv_all)) syntaxError("Bad name, value pair:");
+
+		const regex re_nv_pair("(\\w+)=\"([^\"]+)\"");
 		smatch matches;
 		
 		string s = nv;
-		while (regex_search (s, matches, re_nv)) {
+		while (regex_search (s, matches, re_nv_pair)) {
 			string name = *(matches.begin() + 1);
 			string value = *(matches.begin() + 2);
 			unescape_tag(value);

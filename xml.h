@@ -28,20 +28,20 @@ namespace XML {
 		 * The array transitions implments the following state machine
 		 * to check XML syntax
 
-                +--------+      NEW  +------------+
-                ^        |       |   |            |
-                |        V       V   V            |
-              FOOTER<----+------>HEADER--------+  |
-                ^        ^        |  |         |  |
-                |        |   +----+  |         |  |
-                |        |   |       |   +---+ |  |
-                |        |   V       V   |   | |  |
-                |      ATOM_END<-NAME_VALUE<-+ |  |
-                |                   |          |  |
-                |                   V          |  |
-                +-----ELEMENT<---HEADER_END<---+  |
-                                    |             |
-                                    +-------------+
+                +------+      NEW  +--------+
+                ^      |       |   |        |
+                |      V       V   V        |
+              FOOTER<--+------>HEADER-----+ |
+                ^      ^        |  |      | |
+                |      |   +----+  |  +-+ | |
+                |      |   |       |  | | | |
+                |      |   V       V  V | | |
+                |    ATOM_END<-NAME_VALUE | |
+                |                 |       | |
+                |                 V       | |
+                +--ELEMENT<---HEADER_END<-+ |
+                                  |         |
+                                  +---------+
 		*/
 
 		const std::vector<std::array<int, 2>> transitions = {

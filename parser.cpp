@@ -74,14 +74,14 @@ Node* EqnXMLParser::getFactor(Node* parent)
 void Node::out(XML::Stream& xml)
 { 
 	xml << XML::HEADER << getName();
-	if (m_nth != 1) xml << "nth" << to_string(m_nth);
+	if (m_nth != 1) xml << XML::NAME_VALUE << "nth" << to_string(m_nth);
 	xml_out(xml);
 }
 
 Node::Node(EqnXMLParser& in, Node* parent, const string& name) : 
 	m_parent(parent), m_sign(true), m_select(NONE), m_nth(1)
 {
-	while (in.check(XML::NAME_VALUE)) in.next(XML::NAME_VALUE);
+	if (in.check(XML::NAME_VALUE)) in.next(XML::NAME_VALUE);
 
 	string value;
 	if (in.getAttribute("negative", value)) {

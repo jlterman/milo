@@ -32,6 +32,14 @@ const string test5 =
 const string test6 =
 "<document>\n"
 "  <equation>\n"
+"    <variable name=\"a negative=\"true\"/>\n"
+"  </equation>\n"
+"</document>";
+
+
+const string test_n =
+"<document>\n"
+"  <equation>\n"
 "    <expression>\n"
 "      <term>\n"
 "        <variable name=\"x\"/>\n"
@@ -119,7 +127,7 @@ int main()
 		XML::Parser p(in2);
 		p.next(XML::HEADER, "equation").next(XML::HEADER_END);
 		p.next(XML::HEADER, "variable");
-		p.next(XML::NAME_VALUE).next(XML::NAME_VALUE);
+		if (p.check(XML::NAME_VALUE)) p.next(XML::NAME_VALUE);
 		p.next(XML::ATOM_END);
 		string value;
 		if (!p.getAttribute("name", value) || value != "a") throw logic_error("test did not pass");
@@ -192,4 +200,21 @@ int main()
 		else cout << "Unexpected exception: " << "'" << e.what() << "'" << endl;
 	}
 	cout << "Test #5  " << ( passed ? "passed" : "failed") << endl;
+
+	passed = false;
+	istringstream in6(test6);
+	try {
+		XML::Parser p(in6);
+		p.next(XML::HEADER, "equation").next(XML::HEADER_END);
+		p.next(XML::HEADER, "variable");
+		if (p.check(XML::NAME_VALUE)) p.next(XML::NAME_VALUE);
+		p.next(XML::ATOM_END);
+		p.finish();
+	}
+	catch (std::exception& e) {
+		string err = e.what();
+		if (err == "Bad name, value pair:\n<document><equation><variablename=\"a negative=\"true\"<<<<<") passed = true;
+		else cout << "Unexpected exception: " << "'" << e.what() << "'" << endl;
+	}
+	cout << "Test #6  " << ( noThrow ? "passed" : "failed") << endl;
 }
