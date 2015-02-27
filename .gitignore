@@ -1,0 +1,9 @@
+*.o
+*~
+test.cpp
+test
+milo_key.h
+milo_ncurses
+milo_test
+unit_tests/xml_test
+tmp/
