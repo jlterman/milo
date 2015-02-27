@@ -1,6 +1,6 @@
 --xml test3.xml --test
 ---------
-(+cos(+x+2)+(+(+a)^(+(+(+ab+cd+ef)/(+tan(+y)))))/(+(+a)^(+b))+ab(+cd+ef))
+(+cos(+x+2)+(+(+a)^(+(+(+ab-cd+ef)/(+tan(+y)))))/(+(+a)^(+b))+ab(+cd+ef))
 ---------
 <document>
   <equation>
@@ -37,7 +37,7 @@
                               <variable name="a"/>
                               <variable name="b"/>
                             </term>
-                            <term>
+                            <term negative="true">
                               <variable name="c"/>
                               <variable name="d"/>
                             </term>
@@ -101,7 +101,7 @@
   </equation>
 </document>
 ---------
-          /ab+cd+[31me[37mf\          
+          /ab-cd+[31me[37mf\          
           |--------|          
           \ [32mt[37m[32ma[37m[32mn[37m(y) /          
          a                    

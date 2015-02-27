@@ -75,6 +75,7 @@ void Node::out(XML::Stream& xml)
 { 
 	xml << XML::HEADER << getName();
 	if (m_nth != 1) xml << XML::NAME_VALUE << "nth" << to_string(m_nth);
+	if (!m_sign) xml << XML::NAME_VALUE << "negative" << "true";
 	xml_out(xml);
 }
 
