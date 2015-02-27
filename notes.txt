@@ -1,0 +1,258 @@
+================ regex example ==============
+
+#include <iostream>
+#include <regex>
+#include <tuple>
+#include <vector>
+
+using namespace std;
+
+class EquationPattern
+{
+public:
+	EquationPattern(string name, string match, string output) : 
+		m_name{name}, m_regex{match}, m_output{output} {}
+
+	string apply(string xml) const
+	{
+		xml = regex_replace(xml, m_space, " ");
+		
+		smatch results;
+		if (!regex_search(xml, results, m_regex)) return string();
+		vector<string> params;
+		for ( auto i : results ) { params.push_back(i.str()); }
+		xml = m_output;
+		for (int i = 1; i < params.size(); ++i) {
+			regex re("@" + to_string(i));
+			xml = regex_replace(xml, re, params.at(i));
+		}
+		return xml;
+	}
+
+private:
+	const string m_name;
+	const regex m_regex;
+	const string m_output;
+
+	static const regex m_space;
+};
+
+const regex EquationPattern::m_space{"\\s+"};
+
+using EquationPatternTable = vector<EquationPattern>;
+
+const EquationPatternTable pattern_table = {
+	{ "sin(2x)", 
+
+	  "<function name=\"sin\"( negative=\".*\")?( nth=\".*\")?> <expression> "
+	  "<term> <number real=\"2\" imag=\"0\"/> (.*) </term> </expression> </function>",
+
+	  "<number@1@2 real=\"2\" imag=\"0\"/> "
+	  "<function name=\"sin\"@2> <expression> <term> @3 </term> </expression> </function> "
+	  "<function name=\"cos\"@2> <expression> <term> @3 </term> </expression> </function>"
+	},
+	{
+		"sin(x+y)",
+
+		"<function name=\"sin\"( negative=\".*\")?( nth=\".*\")?> <expression> <term(.*) </term> "
+		"<term(.*) </term> </expression> </function>",
+
+		"<expression@1@2> <term> <function name=\"sin\"> <expression> <term@3 </term> </expression> </function> "
+		"<function name=\"cos\"> <expression> <term@4 </term> </expression> </function> </term> "
+		"<function name=\"sin\"> <expression> <term@4 </term> </expression> </function> "
+		"<function name=\"cos\"> <expression> <term@3 </term> </expression> </function> </term> </expression>"
+	} 
+};
+
+const string sin2x_str =
+	"<document>\n"
+	" <equation>\n"
+	"  <expression>\n"
+	"   <term>\n"
+	"    <expression>\n"
+	"     <term>\n"
+	"      <function name=\"sin\" negative=\"true\">\n"
+	"       <expression>\n"
+	"        <term>\n"
+	"         <number real=\"2\" imag=\"0\"/>\n"
+	"         <variable name=\"x\"/>\n"
+	"         <variable name=\"y\"/>\n"
+	"        </term>\n"
+	"       </expression>\n"
+	"      </function>\n"
+	"     </term>\n"
+	"    </expression>\n"
+	"   </term>\n"
+	"  </expression>\n"
+	" </equation>\n"
+	"</document>\n";
+
+const string sinx_y_str =
+	"<document>\n"
+	" <equation>\n"
+	"  <expression>\n"
+	"   <term>\n"
+	"    <function name=\"sin\">\n"
+	"     <expression>\n"
+	"      <term>\n"
+	"       <variable nth=\"2\" name=\"x\"/>\n"
+	"      </term>\n"
+	"      <term>\n"
+	"       <variable name=\"y\"/>\n"
+	"      </term>\n"
+	"     </expression>\n"
+	"    </function>\n"
+	"   </term>\n"
+	"  </expression>\n"
+	" </equation>\n"
+	"</document>\n";
+
+
+int main()
+{
+	string xml = pattern_table.at(0).apply(sin2x_str);
+	if (xml.empty()) 
+		cout << "no match" << endl;
+	else 
+		cout << sin2x_str << endl << "----------" << endl << xml << endl;
+
+	cout << endl << "=================" << endl;
+
+	xml = pattern_table.at(1).apply(sinx_y_str);
+	if (xml.empty()) 
+		cout << "no match" << endl;
+	else 
+		cout << sinx_y_str << endl << "----------" << endl << xml << endl;
+
+	cout << endl << "=================" << endl;
+
+	xml = pattern_table.at(1).apply(sin2x_str);
+	if (xml.empty()) 
+		cout << "no match" << endl;
+	else 
+		cout << sinx_y_str << endl << "----------" << endl << xml << endl;
+}
+
+====================================
+
+#include <iostream>     // std::cout
+#include <algorithm>    // std::sort
+#include <vector>       // std::vector
+
+using namespace std;
+
+void insertAt(int ref, vector<int>& old_ints, vector<int>& new_ints)
+{
+	auto pos = find(old_ints.begin(), old_ints.end(), ref) + 1;
+	for ( auto item : new_ints) { pos = old_ints.insert(pos, item) + 1; }
+	new_ints.clear();
+}
+
+int main () {
+	vector<int> myvector = {32,71,12,45,26,80,53,33};
+	vector<int> new_values = { -4, -3, -2, -1 };
+	
+	insertAt(45, myvector, new_values);
+	bool not_first = false;
+	for ( auto item : myvector ) { cout << (not_first++ ? ", " : "") << item; } cout << endl;
+
+	*(myvector.begin()) = 0;
+	not_first = false;
+	for ( auto item : myvector ) { cout << (not_first++ ? ", " : "") << item; } cout << endl;
+	return 0;
+}
+
+=====================================
+
+void parse_xml(vector<string>& tags, const string& xml)
+{
+	regex re_xml("(</?)(\\w+)(\\s+\\w+=\"[^\"]+\")*\\s*(/?>)([^<]*)");
+	regex re_nws("\\S");
+	smatch matches;
+
+	tags.clear();
+	string s = xml;
+	while (regex_search (s, matches, re_xml)) {
+		for ( auto it = matches.begin()+1; it != matches.end(); ++it) {
+			string tag = *it;
+			if (!regex_search(tag, re_nws)) continue;
+			tags.push_back(tag);
+		}
+		s = matches.suffix().str();
+	}
+}
+
+============================
+
+FOOTER_END----+      NEW  +------------+
+     ^        |       |   |            |
+     |        V       V   V            |
+   FOOTER<----+------>HEADER--------+  |
+     ^        ^        |  |         |  |
+	 |        |   +----+  |         |  |
+     |        |   |       |   +---+ |  |
+     |        |   V       V   |   | |  |
+     |      ATOM_END<-NAME_VALUE<-+ |  |
+     |                   |          |  |
+     |                   V          |  |
+     +-----ELEMENT<---HEADER_END<---+  |
+                         |             |
+                         +-------------+
+
+                NEW -> HEADER
+             FOOTER -> FOOTER_END
+ATOM_END|FOOTER_END -> FOOTER|HEADER
+             HEADER -> NAME_VALUE|HEADER_END|ATOM_END
+         NAME_VALUE -> HEADER_END|ATOM_END|NAME_VALUE
+         HEADER_END -> ELEMENT|HEADER
+            ELEMENT -> FOOTER
+
+enum State { NEW=1, HEADER=2, FOOTER=4, HEADER_END=8, ATOM_END=16,
+             FOOTER_END=32, NAME_VALUE=64, ELEMENT=128 };
+
+================================
+(+cos(+x+2)+(+(+a)^(+(+(+ab-cd+ef)/(+tan(+y)))))/(+(+a)^(+b))+ab(+cd+ef))
+------------
+          /ab-cd+ef\          
+          |--------|          
+          \ tan(y) /          
+         a                    
+cos(x+2)+-----------+ab(cd+ef)
+              b               
+             a                
+====================
+void Parser::tokenize(const string& xml)
+	{
+		const regex re_xml("(</?\\w+)\\s*([^/>]*)\\s*(/?>)([^<]*)");
+		const regex re_nws("\\S");
+		smatch matches;
+		
+		string s = xml;
+		while (regex_search (s, matches, re_xml)) {
+			for ( auto it = matches.begin() + 1; it != matches.end(); ++it) {
+				string tag = *it;
+				if (!regex_search(tag, re_nws)) continue;
+				m_tokens.push_back(tag);
+			}
+			s = matches.suffix().str();
+		}
+	}
+
+	void Parser::tokenize(istream& in)
+	{
+		const regex re_end(">\\s*$");
+		char buffer[1024] = "\0";
+		string xml;
+		while (in.getline(buffer, 1024)) {
+			xml = buffer;
+			xml += "\n";
+			buffer[0] = '\0';
+			while (!regex_search(xml, re_end) && in.getline(buffer, 1024)) {
+				xml += buffer;
+				xml += "\n";
+				buffer[0] = '\0';
+			}
+			tokenize(xml);
+		}
+	}
+==================================
