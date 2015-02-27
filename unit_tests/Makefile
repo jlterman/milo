@@ -2,6 +2,7 @@ ARGS    = -g -std=c++11 -I ../
 
 all: xml_test
 	./xml_test
+	./milo_test.sh
 
 xml_test.o: xml_test.cpp ../xml.h
 	g++ $(ARGS) xml_test.cpp  -c

@@ -1,0 +1,31 @@
+--parse a^(a/y) --test
+---------
+(+a^(+a/y))
+---------
+<document>
+  <equation>
+    <expression>
+      <term>
+        <power>
+          <variable name="a"/>
+          <expression>
+            <term>
+              <divide>
+                <variable name="a"/>
+                <variable name="y"/>
+              </divide>
+            </term>
+          </expression>
+        </power>
+      </term>
+    </expression>
+  </equation>
+</document>
+---------
+ /a\
+ |-|
+ \y/
+a
+---------
+XML test passed
+---------

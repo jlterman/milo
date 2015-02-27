@@ -104,7 +104,7 @@ static void test(const string&)
 	cout << "---------" << endl;
 	string xml;
 	eqn.xml_out(xml);
-	cout << xml;
+	cout << xml << endl;
 	cout << "---------" << endl;
 	eqn.draw(gc);
 	gc.out();
