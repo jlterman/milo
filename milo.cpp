@@ -238,7 +238,7 @@ void Power::calcOrig(Graphics& gc, int x, int y)
 	m_internal.setOrigin(x, y);
 	m_first->calculateOrigin(gc, x, y + getFrame().base);
 	m_second->calculateOrigin(gc, x + m_first->getFrame().box.width(), 
-							      y + getFrame().base - m_first->getFrame().box.height() 
+							      y + getFrame().base - m_second->getFrame().box.height() 
                                     + gc.getTextHeight()/2);
 }
 

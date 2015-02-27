@@ -1,0 +1,113 @@
+--xml test3.xml --test
+---------
+(+cos(+x+2)+(+(+a)^(+(+(+ab+cd+ef)/(+tan(+y)))))/(+(+a)^(+b))+ab(+cd+ef))
+---------
+<document>
+  <equation>
+    <expression>
+      <term>
+        <function name="cos">
+          <expression>
+            <term>
+              <variable name="x"/>
+            </term>
+            <term>
+              <number value="2.000000"/>
+            </term>
+          </expression>
+        </function>
+      </term>
+      <term>
+        <divide>
+          <expression>
+            <term>
+              <power>
+                <expression>
+                  <term>
+                    <variable name="a"/>
+                  </term>
+                </expression>
+                <expression>
+                  <term>
+                    <expression>
+                      <term>
+                        <divide>
+                          <expression>
+                            <term>
+                              <variable name="a"/>
+                              <variable name="b"/>
+                            </term>
+                            <term>
+                              <variable name="c"/>
+                              <variable name="d"/>
+                            </term>
+                            <term>
+                              <constant name="e"/>
+                              <variable name="f"/>
+                            </term>
+                          </expression>
+                          <expression>
+                            <term>
+                              <function name="tan">
+                                <expression>
+                                  <term>
+                                    <variable name="y"/>
+                                  </term>
+                                </expression>
+                              </function>
+                            </term>
+                          </expression>
+                        </divide>
+                      </term>
+                    </expression>
+                  </term>
+                </expression>
+              </power>
+            </term>
+          </expression>
+          <expression>
+            <term>
+              <power>
+                <expression>
+                  <term>
+                    <variable name="a"/>
+                  </term>
+                </expression>
+                <expression>
+                  <term>
+                    <variable name="b"/>
+                  </term>
+                </expression>
+              </power>
+            </term>
+          </expression>
+        </divide>
+      </term>
+      <term>
+        <variable name="a"/>
+        <variable name="b"/>
+        <expression>
+          <term>
+            <variable name="c"/>
+            <variable name="d"/>
+          </term>
+          <term>
+            <constant name="e"/>
+            <variable name="f"/>
+          </term>
+        </expression>
+      </term>
+    </expression>
+  </equation>
+</document>
+---------
+          /ab+cd+[31me[37mf\          
+          |--------|          
+          \ [32mt[37m[32ma[37m[32mn[37m(y) /          
+         a                    
+[32mc[37m[32mo[37m[32ms[37m(x+2)+-----------+ab(cd+[31me[37mf)
+              b               
+             a                
+---------
+XML test passed
+---------

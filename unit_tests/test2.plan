@@ -1,6 +1,6 @@
---parse a^(a/y) --test
+--parse a^(b/c) --test
 ---------
-(+a^(+a/y))
+(+a^(+b/c))
 ---------
 <document>
   <equation>
@@ -11,8 +11,8 @@
           <expression>
             <term>
               <divide>
-                <variable name="a"/>
-                <variable name="y"/>
+                <variable name="b"/>
+                <variable name="c"/>
               </divide>
             </term>
           </expression>
@@ -22,10 +22,10 @@
   </equation>
 </document>
 ---------
- /a\
- |-|
- \y/
-a
+ b
+ -
+ c
+a 
 ---------
 XML test passed
 ---------
