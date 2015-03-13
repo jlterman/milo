@@ -1,0 +1,12 @@
+--parse a/b/c --normalize --xml-out
+<document>
+  <equation>
+    <expression>
+      <term>
+        <variable name="a"/>
+        <variable nth="-1" name="b"/>
+        <variable name="c"/>
+      </term>
+    </expression>
+  </equation>
+</document>

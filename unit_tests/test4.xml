@@ -1,0 +1,12 @@
+<document>
+  <equation>
+    <expression>
+      <term>
+        <divide nth="2">
+          <variable name="a"/>
+          <variable name="b"/>
+        </divide>
+      </term>
+    </expression>
+  </equation>
+</document>

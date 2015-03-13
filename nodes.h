@@ -218,6 +218,8 @@ public:
 	    Node(parent, neg, s), m_value(stod(real)), m_isInteger(isInteger(real)) {}
 	Number(int n, Node* parent, bool neg = false, Node::Select s = Node::Select::NONE) :
 	    Node(parent, neg, s), m_value(n), m_isInteger(true) {}
+	Number(double d, Node* parent, bool neg = false, Node::Select s = Node::Select::NONE) :
+	    Node(parent, neg, s), m_value(d), m_isInteger(isInteger(d)) {}
 	Number(EqnXMLParser& in, Node* parent);
 	~Number() {}
 
@@ -231,6 +233,7 @@ public:
 	Complex getNodeValue() const { return {m_value, 0}; }
 	const std::string& getName() const { return name; }
 	std::type_index getType() const { return type; }
+	bool simplify();
 
 	static const std::string name;
 	static const std::type_index type;
@@ -250,7 +253,7 @@ class Term : public Node
 public:
     Term(Parser& p, Expression* parent = nullptr) : Node((Node*) parent) { while(add(p)); }
 	Term(EqnXMLParser& in, Node* parent = nullptr);
-    Term(NodeVector f, Expression* parent) : Node((Node*) parent) { factors.swap(f); }
+    Term(NodeVector& f, Expression* parent) : Node((Node*) parent) { factors.swap(f); }
     Term(Node* node, Expression* parent = nullptr, bool fNeg = false) : 
 	    Node((Node*) parent, fNeg), factors(1, node) 
 	{
@@ -286,9 +289,12 @@ public:
 	void setParent() { for ( auto f : factors ) f->setParent(this); }
 	void setParent(Expression* parent) { Node::setParent((Node*) parent); }
 
-	static NodeIter begin(Node* me);
-	static NodeIter end(Node* me);
+	NodeIter begin() { return factors.begin(); }
+	NodeIter end()   { return factors.end(); }
 	static NodeIter pos(Node* me);
+
+	void multiply(double n);
+	void multiply(Term* old_term);
 
 	friend class Equation;
 	friend class FactorIterator;
@@ -347,11 +353,14 @@ public:
 	int getTermIndex(Term* term) { return distance(terms.cbegin(), find(terms, term)); }
 	void setParent() { for ( auto t : terms ) t->setParent(this); }
 
+	TermVector::iterator begin() { return terms.begin(); }
+	TermVector::iterator end()   { return terms.end(); }
+
 	static Term* getTerm(Equation& eqn, std::string text, Expression* parent = nullptr);
 	static Term* getTerm(Parser& p, Expression* parent);
 	static Node* parse(Parser& p, Node* parent);
 
-	void add(int n);
+	void add(double n);
 	void add(Expression* old_expr);
 
 	friend class Equation;

@@ -184,7 +184,7 @@ void parse_xml(vector<string>& tags, const string& xml)
 
 ============================
 
-FOOTER_END----+      NEW  +------------+
+>FOOTER_END----+      NEW  +------------+
      ^        |       |   |            |
      |        V       V   V            |
    FOOTER<----+------>HEADER--------+  |
@@ -256,3 +256,4 @@ void Parser::tokenize(const string& xml)
 		}
 	}
 ==================================
+bugs: 1/a/c, (1)/((a+b)/c) --normalize, '((a/b)^(2))' --normalize

@@ -11,6 +11,7 @@
 using namespace std;
 
 static string skip_digits(const string& s) { return s.substr(s.find_first_not_of("+-0123456789")); }
+
 static int get_digits(const string & s) 
 {
 	string n = s.substr(0, s.find_first_not_of("+-0123456789"));
@@ -18,6 +19,9 @@ static int get_digits(const string & s)
 	if (n.length() == 1 && !isdigit(n[0])) return (n[0] == '-' ? -1 : 1);
 	return stoi(n);
 }
+
+static bool isNumber(const string& s) { return s.find_first_not_of("+-0123456789") == string::npos; }
+
 
 const type_index Expression::type = typeid(Expression);
 const type_index   Function::type = typeid(Function);
@@ -37,10 +41,18 @@ static const vector<type_index> factor_precedence = {
 
 static bool sort_terms(Term* a, Term* b)
 {
-	string a_str = skip_digits(a->toString());
-	string b_str = skip_digits(b->toString());
-	if (a_str == b_str) return (a->toString() < b->toString());
-	return (a_str < b_str);
+	if ( !isNumber(a->toString()) && !isNumber(b->toString()) ) {
+		string a_str = skip_digits(a->toString());
+		string b_str = skip_digits(b->toString());
+		if (a_str == b_str) return (a->toString() < b->toString());
+		return (a_str < b_str);
+	}
+	else if ( isNumber(a->toString()) && isNumber(b->toString()) ) {
+		return (a->toString() < b->toString());
+	}
+	else {
+		return (a->toString() > b->toString());
+	}
 }
 
 void Expression::normalize()
@@ -54,6 +66,15 @@ bool Expression::simplify()
 {
 	bool result = false;
 	for ( auto term : terms ) result |= term->simplify();
+
+	if ( terms.back()->numFactors() == 1 && isNumber(terms.back()->toString()) ) {
+		double v = 0;
+		while ( !terms.empty() && terms.back()->numFactors() == 1 && isNumber(terms.back()->toString()) ) {
+			v += terms.back()->getValue().real();
+			terms.erase(terms.end() - 1);
+		}
+		add(v);
+	}
 
 	int a_pos = 0;
 	while ( a_pos < terms.size() - 1 ) {
@@ -69,19 +90,12 @@ bool Expression::simplify()
 		}
 	}
 
-	if (terms.size() == 1 && 
-		this->getParent() != nullptr && 
-		this->getParent()->getType() == Term::type) {
-		Term* term = dynamic_cast<Term*>(this->getParent());
-		term->simplify(this, terms.front());
-		result = true;
-	}
-
 	return result;
 }
 
-void Expression::add(int n)
+void Expression::add(double n)
 {
+	if ( n == 0 ) return;
 	auto num = new Number(abs(n), nullptr, (n < 0));
 	auto term = new Term(num, this);
 	terms.push_back(term);
@@ -91,6 +105,19 @@ void Expression::add(Expression* old_expr)
 {
 	for ( auto term : old_expr->terms ) terms.push_back(term);
 	old_expr->terms.clear();
+}
+
+void Term::multiply(double n)
+{
+	if ( n == 1 ) return;
+	auto num = new Number(abs(n), nullptr, (n < 0));
+	factors.insert(factors.begin(), num);
+}
+
+void Term::multiply(Term* old_term)
+{
+	factors.insert(factors.begin(), old_term->factors.begin(), old_term->factors.end());
+	old_term->factors.clear();
 }
 
 void Term::simplify(Node* ref, Term* new_term)
@@ -117,7 +144,52 @@ void Term::normalize()
 {
 	for ( auto factor : factors ) factor->normalize();
 
+	auto pos = factors.begin(); 
+	while ( pos != factors.end() ) {
+		if ( (*pos)->getNth() == 0 ) { 
+			pos = factors.erase(pos);
+			if ( factors.empty() ) {
+				factors.push_back(new Number(1, this));
+				break;
+			}
+			continue;
+		}
+		if ( (*pos)->getType() != Expression::type ) { ++pos; continue; }
+
+		auto expr = dynamic_cast<Expression*>(*pos);
+		if (expr->numTerms() == 1) {
+			Term* term = *(expr->begin());
+			for ( auto t : term->factors ) {
+				t->multNth(expr->getNth());
+				pos = factors.insert(pos, t) + 1;
+			}
+			term->factors.clear();
+			pos = factors.erase(pos);
+			if ( term->getSign() != expr->getSign() ) negative();
+			delete expr;
+		}
+		else
+			++pos;
+	}
+
 	sort(factors.begin(), factors.end(), factor_cmp);
+
+	bool zero = false;
+	bool sign = true;
+	for ( auto factor : factors ) {
+		zero |= (factor->getType() == Number::type && factor->getValue().real() == 0);
+		if (!factor->getSign()) {
+			sign = !sign;
+			factor->negative();
+		}
+	}
+	if (zero) {
+		for ( auto factor : factors ) delete factor;
+		factors.clear();
+		factors.push_back(new Number(0, this));
+	} else if (!sign) {
+		negative();
+	}
 }
 
 bool Term::simplify()
@@ -129,6 +201,17 @@ bool Term::simplify()
 		result |= factor->simplify();
 	}
 	this->setNth(1);
+
+	if ( factors.front()->getType() == Number::type && factors.size() > 1 ) {
+		double v = 1.0;
+		while ( !factors.empty() && factors.front()->getType() == Number::type ) {
+			Node* factor = factors.front();
+			v *= factor->getValue().real();
+			factors.erase(factors.begin());
+			delete factor;
+		}
+		multiply(v);
+	}
 
 	int a_pos = 0;
 	while ( a_pos < factors.size() - 1 ) {
@@ -158,6 +241,8 @@ bool Term::simplify(TermVector& terms, TermVector::iterator a, TermVector::itera
 {
 	string a_str = (*a)->toString();
 	string b_str = (*b)->toString();
+	if (isNumber(a_str) || isNumber(b_str)) return false;
+
 	string a_base_str = skip_digits(a_str);
 	string b_base_str = skip_digits(b_str);
 	if (a_base_str != b_base_str) return false;
@@ -184,16 +269,26 @@ void Term::insertAfterMe(Node* me, Node* node)
 
 void Power::normalize()
 {
-	m_first->normalize(); m_second->normalize();
+	m_first->normalize();
 
-	if (m_second->numFactors() != 1 || m_second->first()->getType() != Number::type) return;
+	if (getNth() != 1) {
+		Term* term = new Term(m_second);
+		term->multiply(getNth());
+		setNth(1);
+		m_second = new Expression(term, this);
+	}
+	m_second->normalize();
 
-	Complex z = m_second->getValue();
-	if (isZero(z.imag()) && isInteger(z.real())) {
-		m_first->multNth(m_second->getValue().real());
-		*( Term::pos(this) ) = m_first;
-		m_first = nullptr;
-		delete this;
+	if (m_second->numFactors() == 1 && m_second->first()->getType() == Number::type) 
+	{
+		double n = m_second->getValue().real();
+		if (isInteger(n))
+		{
+			m_first->multNth(n);
+			*( Term::pos(this) ) = m_first;
+			m_first = nullptr;
+			delete this;
+		}
 	}
 }
 
@@ -230,7 +325,7 @@ bool Power::simplify(NodeVector::iterator a, NodeVector::iterator b)
 			return true;
 		}
 	}
-	else if (base_a == string("(" + (*b)->toString() + ")")) {
+	else if (base_a == string("(+" + (*b)->toString() + ")")) {
 		p_a->getSecondExpression()->add((*b)->getNth());
 		return true;
 	}
@@ -253,10 +348,21 @@ void Divide::normalize()
 {
 	m_first->normalize(); m_second->normalize();
 
-	m_second->setNth(-m_second->getNth());
+	m_second->multNth(-1);
 
-	Term::insertAfterMe(this, m_second);
-	*( Term::pos(this) ) = m_first;
+	if (getParent()->getType() == Term::type) {
+		Term::insertAfterMe(this, m_second);
+		*( Term::pos(this) ) = m_first;
+	}
+	else if (getParent()->getType() == Divide::type) {
+		Divide* p = dynamic_cast<Divide*>(getParent());
+		NodeVector factors = { m_first, m_second };
+		Node* n = new Expression(new Term(factors, nullptr), p);
+		(this == p->m_first) ? p->m_first : p->m_second = n;
+	}
+	else
+		throw logic_error("can't handle " + getParent()->getName() + " as parent");
+
 	m_first = nullptr;
 	m_second = nullptr;
 	delete this;
@@ -265,4 +371,21 @@ void Divide::normalize()
 bool Divide::simplify()
 {
 	bool result = m_first->simplify() | m_second->simplify();
+}
+
+bool Number::simplify()
+{
+	if (getNth() == 1) return false;
+
+	if (getNth() == 0) {
+		m_value = 1;
+		m_isInteger = true;
+	}
+	else {
+		double v = m_value;
+		for (int i = 1; i < getNth(); ++i) v*m_value;
+		m_value = v;
+	}
+	setNth(1);
+	return true;
 }
