@@ -11,15 +11,6 @@
 
 using namespace std;
 
-void Equation::draw(Graphics& gc)
-{
-	m_root->calculateSize(gc);
-	m_root->calculateOrigin(gc, 0, 0);
-	gc.set(m_root->getFrame().box);
-	setSelect(gc);
-	m_root->draw(gc);
-}
-
 void Equation::setSelect(Graphics& gc)
 {
 	if (m_selectStart == nullptr && m_selectEnd == nullptr) {
@@ -167,7 +158,7 @@ void Node::draw(Graphics& gc) const
 {
 	if (m_fDrawParenthesis)  gc.parenthesis(m_parenthesis);
 	if (isFactor() && !m_sign) {
-		gc.at(m_frame.box.x0() + gc.getParenthesisWidth(), m_frame.box.y0() + m_frame.base, '-');
+		gc.at(m_frame.box.x0(), m_frame.box.y0() + m_frame.base, '-');
 	}
 
 	if (m_nth != 1) {
@@ -176,6 +167,21 @@ void Node::draw(Graphics& gc) const
 	}
 	drawNode(gc);	
 }
+
+void Node::setUpDraw(Graphics& gc)
+{
+	calculateSize(gc);
+	calculateOrigin(gc, 0, 0);
+	gc.set(m_frame.box);
+}
+
+void Equation::draw(Graphics& gc)
+{
+	m_root->setUpDraw(gc);
+	setSelect(gc);
+	m_root->draw(gc);
+}
+
 
 Node::Frame Divide::calcSize(Graphics& gc)
 {
@@ -194,7 +200,7 @@ Node::Frame Divide::calcSize(Graphics& gc)
 
 void Divide::calcOrig(Graphics& gc, int x, int y)
 {
-	m_internal.setOrigin(x, y + getFrame().base);
+	m_internal.setOrigin(x, y);
 	m_first->calculateOrigin(gc,  x + (m_internal.width() - m_first->getFrame().box.width())/2, 
 							      y + getFrame().base - m_first->getFrame().box.height());
 	m_second->calculateOrigin(gc, x + (m_internal.width() - m_second->getFrame().box.width())/2,
@@ -204,7 +210,7 @@ void Divide::calcOrig(Graphics& gc, int x, int y)
 
 void Divide::drawNode(Graphics& gc) const
 {
-	gc.horiz_line(m_internal.width(), m_internal.x0(), m_internal.y0());
+	gc.horiz_line(m_internal.width(), m_internal.x0(), m_internal.y0() + getFrame().base);
 	m_first->draw(gc);
 	m_second->draw(gc);
 }
@@ -234,7 +240,7 @@ Node::Frame Power::calcSize(Graphics& gc)
 
 void Power::calcOrig(Graphics& gc, int x, int y)
 {
-	m_internal.setOrigin(x, y + getFrame().base);
+	m_internal.setOrigin(x, y);
 	m_first->calculateOrigin(gc, x, y + getFrame().base);
 	m_second->calculateOrigin(gc, x + m_first->getFrame().box.width(), 
 							      y + getFrame().base - m_second->getFrame().box.height() 
@@ -303,7 +309,7 @@ Node::Frame Function::calcSize(Graphics& gc)
 
 void Function::calcOrig(Graphics& gc, int x, int y)
 {
-	m_internal.setOrigin(x, y + getFrame().base);
+	m_internal.setOrigin(x, y);
 	m_arg->calculateOrigin(gc, x + gc.getTextLength(m_name), 
 						       y + getFrame().base - m_arg->getFrame().base);
 }
@@ -335,7 +341,7 @@ Node::Frame Constant::calcSize(Graphics& gc)
 
 void Constant::calcOrig(Graphics& gc, int x, int y)
 {
-	m_internal.setOrigin(x, y + getFrame().base);
+	m_internal.setOrigin(x, y);
 }
 
 void Constant::drawNode(Graphics& gc) const
@@ -354,7 +360,7 @@ Node::Frame Variable::calcSize(Graphics& gc)
 
 void Variable::calcOrig(Graphics& gc, int x, int y)
 {
-	m_internal.setOrigin(x, y + getFrame().base);
+	m_internal.setOrigin(x, y);
 }
 
 void Variable::drawNode(Graphics& gc) const
@@ -395,7 +401,7 @@ Node::Frame Number::calcSize(Graphics& gc)
 
 void Number::calcOrig(Graphics& gc, int x, int y)
 {
-	m_internal.setOrigin(x, y + getFrame().base);
+	m_internal.setOrigin(x, y);
 }
 
 void Number::drawNode(Graphics& gc) const
@@ -481,8 +487,6 @@ Node::Frame Expression::calcSize(Graphics& gc)
 		y = max(y, n->getFrame().box.height() - n->getFrame().base);
 		b = max(b, n->getFrame().base);
 	}
-	if (!getSign() || (terms.size()>1)) x += 2*gc.getParenthesisWidth(y+b);
-	
 	Frame frame = { { x, b + y, 0, 0 }, b };
 	m_internal = frame.box;
 	return frame;
@@ -490,8 +494,7 @@ Node::Frame Expression::calcSize(Graphics& gc)
 
 void Expression::calcOrig(Graphics& gc, int x, int y)
 {
-	m_internal.setOrigin(x, y + getFrame().base);
-	if (!getSign() || (terms.size()>1)) x += gc.getParenthesisWidth(m_internal.y0());
+	m_internal.setOrigin(x, y);
 	for ( auto n : terms ) {
 		if (n != terms[0] || !n->getSign()) x += gc.getCharLength('-');
 		n->calculateOrigin(gc, x, y + getFrame().base - n->getFrame().base);
@@ -501,7 +504,6 @@ void Expression::calcOrig(Graphics& gc, int x, int y)
 
 void Expression::drawNode(Graphics& gc) const
 {
-	if (!getSign() || (terms.size()>1)) gc.parenthesis(m_internal);
 	for ( auto n : terms ) {
 		if (n != terms[0] || !n->getSign()) {
 			gc.at(n->getFrame().box.x0() - 1, 
@@ -565,7 +567,7 @@ Node::Frame Input::calcSize(Graphics& gc)
 
 void Input::calcOrig(Graphics& gc, int x, int y)
 {
-	m_internal.setOrigin(x, y + getFrame().base);
+	m_internal.setOrigin(x, y);
 }
 
 void Input::drawNode(Graphics& gc) const

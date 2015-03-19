@@ -12,7 +12,7 @@ release: ARGS = $(CPPARGS) -O2
 release: exe
 
 unit: 
-	cd unit_tests; make clean all
+	cd unit_tests; make all
 
 milo_ncurses: milo_ncurses.o $(OBJECTS)
 	g++ $(OBJECTS) milo_ncurses.o -o milo_ncurses -lncurses

@@ -143,6 +143,7 @@ public:
 
 	void calculateSize(Graphics& gc);
 	void calculateOrigin(Graphics& gc, int x, int y);
+	void setUpDraw(Graphics& gc);
 	void draw(Graphics& gc) const;
 
 	Node* first();
