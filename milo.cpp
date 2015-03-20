@@ -158,7 +158,8 @@ void Node::draw(Graphics& gc) const
 {
 	if (m_fDrawParenthesis)  gc.parenthesis(m_parenthesis);
 	if (isFactor() && !m_sign) {
-		gc.at(m_frame.box.x0(), m_frame.box.y0() + m_frame.base, '-');
+		gc.at(m_frame.box.x0() + ( m_fDrawParenthesis ? gc.getParenthesisWidth() : 0 ), 
+			  m_frame.box.y0() + m_frame.base, '-');
 	}
 
 	if (m_nth != 1) {
@@ -413,6 +414,7 @@ Node::Frame Term::calcSize(Graphics& gc)
 {
 	int x = 0, b = 0, y = 0;
 	for ( auto n : factors ) { 
+		if (n->getType() == Expression::type) n->setDrawParenthesis(true);
 		n->calculateSize(gc); 
 		x += n->getFrame().box.width();
 		y = max(y, n->getFrame().box.height() - n->getFrame().base);

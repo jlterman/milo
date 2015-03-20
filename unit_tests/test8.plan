@@ -1,0 +1,29 @@
+--parse (ab+3a2)/b --simplify --test
+---------
+(+b(+6a+ab))
+---------
+<document>
+  <equation>
+    <expression>
+      <term>
+        <variable nth="-1" name="b"/>
+        <expression>
+          <term>
+            <number value="6.000000"/>
+            <variable name="a"/>
+          </term>
+          <term>
+            <variable name="a"/>
+            <variable name="b"/>
+          </term>
+        </expression>
+      </term>
+    </expression>
+  </equation>
+</document>
+---------
+ -1       
+b  (6a+ab)
+---------
+XML test passed
+---------

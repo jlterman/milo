@@ -96,8 +96,8 @@ bool Expression::simplify()
 void Expression::add(double n)
 {
 	if ( n == 0 ) return;
-	auto num = new Number(abs(n), nullptr, (n < 0));
-	auto term = new Term(num, this);
+	auto num = new Number(abs(n), nullptr);
+	auto term = new Term(num, this, (n < 0));
 	terms.push_back(term);
 }
 
@@ -325,7 +325,7 @@ bool Power::simplify(NodeVector::iterator a, NodeVector::iterator b)
 			return true;
 		}
 	}
-	else if (base_a == string("(+" + (*b)->toString() + ")")) {
+	else if ( (base_a == (*b)->toString()) || (base_a == string("(+" + (*b)->toString() + ")")) ) {
 		p_a->getSecondExpression()->add((*b)->getNth());
 		return true;
 	}
