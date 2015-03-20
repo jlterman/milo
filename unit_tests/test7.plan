@@ -1,0 +1,22 @@
+--xml test7.xml --test
+---------
+(+abe2)
+---------
+<document>
+  <equation>
+    <expression>
+      <term>
+        <variable name="a"/>
+        <variable nth="2" name="b"/>
+        <constant nth="3" name="e"/>
+        <number nth="4" value="2.000000"/>
+      </term>
+    </expression>
+  </equation>
+</document>
+---------
+  2 3 4
+ab [31me[37m 2 
+---------
+XML test passed
+---------

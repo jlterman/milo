@@ -147,7 +147,7 @@ void Node::calculateSize(Graphics& gc)
 void Node::calculateOrigin(Graphics& gc, int x, int y)
 {
 	m_frame.box.setOrigin(x, y);
-	m_parenthesis.setOrigin(x, y + (m_nth != 1 ? gc.getTextHeight() : 0));
+	if (m_nth == 1) m_parenthesis.setOrigin(x, y); else m_parenthesis.setOrigin(x, y + gc.getTextHeight());
 	if (m_fDrawParenthesis)    x += gc.getParenthesisWidth();
 	if (isFactor() && !m_sign) x += gc.getCharLength('-');
 
@@ -341,7 +341,7 @@ Node::Frame Constant::calcSize(Graphics& gc)
 
 void Constant::calcOrig(Graphics& gc, int x, int y)
 {
-	m_internal.setOrigin(x, y);
+	m_internal.setOrigin(x, y + getFrame().base);
 }
 
 void Constant::drawNode(Graphics& gc) const
@@ -360,7 +360,7 @@ Node::Frame Variable::calcSize(Graphics& gc)
 
 void Variable::calcOrig(Graphics& gc, int x, int y)
 {
-	m_internal.setOrigin(x, y);
+	m_internal.setOrigin(x, y + getFrame().base);
 }
 
 void Variable::drawNode(Graphics& gc) const
@@ -401,7 +401,7 @@ Node::Frame Number::calcSize(Graphics& gc)
 
 void Number::calcOrig(Graphics& gc, int x, int y)
 {
-	m_internal.setOrigin(x, y);
+	m_internal.setOrigin(x, y + getFrame().base);
 }
 
 void Number::drawNode(Graphics& gc) const

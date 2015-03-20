@@ -1,0 +1,20 @@
+--xml test6.xml --test
+---------
+(+ab)
+---------
+<document>
+  <equation>
+    <expression>
+      <term nth="2">
+        <variable name="a"/>
+        <variable name="b"/>
+      </term>
+    </expression>
+  </equation>
+</document>
+---------
+    2
+(ab) 
+---------
+XML test passed
+---------

@@ -1,0 +1,10 @@
+<document>
+  <equation>
+    <expression>
+      <term nth="2">
+        <variable name="a"/>
+        <variable name="b"/>
+      </term>
+    </expression>
+  </equation>
+</document>
