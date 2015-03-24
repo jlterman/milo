@@ -22,21 +22,21 @@ static int get_digits(const string & s)
 
 static bool isNumber(const string& s) { return s.find_first_not_of("+-0123456789") == string::npos; }
 
-
-const type_index Expression::type = typeid(Expression);
-const type_index   Function::type = typeid(Function);
-const type_index   Constant::type = typeid(Constant);
-const type_index   Variable::type = typeid(Variable);
-const type_index     Number::type = typeid(Number);
-const type_index     Divide::type = typeid(Divide);
-const type_index      Input::type = typeid(Input);
-const type_index      Power::type = typeid(Power);
-const type_index       Term::type = typeid(Term);
+const type_index Differential::type = typeid(Differential);
+const type_index   Expression::type = typeid(Expression);
+const type_index     Function::type = typeid(Function);
+const type_index     Constant::type = typeid(Constant);
+const type_index     Variable::type = typeid(Variable);
+const type_index       Number::type = typeid(Number);
+const type_index       Divide::type = typeid(Divide);
+const type_index        Input::type = typeid(Input);
+const type_index        Power::type = typeid(Power);
+const type_index         Term::type = typeid(Term);
 
 
 static const vector<type_index> factor_precedence = { 
 	Number::type, Constant::type, Variable::type, Expression::type, 
-	Function::type, Divide::type, Power::type, Input::type
+	Function::type, Divide::type, Power::type, Differential::type, Input::type
 };
 
 static bool sort_terms(Term* a, Term* b)

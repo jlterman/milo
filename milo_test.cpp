@@ -17,7 +17,11 @@ public:
 	int getCharLength(char c) { return 1; }
 	int getParenthesisWidth(int height = 1) { return 1; }
 	int getDivideLineHeight() { return 1; }
+	int getDifferentialHeight(char c) { return 3; }
+	int getDifferentialWidth(char c)  { return 2; }
+	int getDifferentialBase(char c)   { return 1; }
 
+	void differential(int x0, int y0, char variable);
 	void parenthesis(int x_size, int y_size, int x0, int y0);
 	void horiz_line(int x_size, int x0, int y0) { for (int i = 0; i < x_size; ++i) at(x0 + i, y0, '-'); }
 	void at(int x, int y, int c, Color color = BLACK) { m_field[y][x] = c; m_colors[y][x] = color; }
@@ -72,6 +76,14 @@ void AsciiGraphics::parenthesis(int x_size, int y_size, int x0, int y0)
 			
 		}
 	}
+}
+
+void AsciiGraphics::differential(int x0, int y0, char variable)
+{
+	m_field[y0][x0+1] = 'd';
+	m_field[y0+1][x0+1] = '-';
+	m_field[y0+2][x0] = 'd';
+	m_field[y0+2][x0+ 1] = variable;
 }
 
 static Equation eqn("?");

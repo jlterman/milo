@@ -327,6 +327,34 @@ Complex Function::getNodeValue() const
 	return m_func(arg);
 }
 
+Node::Frame Differential::calcSize(Graphics& gc)
+{
+	m_function->calculateSize(gc);
+	Frame frame = {
+		{ gc.getDifferentialWidth(m_variable) + m_function->getFrame().box.width(),
+		  max(gc.getDifferentialHeight(m_variable), m_function->getFrame().box.height()), 0, 0
+		},
+		max(gc.getDifferentialBase(m_variable), m_function->getFrame().base)
+	};
+	m_internal = frame.box;
+	return frame;
+}
+
+void Differential::calcOrig(Graphics& gc, int x, int y)
+{
+	m_internal.setOrigin(x, y);
+	m_function->calculateOrigin(gc, x + gc.getDifferentialWidth(m_variable),
+								    y + getFrame().base - m_function->getFrame().base);
+}
+
+void Differential::drawNode(Graphics& gc) const 
+{
+	gc.differential(m_internal.x0(), 
+					m_internal.y0() + getFrame().base - gc.getDifferentialBase(m_variable),
+					m_variable);
+	m_function->draw(gc);
+}
+
 const Constant::const_map Constant::constants = {
 	{ 'e', Complex(exp(1.0), 0) },
 	{ 'P', Complex(4*atan(1.0), 0) },

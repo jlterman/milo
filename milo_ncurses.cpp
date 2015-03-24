@@ -31,6 +31,9 @@ public:
 	int getCharLength(char c) { return 1; }
 	int getParenthesisWidth(int height = 1) { return 1; }
 	int getDivideLineHeight() { return 1; }
+	int getDifferentialHeight(char c) { return 3; }
+	int getDifferentialWidth(char c)  { return 2; }
+	int getDifferentialBase(char c)   { return 1; }
 
 	void at(int x, int y, int c, Color color = BLACK) {
 		if (c == 'P') c = ACS_PI;
@@ -62,6 +65,8 @@ public:
 	void horiz_line(int x_size, int x0, int y0) { 
 		for (int i = 0; i < x_size; ++i) at(x0 + i, y0, ACS_HLINE);
 	}
+
+	void differential(int x0, int y0, char variable);
 
 	void parenthesis(int x_size, int y_size, int x0, int y0);
 
@@ -117,6 +122,15 @@ void CursesGraphics::parenthesis(int x_size, int y_size, int x0, int y0)
 		}
 	}
 }
+
+void CursesGraphics::differential(int x0, int y0, char variable)
+{
+	at(x0+1, y0, 'd');
+	at(x0+1, y0+1, '-');
+	at(x0, y0+2, 'd');
+	at(x0+1, y0+2, variable);
+}
+
 
 int main(int argc, char* argv[])
 {

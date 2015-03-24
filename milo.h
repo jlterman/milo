@@ -199,6 +199,7 @@ public:
 
 	enum Color { BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE };
 
+	virtual void differential(int x0, int y0, char variable)=0;
 	virtual void parenthesis(int x_size, int y_size, int x0, int y0)=0;
 	virtual void horiz_line(int x_size, int x0, int y0)=0;
 	virtual void at(int x, int y, int c, Color color = BLACK)=0;
@@ -210,6 +211,9 @@ public:
 	virtual int getCharLength(char c)=0;
 	virtual int getParenthesisWidth(int height = 1)=0;
 	virtual int getDivideLineHeight()=0;
+	virtual int getDifferentialHeight(char c)=0;
+	virtual int getDifferentialWidth(char c)=0;
+	virtual int getDifferentialBase(char c)=0;
 
 	virtual void set(int x, int y, int x0 = 0, int y0 = 0) { 
 		m_xSize = x; m_ySize = y; m_xOrig = x0, m_yOrig = y0;

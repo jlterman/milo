@@ -132,15 +132,16 @@ Equation& Equation::operator=(const Equation& eqn)
 	return *this;
 }
 
-const string Expression::name = "expression";
-const string   Function::name = "function";
-const string   Constant::name = "constant";
-const string   Variable::name = "variable";
-const string     Number::name = "number";
-const string     Divide::name = "divide";
-const string      Input::name = "input";
-const string      Power::name = "power";
-const string       Term::name = "term";
+const string Differential::name = "differential";
+const string   Expression::name = "expression";
+const string     Function::name = "function";
+const string     Constant::name = "constant";
+const string     Variable::name = "variable";
+const string       Number::name = "number";
+const string       Divide::name = "divide";
+const string        Input::name = "input";
+const string        Power::name = "power";
+const string         Term::name = "term";
 
 template <class T>
 static Node* create(EqnXMLParser& in, Node* parent)
@@ -149,14 +150,15 @@ static Node* create(EqnXMLParser& in, Node* parent)
 }
 
 const map<string, EqnXMLParser::createPtr> EqnXMLParser::create_factors =
-	{ { Expression::name, create<Expression> },
-	  {   Function::name, create<Function> },
-	  {   Constant::name, create<Constant> },
-	  {   Variable::name, create<Variable> },
-	  {     Number::name, create<Number> },
-	  {     Divide::name, create<Divide> },
-	  {      Input::name, create<Input> },
-	  {      Power::name, create<Power> },
+	{ { Differential::name, create<Differential> },
+	  {   Expression::name, create<Expression>   },
+	  {     Function::name, create<Function>     },
+	  {     Constant::name, create<Constant>     },
+	  {     Variable::name, create<Variable>     },
+	  {       Number::name, create<Number>       },
+	  {       Divide::name, create<Divide>       },
+	  {        Input::name, create<Input>        },
+	  {        Power::name, create<Power>        },
 	};
 
 Term* Expression::getTerm(Equation& eqn, string text, Expression* parent)
@@ -190,7 +192,7 @@ bool Expression::add(Parser& p)
 		return true;
 }
 
-Node* Expression::parse(Parser& p, Node* parent) {
+Expression* Expression::parse(Parser& p, Node* parent) {
 	if (p.peek() != '(') return nullptr;
 	
 	char c = p.next();
@@ -288,7 +290,7 @@ void Equation::factor(string text, NodeVector& factors, Node* parent)
 	}	
 }
 
-Node* Function::parse(Parser& p, Node* parent) {
+Function* Function::parse(Parser& p, Node* parent) {
 	if (!isalpha(p.peek()) ) return nullptr;
 
 	for ( auto m : functions ) { 
@@ -319,7 +321,7 @@ Node* Binary::parse(Parser& p, Node* one, Node* parent)
 	
 Variable::Variable(Parser& p, Node* parent) : Node(parent), m_name( p.next() ) {}
 
-Node* Variable::parse(Parser& p, Node* parent)
+Variable* Variable::parse(Parser& p, Node* parent)
 {
 	char c = p.peek();
 	if ( isalpha(c) ) {
@@ -332,7 +334,7 @@ Node* Variable::parse(Parser& p, Node* parent)
 Constant::Constant(Parser& p, Node* parent) : 
 	Node(parent), m_name(p.next()), m_value(constants.find(m_name)->second) {}
 
-Node* Constant::parse(Parser& p, Node* parent)
+Constant* Constant::parse(Parser& p, Node* parent)
 {
 	char c = p.peek();
 	if ( constants.find(c) != constants.end() ) {
@@ -342,7 +344,7 @@ Node* Constant::parse(Parser& p, Node* parent)
 		return nullptr;			
 }
 
-Node* Number::parse(Parser& p, Node* parent)
+Number* Number::parse(Parser& p, Node* parent)
 {
 	char c = p.peek();
 	if (isdigit(c)) {
@@ -387,8 +389,9 @@ Node* Term::parse(Parser& p, Node* parent)
 	char c = p.peek();
 	if ( c=='\0' || c=='+' || c=='-' || c==')' ) return nullptr;
 
-	Node*    node = Expression::parse(p, parent);
+	Node*      node = Expression::parse(p, parent);
 	if (!node) node = Function::parse(p, parent);
+	if (!node) node = Differential::parse(p, parent);
 	if (!node) node = Constant::parse(p, parent);
 	if (!node) node = Number::parse(p, parent);
 	if (!node) node = Variable::parse(p, parent);
@@ -533,7 +536,7 @@ Input::Input(Parser& p, Node* parent) :
 	p.getEqn().setCurrentInput(m_sn);
 }
 
-Node* Input::parse(Parser& p, Node* parent)
+Input* Input::parse(Parser& p, Node* parent)
 {
 	char c = p.peek();
 	if ( c == '?' || c == '#' || c == '[' ) {
@@ -542,3 +545,49 @@ Node* Input::parse(Parser& p, Node* parent)
 	else
 		return nullptr;
 }
+
+Differential::Differential(Parser& p, Node* parent) : Node(parent)
+{
+	p.match("D/D");
+	m_variable = p.next();
+	if (!isalpha(m_variable)) throw logic_error("expected variable name");
+
+	m_function = Expression::parse(p, this);
+	if (m_function == nullptr) throw logic_error("exected expression");
+}
+
+Differential::Differential(EqnXMLParser& in, Node* parent) : Node(in, parent, name)
+{
+	string name;
+	if (!in.getAttribute("variable", name)) in.syntaxError("missing variable name");
+	m_variable = name[0];
+
+	in.assertNoAttributes();
+	in.next(XML::HEADER_END);
+	in.next(XML::HEADER, Expression::name);
+
+	m_function = new Expression(in, this);
+	in.next(XML::FOOTER);
+}
+
+Differential* Differential::parse(Parser& p, Node* parent)
+{
+	if (p.match("D/D")) 
+		return new Differential(p, parent);
+	else 
+		return nullptr;
+}
+
+string Differential::toString() const
+{
+	return "D/D" + string(1, m_variable) + m_function->toString();
+}
+
+void Differential::xml_out(XML::Stream& xml) const
+{
+	xml << XML::NAME_VALUE << "variable" << string(1, m_variable) << XML::HEADER_END;
+	m_function->out(xml);
+	xml << XML::FOOTER;
+}
+
+

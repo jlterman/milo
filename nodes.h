@@ -27,7 +27,7 @@ public:
 	const std::string& getName() const { return name; }
 	std::type_index getType() const { return type; }
 
-	static Node* parse(Parser& p, Node* parent = nullptr);
+	static Input* parse(Parser& p, Node* parent = nullptr);
 
 	static const std::string name;
 	static const std::type_index type;
@@ -166,7 +166,7 @@ public:
 	static const std::string name;
 	static const std::type_index type;
 
-	static Node* parse(Parser& p, Node* parent);
+	static Constant* parse(Parser& p, Node* parent);
 private:
 	char m_name;
 	Complex m_value;
@@ -200,7 +200,7 @@ public:
 	static const std::string name;
 	static const std::type_index type;
 
-	static Node* parse(Parser& p, Node* parent);
+	static Variable* parse(Parser& p, Node* parent);
 	static void setValue(char name, Complex value);
 
 private:
@@ -238,7 +238,7 @@ public:
 	static const std::string name;
 	static const std::type_index type;
 
-	static Node* parse(Parser& p, Node* parent);
+	static Number* parse(Parser& p, Node* parent);
 
 private:
 	std::string getInteger(Parser& p);
@@ -358,7 +358,7 @@ public:
 
 	static Term* getTerm(Equation& eqn, std::string text, Expression* parent = nullptr);
 	static Term* getTerm(Parser& p, Expression* parent);
-	static Node* parse(Parser& p, Node* parent);
+	static Expression* parse(Parser& p, Node* parent);
 
 	void add(double n);
 	void add(Expression* old_expr);
@@ -384,7 +384,7 @@ public:
 	typedef Complex (*func_ptr)(Complex);
 	using func_map = std::map<std::string, func_ptr>;
 
-	static Node* parse(Parser& p, Node* parent);
+	static Function* parse(Parser& p, Node* parent);
 
 	std::string toString() const { return m_name + m_arg->toString(); }
 	void xml_out(XML::Stream& xml) const;
@@ -430,4 +430,40 @@ private:
 	static Complex tanZ(Complex z);
 	static Complex logZ(Complex z);
 	static Complex expZ(Complex z);
+};
+
+
+class Differential : public Node
+{
+public:
+    Differential(Parser& p, Node* parent);
+	Differential(EqnXMLParser& in, Node* parent);
+	~Differential() {}
+
+	bool isLeaf() const { return false; }
+	int numFactors() const { return m_function->numFactors(); }
+	Node* findNode(int x, int y) { return m_function->findNode(x, y); }
+	std::string toString() const;
+	void xml_out(XML::Stream& xml) const;
+	Frame calcSize(Graphics& gc);
+	void calcOrig(Graphics& gc, int x, int y);
+	void drawNode(Graphics& gc) const;
+	Complex getNodeValue() const { return {0, 0}; }
+	const std::string& getName() const { return name; }
+	std::type_index getType() const { return type; }
+	void normalize() { m_function->normalize(); }
+	bool simplify() {}
+
+	static const std::string name;
+	static const std::type_index type;
+
+	static Differential* parse(Parser& p, Node* parent);
+
+private:
+	Node* downLeft()  { return m_function->first(); }
+	Node* downRight() { return m_function->last(); }
+
+	Box m_internal;
+	char m_variable;
+	Expression* m_function;
 };
