@@ -29,7 +29,7 @@ milo_test.o: milo_test.cpp milo.h
 parser.o: parser.cpp milo.h nodes.h
 	g++ $(ARGS) parser.cpp -c
 
-milo.o: milo.cpp milo.h nodes.h milo_key.h
+milo.o: milo_key.h milo.cpp milo.h nodes.h
 	g++ $(ARGS) milo.cpp -c
 
 symbol.o: symbol.cpp milo.h nodes.h
