@@ -506,12 +506,14 @@ Number::Number(EqnXMLParser& in, Node* parent) : Node(in, parent, name)
 	in.next(XML::ATOM_END);
 }
 
-Input::Input(EqnXMLParser& in, Node* parent) : Node(in, parent, name), m_eqn(in.getEqn())
+Input::Input(EqnXMLParser& in, Node* parent) : Node(in, parent, name), m_eqn(in.getEqn()), m_sn(++input_sn)
 {
+	m_eqn.addInput(this);
 	string value;
 	if (in.getAttribute("current", value)) {
 		if (value != "true" && value != "false") in.syntaxError("bad boolean value");
 		m_current = (value == "true");
+		if (m_current) m_eqn.setCurrentInput(m_sn);
 	}
 	if (in.getAttribute("text", value)) {
 		m_typed = value;
