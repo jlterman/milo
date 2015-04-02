@@ -97,6 +97,7 @@ void Node::out(XML::Stream& xml)
 	xml << XML::HEADER << getName();
 	if (m_nth != 1) xml << XML::NAME_VALUE << "nth" << to_string(m_nth);
 	if (!m_sign) xml << XML::NAME_VALUE << "negative" << "true";
+	if (m_select != NONE) xml << XML::NAME_VALUE << "select" << select_tags.at(m_select);
 	xml_out(xml);
 }
 
@@ -114,6 +115,16 @@ Node::Node(EqnXMLParser& in, Node* parent, const string& name) :
 		auto pos = find(select_tags, value);
 		if (pos == select_tags.end()) in.syntaxError("unknown select node value");
 		m_select = (Select) distance(select_tags.begin(), pos);
+		switch (m_select) {
+		    START: in.getEqn().setSelectStart(this);
+			       break;
+		    END:   in.getEqn().setSelectEnd(this);
+			       break;
+		    ALL:   in.getEqn().setSelect(this);
+			       break;
+		    default: 
+				   break;
+		}
 	}
 	if (in.getAttribute("nth", value)) {
 		if (!isInteger(value)) in.syntaxError("not an integer");
