@@ -47,6 +47,17 @@ using Complex = std::complex<double>;
 using NodeVector = std::vector<Node*>;
 using NodeIter = NodeVector::iterator;
 
+inline std::string to_hexstring(unsigned long x)
+{
+	std::string hex;
+	while (x != 0) {
+		int n = x % 16; x /= 16;
+		char d = (n < 10) ? '0' + n : 'A' + n - 10;
+		hex.insert(0, 1, d);
+	}
+	return hex;
+}
+
 template <class T>
 inline auto find(const std::vector<T>& v, const T& val) -> decltype( v.cbegin() )
 {

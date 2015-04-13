@@ -10,7 +10,10 @@ class CursesGraphics : public Graphics
 public:
 	CursesGraphics() { 
 		if (!init) {
-			initscr(); raw(); noecho(); //curs_set(0);
+			initscr(); raw(); noecho(); 
+#ifndef DEBUG
+			curs_set(0);
+#endif
 			keypad(stdscr, TRUE);
 			mousemask(ALL_MOUSE_EVENTS, NULL);
 			m_has_colors = (has_colors() == TRUE);
@@ -84,7 +87,9 @@ public:
 		mvaddch(y + m_yOrig, x + m_xOrig, ' '); 
 		move(y + m_yOrig, x + m_xOrig);
 		int ch = getch();
-		//curs_set(0);
+#ifndef DEBUG
+		curs_set(0);
+#endif
 		mvaddch(y + m_yOrig, x + m_xOrig, '?'); 
 		return ch;
 	}
@@ -199,21 +204,24 @@ int main(int argc, char* argv[])
 					static Node* end = nullptr;
 					MEVENT event;
 					if(getmouse(&event) == OK) {
+						LOG_TRACE_MSG("mouse event " + to_hexstring(event.bstate) + " click at: " + 
+									  to_string(event.x) + ", " + to_string(event.y));
 						if(event.bstate & BUTTON1_PRESSED) {
-							LOG_TRACE_MSG("mouse click at: " + to_string(event.x) + ", " + 
-												 to_string(event.y));
 							start = eqn->findNode(gc, event.x, event.y);
 							if (start == nullptr) break;
 							eqn->setSelect(start);
 							LOG_TRACE_MSG(string("found node: ") + typeid(start).name() + ": " + 
 										  start->toString());
+							fChanged = false;
 						}
-						if(event.bstate & BUTTON1_RELEASED) {
+						else if(event.bstate & BUTTON1_RELEASED) {
 							end = eqn->findNode(gc, event.x, event.y);
 							if (end == nullptr) break;
 							eqn->setSelect(start, end);
 							LOG_TRACE_MSG(string("found node: ") + typeid(end).name() + ": " + 
 										  end->toString());
+							start = nullptr;
+							end = nullptr;
 						}
 					}
 					break;

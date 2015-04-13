@@ -5,7 +5,7 @@ all: debug
 
 exe: milo_test milo_ncurses
 
-debug: ARGS = $(CPPARGS) -g 
+debug: ARGS = $(CPPARGS) -g -D DEBUG
 debug: exe
 
 release: ARGS = $(CPPARGS) -O2

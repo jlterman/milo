@@ -940,7 +940,7 @@ void Equation::setSelect(Node* start, Node* end)
 	if (start == nullptr) return;
 	clearSelect();
 
-	if (end == nullptr) {
+	if (end == nullptr || end == start) {
 		m_selectStart = m_selectEnd = start;
 		start->setSelect(Node::Select::ALL);
 	}
