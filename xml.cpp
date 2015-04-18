@@ -34,7 +34,7 @@ namespace XML
 	void FSM::advance(State new_state)
 	{
 		for ( auto t : transitions ) {
-			if ((t.at(0)&m_state) != 0 && (t.at(1)&new_state) != 0) {
+			if ((t.at(0)&m_state) != 0 && ((t.at(1)&new_state) != 0)) {
 				m_state = new_state;
 				return;
 			}
@@ -65,7 +65,6 @@ namespace XML
 	string to_string(State state)
 	{
 		static const map<State, string> state_strings = {
-			{ END,        "END"        },
 			{ HEADER,     "HEADER"     }, 
 			{ HEADER_END, "HEADER_END" }, 
 			{ FOOTER,     "FOOTER"     }, 

@@ -29,8 +29,8 @@
 #include <regex>
 
 namespace XML {
-	enum State { END=1, HEADER=2, HEADER_END=4, FOOTER=8, ATOM_END=16, NAME_VALUE=32,
-				 ELEMENT=64, NEW=128, ILLEGAL=256, FINISH=512 };
+	enum State { HEADER=1, HEADER_END=2, FOOTER=4, ATOM_END=8, NAME_VALUE=16,
+				 ELEMENT=32, NEW=64, ILLEGAL=128, FINISH=256 };
 	class FSM
 	{
 	public:

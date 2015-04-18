@@ -42,7 +42,7 @@
                               <variable name="d"/>
                             </term>
                             <term>
-                              <constant name="e"/>
+                              <constant select="ALL" name="e"/>
                               <variable name="f"/>
                             </term>
                           </expression>
