@@ -42,8 +42,8 @@ public:
 	bool match(const string& s);
 	Equation& getEqn() { return m_eqn; }
 private:
-	Equation& m_eqn;
 	string m_expr;
+	Equation& m_eqn;
 	size_t m_pos;
 };
 
@@ -101,7 +101,7 @@ void Node::out(XML::Stream& xml)
 	xml_out(xml);
 }
 
-Node::Node(EqnXMLParser& in, Node* parent, const string& name) : 
+Node::Node(EqnXMLParser& in, Node* parent) : 
 	m_parent(parent), m_sign(true), m_select(NONE), m_nth(1)
 {
 	if (in.check(XML::NAME_VALUE)) in.next(XML::NAME_VALUE);
@@ -116,12 +116,12 @@ Node::Node(EqnXMLParser& in, Node* parent, const string& name) :
 		if (pos == select_tags.end()) in.syntaxError("unknown select node value");
 		m_select = (Select) distance(select_tags.begin(), pos);
 		switch (m_select) {
-		    START: in.getEqn().setSelectStart(this);
-			       break;
-		    END:   in.getEqn().setSelectEnd(this);
-			       break;
-		    ALL:   in.getEqn().setSelect(this);
-			       break;
+		    case START: in.getEqn().setSelectStart(this);
+			            break;
+		    case END:   in.getEqn().setSelectEnd(this);
+			            break;
+		    case ALL:   in.getEqn().setSelect(this);
+			            break;
 		    default: 
 				   break;
 		}
@@ -217,7 +217,7 @@ bool Expression::add(Parser& p)
 	terms.push_back(term);
 	
 	if ( p.peek() == '\0' || p.peek() == ')' ) {
-		char c = p.next();
+		p.next();
 		return false;
 	}
 	else
@@ -227,7 +227,7 @@ bool Expression::add(Parser& p)
 Expression* Expression::parse(Parser& p, Node* parent) {
 	if (p.peek() != '(') return nullptr;
 	
-	char c = p.next();
+	p.next();
 	return new Expression(p, parent);
 }
 
@@ -342,7 +342,6 @@ Node* Binary::parse(Parser& p, Node* one, Node* parent)
 	Node* two = Term::parse(p);
 	if (!two) throw logic_error("bad format");
 
-	Node* binary;
 	if ( c == '/' ) 
 		return new Divide(one, two, parent); 
 	else if ( c == '^' ) 
@@ -443,7 +442,7 @@ bool Term::add(Parser& p)
 	return true;
 }
 
-Function::Function(EqnXMLParser& in, Node* parent) : Node(in, parent, name)
+Function::Function(EqnXMLParser& in, Node* parent) : Node(in, parent)
 {
 	in.next(XML::HEADER_END);
 
@@ -462,7 +461,7 @@ Function::Function(EqnXMLParser& in, Node* parent) : Node(in, parent, name)
 	in.next(XML::FOOTER);
 }
 
-Binary::Binary(EqnXMLParser& in, Node* parent, const string& name) : Node(in, parent, name)
+Binary::Binary(EqnXMLParser& in, Node* parent) : Node(in, parent)
 {
 	in.next(XML::HEADER_END);
 	in.assertNoAttributes();
@@ -476,7 +475,7 @@ Binary::Binary(EqnXMLParser& in, Node* parent, const string& name) : Node(in, pa
 	in.next(XML::FOOTER);
 }
 
-Variable::Variable(EqnXMLParser& in, Node* parent) : Node(in, parent, name)
+Variable::Variable(EqnXMLParser& in, Node* parent) : Node(in, parent)
 {
 	string value;
 	if (in.getAttribute("name", value)) {
@@ -489,7 +488,7 @@ Variable::Variable(EqnXMLParser& in, Node* parent) : Node(in, parent, name)
 	in.next(XML::ATOM_END);
 }
 
-Constant::Constant(EqnXMLParser& in, Node* parent) : Node(in, parent, name)
+Constant::Constant(EqnXMLParser& in, Node* parent) : Node(in, parent)
 {
 	string value;
 	if (in.getAttribute("name", value)) {
@@ -505,7 +504,7 @@ Constant::Constant(EqnXMLParser& in, Node* parent) : Node(in, parent, name)
 	in.next(XML::ATOM_END);
 }
 
-Number::Number(EqnXMLParser& in, Node* parent) : Node(in, parent, name)
+Number::Number(EqnXMLParser& in, Node* parent) : Node(in, parent)
 {
 	string real = "0";
 	if (!in.getAttribute("value", real)) in.syntaxError("Missing value attribute");
@@ -517,7 +516,7 @@ Number::Number(EqnXMLParser& in, Node* parent) : Node(in, parent, name)
 	in.next(XML::ATOM_END);
 }
 
-Input::Input(EqnXMLParser& in, Node* parent) : Node(in, parent, name), m_eqn(in.getEqn()), m_sn(++input_sn)
+Input::Input(EqnXMLParser& in, Node* parent) : Node(in, parent), m_sn(++input_sn), m_eqn(in.getEqn())
 {
 	m_eqn.addInput(this);
 	string value;
@@ -532,7 +531,7 @@ Input::Input(EqnXMLParser& in, Node* parent) : Node(in, parent, name), m_eqn(in.
 	in.next(XML::ATOM_END);
 }
 
-Term::Term(EqnXMLParser& in, Node* parent) : Node(in, parent, name)
+Term::Term(EqnXMLParser& in, Node* parent) : Node(in, parent)
 {
 	in.next(XML::HEADER_END);
 	in.assertNoAttributes();
@@ -544,7 +543,7 @@ Term::Term(EqnXMLParser& in, Node* parent) : Node(in, parent, name)
 	in.next(XML::FOOTER);
 }
 
-Expression::Expression(EqnXMLParser& in, Node* parent) : Node(in, parent, name)
+Expression::Expression(EqnXMLParser& in, Node* parent) : Node(in, parent)
 {
 	in.next(XML::HEADER_END);
 	in.assertNoAttributes();
@@ -559,7 +558,7 @@ Expression::Expression(EqnXMLParser& in, Node* parent) : Node(in, parent, name)
 }
 
 Input::Input(Parser& p, Node* parent) : 
-	Node(parent), m_sn(++input_sn), m_current(false), m_typed(""), m_eqn(p.getEqn())
+	Node(parent), m_sn(++input_sn), m_typed(""), m_current(false), m_eqn(p.getEqn())
 {
 	p.getEqn().addInput(this);
 	char c = p.next();
@@ -590,7 +589,7 @@ Differential::Differential(Parser& p, Node* parent) : Node(parent)
 	if (m_function == nullptr) throw logic_error("exected expression");
 }
 
-Differential::Differential(EqnXMLParser& in, Node* parent) : Node(in, parent, name)
+Differential::Differential(EqnXMLParser& in, Node* parent) : Node(in, parent)
 {
 	string name;
 	if (!in.getAttribute("variable", name)) in.syntaxError("missing variable name");

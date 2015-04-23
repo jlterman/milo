@@ -86,12 +86,12 @@ namespace XML {
 	private:
 		enum Pending { NONE, HEADER_TAG, NAME, VALUE, ELEMENT_TAG };
 
-		Pending m_pending = NONE;
-		std::string m_nv;
+		std::string m_sep;
 		std::ostream& m_os;
 		const int m_indent_step;
+		Pending m_pending = NONE;
+		std::string m_nv;
 		int m_indent = 0;
-		std::string m_sep;
 		FSM fsm;
 	};
 
@@ -119,7 +119,7 @@ namespace XML {
 		void syntaxError(const std::string& msg);
 	private:
 		std::vector<std::string> m_tokens;
-		size_t m_pos;
+		unsigned int m_pos;
 		std::map<std::string, std::string> m_attributes;
 
 		FSM fsm;

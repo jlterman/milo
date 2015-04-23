@@ -58,8 +58,8 @@ public:
 
 	friend class Equation;
 private:
-	std::string m_typed;
 	int m_sn;
+	std::string m_typed;
 	bool m_current;
 	Equation& m_eqn;
 	Box m_internal;
@@ -79,7 +79,7 @@ class Binary : public Node
 public:
 	Binary(char op, Node* one, Node* two, Node* parent, bool neg, Node::Select s) : 
 	    Node(parent, neg, s), m_op(op), m_first(one), m_second(two) {}
-	Binary(EqnXMLParser& in, Node* parent, const std::string& name);
+	Binary(EqnXMLParser& in, Node* parent);
 	virtual ~Binary() { delete m_first; delete m_second; }
 
 	std::string toString() const { return m_first->toString() + std::string(1, m_op) + m_second->toString(); }
@@ -93,9 +93,9 @@ public:
 	void xml_out(XML::Stream& xml) const;
 
 protected:
+	char m_op;
 	Node* m_first;  // Binary own this tree
 	Node* m_second; // Binary own this tree
-	char m_op;
 	Box m_internal;
 
 private:
@@ -115,7 +115,7 @@ public:
 		m_first->setParent(this); m_second->setParent(this); 
 		m_first->setDrawParenthesis(false); m_second->setDrawParenthesis(false);
 	}
-    Divide(EqnXMLParser& in, Node* parent) : Binary(in, parent, name)
+    Divide(EqnXMLParser& in, Node* parent) : Binary(in, parent)
 	{ 
 		m_op = '/'; m_first->setDrawParenthesis(false); m_second->setDrawParenthesis(false);
 	}
@@ -143,7 +143,7 @@ public:
 		m_first->setParent(this); m_second->setParent(this);
 		m_first->setDrawParenthesis(m_first->numFactors()>1); m_second->setDrawParenthesis(false);
 	}
-    Power(EqnXMLParser& in, Node* parent) : Binary(in, parent, name)
+    Power(EqnXMLParser& in, Node* parent) : Binary(in, parent)
 	{ 
 		m_op = '^'; m_first->setDrawParenthesis(m_first->numFactors()>1); m_second->setDrawParenthesis(false);
 	}
@@ -442,9 +442,9 @@ private:
 	Node* downLeft()  { return m_arg->first(); }
 	Node* downRight() { return m_arg->last(); }
 
-	Node* m_arg;       // Function own this tree
 	std::string m_name;
 	func_ptr m_func;
+	Node* m_arg;       // Function own this tree
 	Box m_internal;
 
 	static const func_map functions;
@@ -476,7 +476,7 @@ public:
 	const std::string& getName() const { return name; }
 	std::type_index getType() const { return type; }
 	void normalize() { m_function->normalize(); }
-	bool simplify() {}
+	bool simplify() { return false; }
 
 	static const std::string name;
 	static const std::type_index type;

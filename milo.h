@@ -156,7 +156,7 @@ public:
 
     Node(Node* parent = nullptr, bool fNeg = false, Select s = NONE ) : 
 	    m_parent(parent), m_sign(!fNeg), m_select(s) {}
-	Node(EqnXMLParser& in, Node* parent, const std::string& name);
+	Node(EqnXMLParser& in, Node* parent);
 
 	virtual ~Node() {}
 	Node(const Node&)=delete;
@@ -205,8 +205,8 @@ public:
 private:
 	virtual Node* downLeft() { return nullptr; }
 	virtual Node* downRight() { return nullptr; }
-	virtual Node* getLeftSibling(Node* node) { return nullptr; }
-	virtual Node* getRightSibling(Node* node) { return nullptr; }
+	virtual Node* getLeftSibling(Node*) { return nullptr; }
+	virtual Node* getRightSibling(Node*) { return nullptr; }
 
 	virtual Frame calcSize(Graphics& gc)=0;
 	virtual void calcOrig(Graphics& gc, int x, int y)=0;
@@ -214,12 +214,12 @@ private:
 	virtual Complex getNodeValue() const=0;
 	virtual void xml_out(XML::Stream& xml) const=0;
 
+	Node* m_parent;
+	bool m_sign;
+	Select m_select;
 	Frame m_frame;
 	Box m_parenthesis;
-	bool m_sign;
 	int m_nth = 1;
-	Node* m_parent;
-	Select m_select;
 	bool m_fDrawParenthesis = false;
 };
 
@@ -283,7 +283,7 @@ private:
 	void prev();
 
 public:
-	NodeIterator(Node* node, Equation& eqn) : m_node(node) {}
+	NodeIterator(Node* node) : m_node(node) {}
 
 	Node*& operator*() { return m_node; }
 	Node*& operator->() { return m_node; }
@@ -302,8 +302,8 @@ class FactorIterator : public std::iterator< std::bidirectional_iterator_tag, No
 	Node* m_node;
 	Term* m_pTerm;
 	Expression* m_gpExpr;
-	int m_factor_index;
-	int m_term_index;
+	unsigned int m_factor_index;
+	unsigned int m_term_index;
 
 	void next();
 	void prev();
@@ -371,9 +371,9 @@ public:
 	bool simplify() { m_root->normalize(); return m_root->simplify(); }
 	void normalize() { m_root->normalize(); }
 
-	NodeIterator begin() { return NodeIterator(m_root->first(), *this); }
-	NodeIterator end()   { return NodeIterator(nullptr, *this); }
-	NodeIterator last()  { return NodeIterator(m_root->last(), *this); }
+	NodeIterator begin() { return NodeIterator(m_root->first()); }
+	NodeIterator end()   { return NodeIterator(nullptr); }
+	NodeIterator last()  { return NodeIterator(m_root->last()); }
 
 	FactorIterator insert(FactorIterator it, std::string text);
 	FactorIterator erase(FactorIterator it, bool free = true);
@@ -387,7 +387,7 @@ private:
 	Node* m_selectEnd = nullptr;
 
 	Input* getCurrentInput() { 
-		return (m_input_index < 0) ? nullptr : m_inputs[m_input_index];
+		return (m_inputs.empty()) ? nullptr : m_inputs[m_input_index];
 	}
 	void nextInput();
 	FactorIterator disableCurrentInput();

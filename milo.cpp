@@ -61,7 +61,7 @@ void Equation::setCurrentInput(int in_sn)
 		m_input_index = -1;
 		return;
 	}
-	for (int i = 0; i < m_inputs.size(); ++i) {
+	for (unsigned int i = 0; i < m_inputs.size(); ++i) {
 		if (m_inputs[i]->m_sn == in_sn) {
 			m_input_index = i;
 			m_inputs[m_input_index]->m_current = true;
@@ -142,7 +142,7 @@ Complex Node::getValue() const
 {
 	Complex z(1, 0);
 	for (int i = 0; i < m_nth; ++i) { z *= getNodeValue(); }
-	if (!m_sign && (m_nth&1 == 1)) z *= Complex(-1, 0);
+	if (!m_sign && ((m_nth&1) == 1)) z *= Complex(-1, 0);
 	return z;
 }
 
@@ -389,7 +389,7 @@ Node::Frame Constant::calcSize(Graphics& gc)
     return frame;
 }
 
-void Constant::calcOrig(Graphics& gc, int x, int y)
+void Constant::calcOrig(Graphics&, int x, int y)
 {
 	m_internal.setOrigin(x, y + getFrame().base);
 }
@@ -408,7 +408,7 @@ Node::Frame Variable::calcSize(Graphics& gc)
     return frame;
 }
 
-void Variable::calcOrig(Graphics& gc, int x, int y)
+void Variable::calcOrig(Graphics&, int x, int y)
 {
 	m_internal.setOrigin(x, y + getFrame().base);
 }
@@ -449,7 +449,7 @@ Node::Frame Number::calcSize(Graphics& gc)
     return frame;
 }
 
-void Number::calcOrig(Graphics& gc, int x, int y)
+void Number::calcOrig(Graphics&, int x, int y)
 {
 	m_internal.setOrigin(x, y + getFrame().base);
 }
@@ -498,7 +498,7 @@ string Term::toString() const
 
 Node* Term::getLeftSibling(Node* node)
 {
-	for (int i = 1; i < factors.size(); ++i) {
+	for (unsigned int i = 1; i < factors.size(); ++i) {
 		if (factors[i] == node)
 			return factors[i - 1];
 	}
@@ -507,7 +507,7 @@ Node* Term::getLeftSibling(Node* node)
 
 Node* Term::getRightSibling(Node* node)
 {
-	for (int i = 0; i < factors.size() - 1; ++i) {
+	for (unsigned int i = 0; i < factors.size() - 1; ++i) {
 		if (factors[i] == node) 
 			return factors[i + 1];
 	}
@@ -584,7 +584,7 @@ Complex Expression::getNodeValue() const
 
 Node* Expression::getLeftSibling(Node* node)
 {
-	for (int i = 1; i < terms.size(); ++i) {
+	for (unsigned int i = 1; i < terms.size(); ++i) {
 		if (terms[i] == node)
 			return terms[i - 1]->last();
 	}
@@ -593,7 +593,7 @@ Node* Expression::getLeftSibling(Node* node)
 
 Node* Expression::getRightSibling(Node* node)
 {
-	for (int i = 0; i < terms.size() - 1; ++i) {
+	for (unsigned int i = 0; i < terms.size() - 1; ++i) {
 		if (terms[i] == node)
 			return terms[i + 1]->first();
 	}
@@ -603,7 +603,7 @@ Node* Expression::getRightSibling(Node* node)
 int Input::input_sn = -1;
 
 Input::Input(Equation& eqn, std::string txt, bool current, Node* parent, bool neg, Node::Select s) :
-	Node(parent, neg, s), m_typed(txt), m_sn(++input_sn), m_current(current), m_eqn(eqn)
+	Node(parent, neg, s), m_sn(++input_sn), m_typed(txt), m_current(current), m_eqn(eqn)
 {
 	eqn.addInput(this);
 	if (current) eqn.setCurrentInput(m_sn);
@@ -616,7 +616,7 @@ Node::Frame Input::calcSize(Graphics& gc)
     return frame;
 }
 
-void Input::calcOrig(Graphics& gc, int x, int y)
+void Input::calcOrig(Graphics&, int x, int y)
 {
 	m_internal.setOrigin(x, y);
 }
@@ -715,7 +715,7 @@ bool Equation::handleChar(int ch)
 				break;
 			}
 		    case Key::UP: {
-				NodeIterator n{m_selectStart, *this};
+				NodeIterator n{m_selectStart};
 				if (n != begin() ) {
 					--n;
 					setSelect(*n);
@@ -725,7 +725,7 @@ bool Equation::handleChar(int ch)
 				break;
 			}
 		    case Key::DOWN: {
-				NodeIterator n{m_selectStart, *this};
+				NodeIterator n{m_selectStart};
 				++n;
 				if (n != end()) setSelect(*n); else fResult = false;
 				break;
@@ -882,7 +882,7 @@ bool Equation::handleChar(int ch)
 void Equation::nextInput() 
 { 
 	m_inputs[m_input_index]->setCurrent(false);
-	m_input_index = (++m_input_index)%m_inputs.size();
+	m_input_index = (m_input_index + 1)%m_inputs.size();
 	m_inputs[m_input_index]->setCurrent(true);
 }
 
@@ -906,7 +906,7 @@ void Equation::removeInput(Input* in)
 	eraseElement(m_inputs, in_index);
 	
 	if (m_inputs.size() > 0 && in_index == m_input_index) {
-		m_input_index = (++m_input_index)%m_inputs.size();
+		m_input_index = (m_input_index + 1)%m_inputs.size();
 		m_inputs[m_input_index]->setCurrent(true);
 	}
 	else
@@ -1020,7 +1020,7 @@ FactorIterator Equation::erase(FactorIterator it, bool free)
 {
 	if (free) delete it.m_pTerm->factors[it.m_factor_index];
 	eraseElement(it.m_pTerm->factors, it.m_factor_index);
-	if (--it.m_factor_index < 0) it.m_factor_index = 0;
+	if (it.m_factor_index > 0) --it.m_factor_index;
 
 	if (it.m_pTerm->factors.size() == 0) {
 		if (it.m_gpExpr->terms.size() == 1) {
@@ -1030,7 +1030,7 @@ FactorIterator Equation::erase(FactorIterator it, bool free)
 		else {
 			if (free) delete it.m_gpExpr->terms[it.m_term_index];
 			eraseElement(it.m_gpExpr->terms, it.m_term_index);
-			if (--it.m_term_index < 0) it.m_term_index = 0;
+			if (it.m_term_index > 0) --it.m_term_index;
 			it.m_pTerm = it.m_gpExpr->terms[it.m_term_index];
 		}
 	}
@@ -1172,17 +1172,18 @@ void FactorIterator::prev()
 {
 	if (m_gpExpr == nullptr) throw logic_error("null iterator");
 
-	if (--m_factor_index < 0) {
-		--m_term_index;
+	if (m_factor_index > 0) {
+		--m_factor_index;
 	}
-	if (m_term_index >= 0) {
+	else if (m_term_index > 0) {
+		--m_term_index;
 		m_pTerm = m_gpExpr->terms[m_term_index];
-
-		if (m_factor_index < 0) m_factor_index += m_pTerm->factors.size();
-		m_node = m_pTerm->factors[m_factor_index];
+		m_factor_index += m_pTerm->factors.size();
 	}
 	else 
 		throw range_error("out of range");		
+
+	m_node = m_pTerm->factors[m_factor_index];
 }
 
 bool FactorIterator::isEndTerm()

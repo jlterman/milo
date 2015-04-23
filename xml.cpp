@@ -219,10 +219,9 @@ namespace XML
 		}
 	}
 
-	Parser::Parser(istream& in) : m_pos(-1)
+	Parser::Parser(istream& in) : m_pos(0)
 	{ 
 		tokenize(in);
-		m_pos = 0;
 		next(HEADER, "document").next(HEADER_END);
 	}
 	
@@ -333,8 +332,7 @@ namespace XML
 	void Parser::syntaxError(const string& msg)
 	{
 		string error = msg + "\n";
-		int last = (m_pos == -1) ? m_tokens.size() - 1 : m_pos;
-		for (int i = 0; i <= last; ++i) { error += m_tokens[i]; }
+		for (unsigned int i = 0; i <= m_pos; ++i) { error += m_tokens[i]; }
 		error += "<<<<<";
 		throw logic_error(error);
 	}

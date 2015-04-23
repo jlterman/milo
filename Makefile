@@ -1,5 +1,5 @@
 OBJECTS = parser.o milo.o symbol.o xml.o
-CPPARGS = -std=c++11
+CPPARGS = -std=c++11 -Wall -Wextra -Werror -Wpedantic
 
 all: debug
 

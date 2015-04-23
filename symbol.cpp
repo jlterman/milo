@@ -97,9 +97,9 @@ bool Expression::simplify()
 		add(v);
 	}
 
-	int a_pos = 0;
+	unsigned int a_pos = 0;
 	while ( a_pos < terms.size() - 1 ) {
-		int b_pos = a_pos + 1;
+		unsigned int b_pos = a_pos + 1;
 		while ( b_pos < terms.size() ) {
 			if (Term::simplify(terms, terms.begin() + a_pos, terms.begin() + b_pos)) {
 				result = true;
@@ -234,9 +234,9 @@ bool Term::simplify()
 		multiply(v);
 	}
 
-	int a_pos = 0;
+	unsigned int a_pos = 0;
 	while ( a_pos < factors.size() - 1 ) {
-		int b_pos = a_pos + 1;
+		unsigned int b_pos = a_pos + 1;
 		Node* a = factors.at(a_pos);
 		while ( b_pos < factors.size() ) {
 			Node* b = factors.at(b_pos);
@@ -391,7 +391,7 @@ void Divide::normalize()
 
 bool Divide::simplify()
 {
-	bool result = m_first->simplify() | m_second->simplify();
+	return m_first->simplify() | m_second->simplify();
 }
 
 bool Number::simplify()
@@ -404,7 +404,7 @@ bool Number::simplify()
 	}
 	else {
 		double v = m_value;
-		for (int i = 1; i < getNth(); ++i) v*m_value;
+		for (int i = 1; i < getNth(); ++i) v*=m_value;
 		m_value = v;
 	}
 	setNth(1);

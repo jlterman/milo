@@ -14,12 +14,12 @@ public:
 
 	int getTextHeight() { return 1; }
 	int getTextLength(const std::string& s) { return s.length(); }
-	int getCharLength(char c) { return 1; }
-	int getParenthesisWidth(int height = 1) { return 1; }
+	int getCharLength(char) { return 1; }
+	int getParenthesisWidth(int) { return 1; }
 	int getDivideLineHeight() { return 1; }
-	int getDifferentialHeight(char c) { return 3; }
-	int getDifferentialWidth(char c)  { return 2; }
-	int getDifferentialBase(char c)   { return 1; }
+	int getDifferentialHeight(char) { return 3; }
+	int getDifferentialWidth(char)  { return 2; }
+	int getDifferentialBase(char)   { return 1; }
 
 	void differential(int x0, int y0, char variable);
 	void parenthesis(int x_size, int y_size, int x0, int y0);
@@ -44,7 +44,9 @@ private:
 
 void AsciiGraphics::at(int x, int y, const string& s, Color color)
 {
-	for (int n = 0; n < s.length(); ++n) { m_field[y][x + n] = s[n]; m_colors[y][x + n] = color; }
+	for (unsigned int n = 0; n < s.length(); ++n) { 
+		m_field[y][x + n] = s[n]; m_colors[y][x + n] = color;
+	}
 }
 
 void AsciiGraphics::out()

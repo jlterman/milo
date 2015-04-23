@@ -31,12 +31,12 @@ public:
 
 	int getTextHeight() { return 1; }
 	int getTextLength(const std::string& s) { return s.length(); }
-	int getCharLength(char c) { return 1; }
-	int getParenthesisWidth(int height = 1) { return 1; }
+	int getCharLength(char) { return 1; }
+	int getParenthesisWidth(int) { return 1; }
 	int getDivideLineHeight() { return 1; }
-	int getDifferentialHeight(char c) { return 3; }
-	int getDifferentialWidth(char c)  { return 2; }
-	int getDifferentialBase(char c)   { return 1; }
+	int getDifferentialHeight(char) { return 3; }
+	int getDifferentialWidth(char)  { return 2; }
+	int getDifferentialBase(char)   { return 1; }
 
 	void at(int x, int y, int c, Color color = BLACK) {
 		if (c == 'P') c = ACS_PI;
@@ -58,7 +58,7 @@ public:
 
 	void out() { refresh(); }
 
-	void set(int x, int y, int x0 = 0, int y0 = 0) { 
+	void set(int x, int y, int, int) { 
 		int row, col;
 		getmaxyx(stdscr, row, col);
 		Graphics::set(x, y, (col - x)/2, (row - y)/2);
@@ -78,11 +78,11 @@ public:
 		for (int j = 0; j < y; ++j) mvchgat(m_yOrig + y0 + j, m_xOrig + x0, x, A_REVERSE, 0, NULL);
 	}
 
-	int ins(int x, int y) {
+	unsigned int ins(int x, int y) {
 		return mvinch(y + m_yOrig, x + m_xOrig);
 	}
 
-	int getChar(int y, int x) {
+	unsigned int getChar(int y, int x) {
 		curs_set(2);
 		mvaddch(y + m_yOrig, x + m_xOrig, ' '); 
 		move(y + m_yOrig, x + m_xOrig);
