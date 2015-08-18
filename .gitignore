@@ -7,3 +7,5 @@ milo_ncurses
 milo_test
 unit_tests/xml_test
 tmp/
+html/
+doxygen_sqlite3.db
