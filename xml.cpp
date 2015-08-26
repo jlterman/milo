@@ -23,7 +23,9 @@
 
 using namespace std;
 
-/* Helper function that removes all spaces in front and back of string
+/** 
+ * Removes all spaces in front and back of string.
+ * @param[in|out] s String value which has leading and trailing spaces removed.
  */
 void trim(string& s)
 {
@@ -33,10 +35,7 @@ void trim(string& s)
 
 namespace XML
 {
-	/* FSM::advance(State) will check that the transition of
-	 * old state (m_state) => new_state is legal. If legal,
-	 * m_state is new_state otherwise it is set to illegal.
-	 */
+	// Set FSM current state to new_state if legal transition, to illegal otherwise. 
 	void FSM::advance(State new_state)
 	{
 		// The table transitions consist of old states (0) and
@@ -53,11 +52,7 @@ namespace XML
 		return;
 	}
 
-	/* FSM::next(State,string) attempts to advance the state of FSM
-	 * and check if this is a legal transition. Argument tag may be
-	 * empty if not relevent. Either m_state is set to new_state or
-	 * illegal.
-	 */
+	// Advance FSM to new_state and new tag if new_state == HEADER
 	void FSM::next(State new_state, const std::string& tag)
 	{
 		// If transition is illegal, return
@@ -101,10 +96,7 @@ namespace XML
 		return state_strings.at(state);
 	}
 
-	/* Stream::out(state) advances the XML output stream to the given state.
-	 * Some states like footers are complete onto themselves and others like
-	 * headers create a pending state to complete the transition
-	 */
+	// output state to Stream. Legality of transistion checked
 	void Stream::out(State state)
 	{
 		switch (state) {
@@ -156,10 +148,7 @@ namespace XML
 			throw logic_error("Bad next xml state: " + to_string(state));
 	}
 
-	/* Stream::out(string) should only be called when XML stream has a pending
-	 * state. The NAME pending state will cause to the stream to be left with
-	 * VALUE pending. Otherwise, it it completes the transistion to the next state
-	 */
+	// output string to Stream. Behavior is dependent on Pending state
 	void Stream::out(const string& tag)
 	{
 		string tag_str = tag;
@@ -276,9 +265,7 @@ namespace XML
 		next(HEADER, "document").next(HEADER_END);
 	}
 
-	/* Parser::tokenize(string) is a helper function for Parser::tokenize(istream)
-	 * It's job is to analyze the string given it and push 
-	 */
+	// Helper function for tokenize(istream)
 	void Parser::tokenize(string xml)
 	{
 		// if empty string, return
@@ -318,11 +305,7 @@ namespace XML
 		m_tokens.push_back(xml);
 	}
 
-	/* Parser::tokenize(istream) reads from the stream tokenizing it. It reads
-	 * line by line until it finds the character that will end the current XML 
-	 * tag which is then tokenized. Carriage returns are perserved and can be 
-	 * in name, value pairs and element tags
-	 */
+	// Tokenize input stream with helper function tokenize(string)
 	void Parser::tokenize(istream& in)
 	{
 		static char buffer[1024];
@@ -373,11 +356,7 @@ namespace XML
 		}
 	}
 
-
-	/* Parser::getAttribute(string, string&) will look for a attribute
-	 * name and store its value in the argument value. True is returned
-	 * if name is found, otherwise false
-	 */
+	// Return true if attribute name was found. Value returned in value
 	bool Parser::getAttribute(const string& name, string& value)
 	{
 		if (m_attributes.find(name) == m_attributes.end()) return false;
@@ -387,10 +366,7 @@ namespace XML
 		return true;
 	}
 
-	/* Parser::parse_attributes(string) expects a string containing
-	 * name="value" pairs separated by white space. It then populates
-	 * the m_attributes map with these name value pairs
-	 */
+	// Take token with name, value pairs(s) and fill m_attributes map
 	void Parser::parse_attributes(const string& nv)
 	{
 		const regex re_nv_all("^(\\w+=\"[^\"]+\"\\s*)+$");
@@ -410,9 +386,7 @@ namespace XML
 		}
 	}
 
-	/* Parser::syntaxError(string) will throw an exception showing all the
-	 * XML that has been parsed so far plus the message string
-	 */
+	// Throw an exception that displays XML tokens read in and message string
 	void Parser::syntaxError(const string& msg)
 	{
 		string error = msg + "\n";
@@ -421,10 +395,7 @@ namespace XML
 		throw logic_error(error);
 	}
 
-	/* Parser::parse(State&, string&) will parse the current token, m_tokens[m_pos],
-	 * and return the corresponding state and tag if appropiate. Mostly a helper
-	 * function for Parser::next()
-	 */
+	// Parse next XML token and put in arguments state and tag
 	void Parser::parse(State& state, string& tag)
 	{
 		if (m_tokens.at(m_pos) == ">") {
@@ -446,9 +417,7 @@ namespace XML
 			state = ELEMENT;
 	}
 
-	/* Parser::next() parses the current token with Parser::parse(), populates
-	 * the Parser class object and advances the FSM
-	 */
+	// Process next token and check if transistion was legal
 	void Parser::next()
 	{
 		State state;
@@ -493,9 +462,7 @@ namespace XML
 		++m_pos;
 	}
 
-	/* Parser::check(state, string) checks the current XML token matches the
-	 * state and if not empty, tag passed to it. Return true if matches.
-	 */
+	// Check the current state and last header name tag read in
 	bool Parser::check(State ref_state, const string& ref_tag)
 	{
 		State state;
@@ -504,9 +471,7 @@ namespace XML
 		return (ref_state == state) && (ref_tag.empty() || ref_tag == tag);
 	}
 
-	/* Parser::next(state, string) Parse the current XML token, check if it 
-	 * matches the given state and tag and then transition the FSM to this state.
-	 */
+	// Read in the next XML tag and check the state and the header name tag
 	Parser& Parser::next(State state, const string& tag)
 	{
 		if (check(state, tag)) 
