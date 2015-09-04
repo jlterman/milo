@@ -25,7 +25,7 @@ using namespace std;
 
 /** 
  * Removes all spaces in front and back of string.
- * @param[in|out] s String value which has leading and trailing spaces removed.
+ * @param[in,out] s String value which has leading and trailing spaces removed.
  */
 void trim(string& s)
 {

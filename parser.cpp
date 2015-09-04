@@ -164,6 +164,14 @@ Equation& Equation::operator=(const Equation& eqn)
 	return *this;
 }
 
+Equation* Equation::clone()
+{
+	string store;
+	xml_out(store);
+	istringstream in(store);
+	return new Equation(in);
+}
+
 const string Differential::name = "differential";
 const string   Expression::name = "expression";
 const string     Function::name = "function";

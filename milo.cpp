@@ -112,6 +112,7 @@ Node* Node::last()
 	return (down != nullptr) ? down : node;
 }
 
+// Return node to the left. Go up if necessary
 Node* Node::getNextLeft()
 {
 	Node* left = (m_parent) ? m_parent->getLeftSibling(this) : nullptr;
@@ -125,6 +126,7 @@ Node* Node::getNextLeft()
 		return nullptr;
 }
 
+// Return node to the right. Go down if necessary
 Node* Node::getNextRight()
 {
 	Node* right = (m_parent) ? m_parent->getRightSibling(this) : nullptr;
@@ -175,6 +177,7 @@ void Node::calculateOrigin(Graphics& gc, int x, int y)
 	calcOrig(gc, x, y);
 }
 
+// Draw this node and subtree in this graphic context
 void Node::draw(Graphics& gc) const
 {
 	if (m_fDrawParenthesis)  gc.parenthesis(m_parenthesis);
@@ -190,6 +193,7 @@ void Node::draw(Graphics& gc) const
 	drawNode(gc);	
 }
 
+// Set up drawing for this node and its subtree
 void Node::setUpDraw(Graphics& gc)
 {
 	calculateSize(gc);
@@ -911,14 +915,6 @@ void Equation::removeInput(Input* in)
 	}
 	else
 		m_input_index = -1;
-}
-
-Equation* Equation::clone()
-{
-	string store;
-	xml_out(store);
-	istringstream in(store);
-	return new Equation(in);
 }
 
 void Equation::getCursorOrig(int& x, int& y) 
