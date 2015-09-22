@@ -143,7 +143,7 @@ void Equation::xml_in(EqnXMLParser& in)
 	in.next(XML::FOOTER);
 }
 
-Equation::Equation(istream& is)
+Equation::Equation(std::istream& is)
 {
 	EqnXMLParser in(is, *this);
 	xml_in(in);
@@ -201,7 +201,7 @@ const map<string, EqnXMLParser::createPtr> EqnXMLParser::create_factors =
 	  {        Power::name, create<Power>        },
 	};
 
-Term* Expression::getTerm(Equation& eqn, string text, Expression* parent)
+Term* Expression::getTerm(Equation& eqn, std::string text, Expression* parent)
 {
 	Parser p(text, eqn);
 	return getTerm(p, parent);
@@ -246,13 +246,13 @@ void Equation::xml_out(XML::Stream& xml) const
 	xml << XML::FOOTER;
 }
 
-void Equation::xml_out(ostream& os) const 
+void Equation::xml_out(std::ostream& os) const 
 {
 	XML::Stream xml(os);
 	xml_out(xml);
 }
 
-void Equation::xml_out(string& str) const
+void Equation::xml_out(std::string& str) const
 {
 	ostringstream os; 
 	xml_out(os);
@@ -315,7 +315,7 @@ void Expression::xml_out(XML::Stream& xml) const
 	xml << XML::FOOTER;
 }
 
-Equation::Equation(string eq)
+Equation::Equation(std::string eq)
 { 
 	Parser p(eq, *this); 
 	m_root = new Expression(p);

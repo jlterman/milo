@@ -76,6 +76,14 @@ static bool sort_terms(Term* a, Term* b)
 	}
 }
 
+bool Function::less(Node* b) const
+{ 
+	auto bf = dynamic_cast<Function*>(b);
+	if (bf == nullptr) throw logic_error("Illegal call of less()");
+	if ( m_name == bf->m_name ) return toString() < bf->toString(); 
+	return m_name > bf-> m_name;
+}
+
 void Expression::normalize()
 {
 	for ( auto term : terms ) term->normalize();

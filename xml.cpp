@@ -149,7 +149,7 @@ namespace XML
 	}
 
 	// output string to Stream. Behavior is dependent on Pending state
-	void Stream::out(const string& tag)
+	void Stream::out(const std::string& tag)
 	{
 		string tag_str = tag;
 		switch (m_pending) {
@@ -259,14 +259,14 @@ namespace XML
 	/* Constructor for Parser class reads in XML from input stream.
 	 * Expects root tag to be "document"
 	 */
-	Parser::Parser(istream& in) : m_pos(0)
+	Parser::Parser(std::istream& in) : m_pos(0)
 	{ 
 		tokenize(in);
 		next(HEADER, "document").next(HEADER_END);
 	}
 
 	// Helper function for tokenize(istream)
-	void Parser::tokenize(string xml)
+	void Parser::tokenize(std::string xml)
 	{
 		// if empty string, return
 		auto ws = [](char c) { return isspace(c); };
@@ -306,7 +306,7 @@ namespace XML
 	}
 
 	// Tokenize input stream with helper function tokenize(string)
-	void Parser::tokenize(istream& in)
+	void Parser::tokenize(std::istream& in)
 	{
 		static char buffer[1024];
 		
@@ -472,7 +472,7 @@ namespace XML
 	}
 
 	// Read in the next XML tag and check the state and the header name tag
-	Parser& Parser::next(State state, const string& tag)
+	Parser& Parser::next(State state, const std::string& tag)
 	{
 		if (check(state, tag)) 
 			next(); 

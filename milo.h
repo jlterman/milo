@@ -50,9 +50,11 @@ class Term;
 class Expression;
 class EqnXMLParser;
 
-using Complex = std::complex<double>;   ///< @typedef Specialized as complex double.
-using NodeVector = std::vector<Node*>;  ///< @typedef Storage of node pointers.
-using NodeIter = NodeVector::iterator;  ///< @typedef Iterator into vector of node pointers.
+/** 
+ */
+using Complex = std::complex<double>;   ///< @brief Specialized as complex double.
+using NodeVector = std::vector<Node*>;  ///< @brief Storage of node pointers.
+using NodeIter = NodeVector::iterator;  ///< @brief Iterator into vector of node pointers.
 
 /**
  * Convert long integer to hex string no leading zeroes.
@@ -274,7 +276,7 @@ private:
 	std::array<T, SIZE> m_rect;
 };
 
-using Box = Rectangle<int>; ///< @typedef Specialization of integer rectangle.
+using Box = Rectangle<int>; ///< @brief Specialization of integer rectangle.
 
 /**
  * Abstract base class for symbolic classes that make up an equation.
@@ -555,7 +557,6 @@ private:
 	/**
 	 * Get left sibiling of node argument.
 	 * Default function returns NULL assuming this is a leaf node.
-	 * @param node Reference node.
 	 * @return Left sibling node.
 	 */
 	virtual Node* getLeftSibling(Node*) { return nullptr; }
@@ -563,7 +564,6 @@ private:
 	/**
 	 * Get right sibiling of node argument.
 	 * Default function returns NULL assuming this is a leaf node.
-	 * @param node Reference node.
 	 * @return Right sibling node.
 	 */
 	virtual Node* getRightSibling(Node*) { return nullptr; }
@@ -663,6 +663,7 @@ public:
 	 * Draw a character at x,y with a color.
 	 * @param x0 Horizontal origin of character.
 	 * @param y0 Vertical origin of character.
+	 * @param c  Character to be drawn at x0,y0.
 	 * @param color Color of character.
 	 */
 	virtual void at(int x0, int y0, int c, Color color = BLACK)=0;
@@ -671,6 +672,7 @@ public:
 	 * Draw a string at x,y with a color.
 	 * @param x0 Horizontal origin of line.
 	 * @param y0 Vertical origin of line.
+	 * @param s  String to be drawn at x0,y0.
 	 * @param color Color of line.
 	 */
 	virtual void at(int x0, int y0, const std::string& s, Color color = BLACK)=0;
@@ -778,7 +780,7 @@ public:
 	/**
 	 * Change the coordinates x,y to be relative to the graphic's window origin.
 	 * @param[in,out] x Horizontal coordinate to be shifted.
-	 * @param[in,out] x Vertical coordinate to be shifted.
+	 * @param[in,out] y Vertical coordinate to be shifted.
 	 */
 	void relativeOrig(int& x, int& y) { x -= m_xOrig; y -= m_yOrig; }
 protected:
@@ -1097,7 +1099,7 @@ public:
 	/**
 	 * Get coordinates of current active input.
 	 * @param[out] x Horizontal origin of curosr.
-	 * @param[out[ y Vertical origin cursor.
+	 * @param[out] y Vertical origin cursor.
 	 */
 	void getCursorOrig(int& x, int& y);
 
@@ -1299,7 +1301,7 @@ private:
 	/**
 	 * Replace node pointed to by iterator.
 	 * @param it   Iterator pointing to term to be deleted (current node's parent).
-	 * @param node Term to replace deleted term
+	 * @param term Term to replace deleted term
 	 * @param free If true, free memory for deleted term.
 	 */
 	static void replace(FactorIterator it, Term* term, bool free = true);

@@ -981,7 +981,7 @@ FactorIterator Equation::insert(FactorIterator it, Node* node)
 	return ++it;
 }
 
-FactorIterator Equation::insert(FactorIterator it, string text)
+FactorIterator Equation::insert(FactorIterator it, std::string text)
 {
 	NodeVector factors;
 	factor(text, factors, it.m_pTerm);

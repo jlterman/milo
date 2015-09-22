@@ -18,7 +18,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-/** \file xml.h
+/**
+ * @file xml.h
  * This file is the interface to the XML input and output stream
  * The XML output stream is used to serialize the equation tree to an XML file.
  * The XML input stream is to deserialize the XML file into an equation tree
