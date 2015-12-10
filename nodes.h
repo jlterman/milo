@@ -32,6 +32,8 @@
 // Forward class decleration
 class Parser;
 
+/** @name Global Utility Functions */
+//@{
 /**
  * Check if floating point is smaller than a limit.
  * @return If smaller than limit, return true for zero.
@@ -55,8 +57,12 @@ bool isInteger(const std::string& n);
  * @return True is fractional value is smaller than a limit.
  */
 bool isInteger(double value);
+//@}
 
+/** @name Global Type Declerations  */
+//@{
 using TermVector = std::vector<Term*>; ///< @brief Specialized vector of terms.
+//@}
 
 /**
  * Take input from keyboard and display it on screen.
@@ -65,6 +71,8 @@ using TermVector = std::vector<Term*>; ///< @brief Specialized vector of terms.
 class Input : public Node
 {
 public:
+	/** @name Constructor and Virtual Destructor */
+	//@{
 	/**
 	 * Constructor using a text parser for input.
 	 * @param p Input parser.
@@ -92,19 +100,16 @@ public:
 	Input(EqnXMLParser& in, Node* parent);
 	
 	~Input() {} ///< Virtual desctructor.
-
+	//@}
+	
+	/** @name Virtual Public Member Functions */
+	//@{
 	/**
 	 * Output text repesentation of input node.
 	 * If empty output a '?' or a '#' if active. Otherwise '[typed_text]'.
 	 * @return String containing text representation.
 	 */
 	std::string toString() const;
-
-	/**
-	 * Output XML of this node.
-	 * @param xml XML output stream.
-	 */
-	void xml_out(XML::Stream& xml) const;
 
 	/**
 	 * Get number of factors in this node.
@@ -123,6 +128,7 @@ public:
 	 * @return Type of this class.
 	 */
 	std::type_index getType() const { return type; }
+	//@}
 
 	/**
 	 * Static helper function to parse Input class.
@@ -145,6 +151,8 @@ private:
 	Equation& m_eqn;     ///< Equation class object containing this input node.
 	Box m_internal;      ///< Bounding box of Input node.
 	
+	/** @name Virtual Private Member Functions */
+	//@{
 	/**
 	 * Calculate size of this node in given graphics context.
 	 * @param gc Graphics context.
@@ -171,7 +179,14 @@ private:
 	 * @return Nothing is ever returned.
 	 */
 	Complex getNodeValue() const;
-
+	
+	/**
+	 * Output XML of this node.
+	 * @param xml XML output stream.
+	 */
+	void xml_out(XML::Stream& xml) const;
+	//@}
+	
 	/**
 	 * Set state of this node being the active input.
 	 * @param current True, if current active input.
@@ -188,6 +203,8 @@ private:
 class Binary : public Node
 {
 public:
+	/** @name Constructor and Virtual Destructor */
+	//@{
 	/**
 	 * Constructor for Binary class.
 	 * @param op  Character representing operator.
@@ -213,7 +230,10 @@ public:
 	 * Abstract base class needs virtual desctructor.
 	 */
 	virtual ~Binary() { delete m_first; delete m_second; }
-
+	//@}
+	
+	/** @name Virtual Public Member Functions */
+	//@{
 	/**
 	 * Get string representation of Binary object.
 	 * Simply first node, operator, second node.
@@ -240,7 +260,8 @@ public:
 	 * @return Return number of factors in both expressions.
 	 */
 	int numFactors() const { return m_first->numFactors() + m_second->numFactors(); }
-
+	//@}
+	
 	/**
 	 * Get first expression of this node.
 	 * @return First expression.
@@ -262,12 +283,6 @@ public:
 	 */
 	static Node* parse(Parser& p, Node* one, Node* parent);
 
-	/**
-	 * Output XML of this node.
-	 * @param xml XML output stream.
-	 */
-	void xml_out(XML::Stream& xml) const;
-
 protected:
 	char m_op;      ///< Character repesentation of operator.
 	Node* m_first;  ///< First expression owned by this object.
@@ -275,6 +290,8 @@ protected:
 	Box m_internal; ///< Bounding box of this node.
 
 private:
+	/** @name Virtual Private Member Functions */
+	//@{
 	/**
 	 * Get left node.
 	 * For Binary class is its first expression.
@@ -304,6 +321,13 @@ private:
 	 * @return Right sibiling or null.
 	 */
 	Node* getRightSibling(Node* node) { return (m_first == node) ? m_second->first() : nullptr; }
+
+	/**
+	 * Output XML of this node.
+	 * @param xml XML output stream.
+	 */
+	void xml_out(XML::Stream& xml) const;
+	//@}
 };
 
 /**
@@ -313,6 +337,8 @@ private:
 class Divide : public Binary
 {
 public:
+	/** @name Constructor and Virtual Destructor */
+	//@{
 	/**
 	 * Constructor for Divide class.
 	 * @param one First expression.
@@ -343,7 +369,41 @@ public:
 	 * Abstract base class needs virtual destructor.
 	 */
 	~Divide() {}
+	//@}
+	
+	/** @name Virtual Public Member Functions */
+	//@{
+	/**
+	 * Get name of this class.
+	 * @return Name of this class.
+	 */
+	const std::string& getName() const { return name; }
 
+	/**
+	 * Get name of this class.
+	 * @return Name of this class.
+	 */
+	std::type_index getType() const { return type; }
+
+	/**
+	 * Refactor subtree to a standard form.
+	 * For Divide class, replace a/b with ab^-1.
+	 */
+	void normalize();
+
+	/**
+	 * Attempt to algebraically simplify the subtree this node is the root.
+	 * @return True, if subtree was changed.
+	 */
+	bool simplify();
+	//@}
+	
+	static const std::string name;     ///< Name of Divide class.
+	static const std::type_index type; ///< Type of Divide class.
+
+ private:
+	/** @name Virtual Private Member Functions */
+	//@{
 	/**
 	 * Calculate size of this node in given graphics context.
 	 * @param gc Graphics context.
@@ -370,33 +430,7 @@ public:
 	 * @return Complex value of this subtree.
 	 */
 	Complex getNodeValue() const;
-
-	/**
-	 * Get name of this class.
-	 * @return Name of this class.
-	 */
-	const std::string& getName() const { return name; }
-
-	/**
-	 * Get name of this class.
-	 * @return Name of this class.
-	 */
-	std::type_index getType() const { return type; }
-
-	/**
-	 * Refactor subtree to a standard form.
-	 * For Divide class, replace a/b with ab^-1.
-	 */
-	void normalize();
-
-	/**
-	 * Attempt to algebraically simplify the subtree this node is the root.
-	 * @return True, if subtree was changed.
-	 */
-	bool simplify();
-
-	static const std::string name;     ///< Name of Divide class.
-	static const std::type_index type; ///< Type of Divide class.
+	//@}
 };
 
 /**
@@ -407,6 +441,8 @@ public:
 class Power : public Binary
 {
 public:
+	/** @name Constructor and Virtual Destructor */
+	//@{
 	/**
 	 * Constructor for Power class.
 	 * @param one First expression.
@@ -437,34 +473,10 @@ public:
 	 * Abstract base class needs virtual destructor.
 	 */
 	~Power() {}
-
-  	/**
-	 * Calculate size of this node in given graphics context.
-	 * @param gc Graphics context.
-	 * @return Return frame containing size of this node.
-	 */
-	Frame calcSize(Graphics& gc);
-
-	/**
-	 * Calculate origin of this node offset from the point (x,y) given it.
-	 * @param gc Graphics context.
-	 * @param x Horizontal origin.
-	 * @param y Vertical origin.
-	 */
-	void calcOrig(Graphics& gc, int x, int y);
-
-	/**
-	 * Draw this node in the given graphical context.
-	 * @param gc Graphical context.
-	 */
-	void drawNode(Graphics& gc) const;
-
-	/**
-	 * Get value of this subtree.
-	 * @return Complex value of this subtree.
-	 */
-	Complex getNodeValue() const;
-
+	//@}
+	
+	/** @name Virtual Public Member Functions */
+	//@{
 	/**
 	 * Get name of this class.
 	 * @return Name of this class.
@@ -495,11 +507,42 @@ public:
 	 * @return True, if node vector was changed.
 	 */
 	static bool simplify(NodeVector& factors);
-
+	//@}
+	
 	static const std::string name;     ///< Name of Power class.
 	static const std::type_index type; ///< Type of Power class.
 
 private:
+	/** @name Virtual Private Member Functions */
+	//@{
+  	/**
+	 * Calculate size of this node in given graphics context.
+	 * @param gc Graphics context.
+	 * @return Return frame containing size of this node.
+	 */
+	Frame calcSize(Graphics& gc);
+
+	/**
+	 * Calculate origin of this node offset from the point (x,y) given it.
+	 * @param gc Graphics context.
+	 * @param x Horizontal origin.
+	 * @param y Vertical origin.
+	 */
+	void calcOrig(Graphics& gc, int x, int y);
+
+	/**
+	 * Draw this node in the given graphical context.
+	 * @param gc Graphical context.
+	 */
+	void drawNode(Graphics& gc) const;
+
+	/**
+	 * Get value of this subtree.
+	 * @return Complex value of this subtree.
+	 */
+	Complex getNodeValue() const;
+	//@}
+	
 	/**
 	 * Static helper function for simplifying Power expressions.
 	 * If both iterators point to a Power object, see if they can be combined.
@@ -517,6 +560,8 @@ private:
 class Constant : public Node
 {
 public:
+	/** @name Constructor and Virtual Destructor */
+	//@{
 	/**
 	 * Parser constructor for Constant class.
 	 * @param p Parser object.
@@ -547,15 +592,50 @@ public:
 	 * Abstract base class needs virtual destructor.
 	 */
 	~Constant() {}
-
+	//@}
+	
 	using const_map = std::map<char, Complex>; ///< @brief Specialization for mapping name to value.
 
+	/** @name Virtual Public Member Functions */
+	//@{
 	/**
 	 * String representation of constant is its name.
 	 * @return Name of constant.
 	 */
 	std::string toString() const { return std::string() + m_name; }
 
+	/**
+	 * Get name of this class.
+	 * @return Name of this class.
+	 */
+	const std::string& getName() const { return name; }
+
+	/**
+	 * Get name of this class.
+	 * @return Name of this class.
+	 */
+	std::type_index getType() const { return type; }
+	//@}
+	
+	static const std::string name;     ///< Name of constant.
+	static const std::type_index type; ///< Type of constant.
+
+	/**
+	 * Static helper function to parse Constant class.
+	 * @param p Parser object pointing to operator.
+	 * @param parent Parent node.
+	 * @return Constant object or null if constant not present.
+	 */
+	static Constant* parse(Parser& p, Node* parent);
+private:
+	char m_name;                      ///< Name of constant.
+	Complex m_value;                  ///< Value of constant.
+	Box m_internal;                   ///< Bounding box of this node.
+	
+	static const const_map constants; ///< Mapping of all constant name to their values.
+
+	/** @name Virtual Private Member Functions */
+	//@{
 	/**
 	 * Output XML of this node.
 	 * @param xml XML output stream.
@@ -588,35 +668,7 @@ public:
 	 * @return Complex value of this constant.
 	 */
 	Complex getNodeValue() const { return constants.at(m_name); }
-
-	/**
-	 * Get name of this class.
-	 * @return Name of this class.
-	 */
-	const std::string& getName() const { return name; }
-
-	/**
-	 * Get name of this class.
-	 * @return Name of this class.
-	 */
-	std::type_index getType() const { return type; }
-
-	static const std::string name;     ///< Name of constant.
-	static const std::type_index type; ///< Type of constant.
-
-	/**
-	 * Static helper function to parse Constant class.
-	 * @param p Parser object pointing to operator.
-	 * @param parent Parent node.
-	 * @return Constant object or null if constant not present.
-	 */
-	static Constant* parse(Parser& p, Node* parent);
-private:
-	char m_name;                      ///< Name of constant.
-	Complex m_value;                  ///< Value of constant.
-	Box m_internal;                   ///< Bounding box of this node.
-	
-	static const const_map constants; ///< Mapping of all constant name to their values.
+	//@}
 };
 
 
@@ -626,6 +678,8 @@ private:
 class Variable : public Node
 {
 public:
+	/** @name Constructor and Virtual Destructor */
+	//@{
 	/**
 	 * Parser constructor for Variable class.
 	 * @param p Parser object.
@@ -658,15 +712,57 @@ public:
 	 * Abstract base class needs virtual destructor.
 	 */
 	~Variable() {}
-
+	//@}
+	
 	using var_map = std::map<char, Complex>; ///< @brief Specialization for mapping name to value.
 
+	/** @name Virtual Public Member Functions */
+	//@{
 	/**
 	 * String representation of variable is its name.
 	 * @return Name of variable.
 	 */
 	std::string toString() const { return std::string(1, m_name); }
 
+	/**
+	 * Get name of this class.
+	 * @return Name of this class.
+	 */
+	const std::string& getName() const { return name; }
+
+	/**
+	 * Get name of this class.
+	 * @return Name of this class.
+	 */
+	std::type_index getType() const { return type; }
+	//@}
+	
+	static const std::string name;     ///< Name of Variable class.
+	static const std::type_index type; ///< Type of Variable class.
+
+	/**
+	 * Static helper function to parse Variable class.
+	 * @param p Parser object pointing to operator.
+	 * @param parent Parent node.
+	 * @return Variable object or null if variable not present.
+	 */
+	static Variable* parse(Parser& p, Node* parent);
+
+	/**
+	 * Static helper function to set value of a variable.
+	 * @param name Variable name.
+	 * @param value Value of Variable.
+	 */
+	static void setValue(char name, Complex value);
+
+private:
+	char m_name;    ///< Name of Variable
+	Box m_internal; ///< Bounding box of this node.
+
+	static var_map values; ///< Mapping of all variable name to their values.
+
+	/** @name Virtual Private Member Functions */
+	//@{
 	/**
 	 * Output XML of this node.
 	 * @param xml XML output stream.
@@ -699,42 +795,7 @@ public:
 	 * @return Complex value of this subtree.
 	 */
 	Complex getNodeValue() const { return values[m_name]; }
-
-	/**
-	 * Get name of this class.
-	 * @return Name of this class.
-	 */
-	const std::string& getName() const { return name; }
-
-	/**
-	 * Get name of this class.
-	 * @return Name of this class.
-	 */
-	std::type_index getType() const { return type; }
-
-	static const std::string name;     ///< Name of Variable class.
-	static const std::type_index type; ///< Type of Variable class.
-
-	/**
-	 * Static helper function to parse Variable class.
-	 * @param p Parser object pointing to operator.
-	 * @param parent Parent node.
-	 * @return Variable object or null if variable not present.
-	 */
-	static Variable* parse(Parser& p, Node* parent);
-
-	/**
-	 * Static helper function to set value of a variable.
-	 * @param name Variable name.
-	 * @param value Value of Variable.
-	 */
-	static void setValue(char name, Complex value);
-
-private:
-	char m_name;    ///< Name of Variable
-	Box m_internal; ///< Bounding box of this node.
-
-	static var_map values; ///< Mapping of all variable name to their values.
+	//@}
 };
 
 /**
@@ -744,6 +805,8 @@ private:
 class Number : public Node
 {
 public:
+	/** @name Constructor and Virtual Destructor */
+	//@{
 	/**
 	 * Parser constructor for Number class.
 	 * @param p Parser object.
@@ -793,18 +856,65 @@ public:
 	 * Abstract base class needs virtual destructor.
 	 */
 	~Number() {}
-
+	//@}
+	
 	/**
 	 * Load numeric value from Parser.
 	 * @param p Parser object.
 	 */
 	void getNumber(Parser& p);
 
+	/** @name Virtual Public Member Functions */
+	//@{
 	/**
 	 * Get string representation of Number value.
 	 * @return String representation of Number value.
 	 */
 	std::string toString() const;
+
+	/**
+	 * Get name of this class.
+	 * @return Name of this class.
+	 */
+	const std::string& getName() const { return name; }
+
+	/**
+	 * Get name of this class.
+	 * @return Name of this class.
+	 */
+	std::type_index getType() const { return type; }
+
+	/**
+	 * Attempt to algebraically simplify the subtree this node is the root.
+	 * @return True, if subtree was changed.
+	 */
+	bool simplify();
+	//@}
+	
+	static const std::string name;     ///< Name of Number class.
+	static const std::type_index type; ///< Type of Number class.
+
+	/**
+	 * Static helper function to parse Number class.
+	 * @param p Parser object pointing to operator.
+	 * @param parent Parent node.
+	 * @return Number object or null if number not present.
+	 */
+	static Number* parse(Parser& p, Node* parent);
+
+private:
+	double m_value;   ///< Value of Number.
+	bool m_isInteger; ///< True, if integer.
+	Box m_internal;   ///< Bounding box of this node.
+
+	/** @name Virtual Private Member Functions */
+	//@{
+	/**
+	 * Static helper function to parse integer from Parser.
+	 * @param p Parser object.
+	 * @return String containing integer.
+	 */
+	static std::string getInteger(Parser& p);
 
 	/**
 	 * Output XML of this node.
@@ -838,47 +948,7 @@ public:
 	 * @return Complex value of this subtree.
 	 */
 	Complex getNodeValue() const { return {m_value, 0}; }
-
-	/**
-	 * Get name of this class.
-	 * @return Name of this class.
-	 */
-	const std::string& getName() const { return name; }
-
-	/**
-	 * Get name of this class.
-	 * @return Name of this class.
-	 */
-	std::type_index getType() const { return type; }
-
-	/**
-	 * Attempt to algebraically simplify the subtree this node is the root.
-	 * @return True, if subtree was changed.
-	 */
-	bool simplify();
-
-	static const std::string name;     ///< Name of Number class.
-	static const std::type_index type; ///< Type of Number class.
-
-	/**
-	 * Static helper function to parse Number class.
-	 * @param p Parser object pointing to operator.
-	 * @param parent Parent node.
-	 * @return Number object or null if number not present.
-	 */
-	static Number* parse(Parser& p, Node* parent);
-
-private:
-	double m_value;   ///< Value of Number.
-	bool m_isInteger; ///< True, if integer.
-	Box m_internal;   ///< Bounding box of this node.
-
-	/**
-	 * Static helper function to parse integer from Parser.
-	 * @param p Parser object.
-	 * @return String containing integer.
-	 */
-	static std::string getInteger(Parser& p);
+	//@}
 };
 
 /**
@@ -887,6 +957,8 @@ private:
 class Term : public Node
 {
 public:
+	/** @name Constructor and Virtual Destructor */
+	//@{
 	/**
 	 * Parser constructor for Term class.
 	 * @param p Parser object.
@@ -925,6 +997,7 @@ public:
 	 * Abstract base class needs virtual destructor.
 	 */
 	~Term() { freeVector(factors); }
+	//@}
 	
 	/**
 	 * Static helper function to parse Term class.
@@ -934,39 +1007,14 @@ public:
 	 */
 	static Node* parse(Parser& p, Node* parent = nullptr);
 
+	/** @name Virtual Public Member Functions */
+	//@{
 	/**
 	 * Get string representation of Term class.
 	 * The factors are concatenated into one string.
 	 * @return String representation of Term class.
 	 */
 	std::string toString() const;
-
-	/**
-	 * Output XML of this node.
-	 * @param xml XML output stream.
-	 */
-	void xml_out(XML::Stream& xml) const;
-	
-	/**
-	 * Calculate size of this node in given graphics context.
-	 * @param gc Graphics context.
-	 * @return Return frame containing size of this node.
-	 */
-	Frame calcSize(Graphics& gc);
-
-	/**
-	 * Calculate origin of this node offset from the point (x,y) given it.
-	 * @param gc Graphics context.
-	 * @param x Horizontal origin.
-	 * @param y Vertical origin.
-	 */
-	void calcOrig(Graphics& gc, int x, int y);
-
-	/**
-	 * Draw this node in the given graphical context.
-	 * @param gc Graphical context.
-	 */
-	void drawNode(Graphics& gc) const;
 
 	/**
 	 * Override for isLeaf virtual function.
@@ -981,34 +1029,18 @@ public:
 	bool isFactor() const { return false; }
 
 	/**
-	 * Get value of this subtree.
-	 * @return Complex value of this subtree.
-	 */
-	Complex getNodeValue() const;
-
-	/**
 	 * Rescursive search to find deepest node at point (x,y).
 	 * @param x horizontal coordinate.
 	 * @param y vertical coordinate.
 	 * @return Deepest node at point (x,y).	 
 	 */
 	Node* findNode(int x, int y);
+
+	/**
+	 * Get number of factor in this subtree.
+	 * @return Return total number of factors in term.
+	 */
 	int numFactors() const;
-
-	/**
-	 * Get name of this class.
-	 * @return Name of this class.
-	 */
-	const std::string& getName() const { return name; }
-
-	/**
-	 * Get name of this class.
-	 * @return Name of this class.
-	 */
-	std::type_index getType() const { return type; }
-
-	static const std::string name;     ///< Name of Term class.
-	static const std::type_index type; ///< Type of Term class.
 
 	/**
 	 * Refactor subtree to a standard form.
@@ -1023,6 +1055,22 @@ public:
 	 * @return True, if subtree was changed.
 	 */
 	bool simplify();
+
+	/**
+	 * Get name of this class.
+	 * @return Name of this class.
+	 */
+	const std::string& getName() const { return name; }
+
+	/**
+	 * Get name of this class.
+	 * @return Name of this class.
+	 */
+	std::type_index getType() const { return type; }
+	//@}
+	
+	static const std::string name;     ///< Name of Term class.
+	static const std::type_index type; ///< Type of Term class.
 
 	/**
 	 * Helper function to take factors from a term and insert into this term.
@@ -1100,6 +1148,11 @@ public:
 	friend class Equation;
 	friend class FactorIterator;
 private:
+	NodeVector factors; ///< Term owns this tree
+	Box m_internal;     ///< Bounding box of this node.
+
+	/** @name Virtual Private Member Functions */
+	//@{
 	/**
 	 * Get left node.
 	 * For Term class is its first factor.
@@ -1126,11 +1179,43 @@ private:
 	 * @param node Reference node.
 	 * @return Right sibiling or null.
 	 */
+
 	Node* getRightSibling(Node* node);
 
-	NodeVector factors; ///< Term owns this tree
-	Box m_internal;     ///< Bounding box of this node.
+	/**
+	 * Get value of this subtree.
+	 * @return Complex value of this subtree.
+	 */
+	Complex getNodeValue() const;
 
+	/**
+	 * Output XML of this node.
+	 * @param xml XML output stream.
+	 */
+	void xml_out(XML::Stream& xml) const;
+	
+	/**
+	 * Calculate size of this node in given graphics context.
+	 * @param gc Graphics context.
+	 * @return Return frame containing size of this node.
+	 */
+	Frame calcSize(Graphics& gc);
+
+	/**
+	 * Calculate origin of this node offset from the point (x,y) given it.
+	 * @param gc Graphics context.
+	 * @param x Horizontal origin.
+	 * @param y Vertical origin.
+	 */
+	void calcOrig(Graphics& gc, int x, int y);
+
+	/**
+	 * Draw this node in the given graphical context.
+	 * @param gc Graphical context.
+	 */
+	void drawNode(Graphics& gc) const;
+	//@}
+	
 	/**
 	 * Add factors to this Term object from parser.
 	 * @return True if factors were added.
@@ -1146,6 +1231,8 @@ private:
 class Expression : public Node
 {
 public:
+	/** @name Constructor and Virtual Destructor */
+	//@{
 	 /**
 	  * XML constructor for Expression class.
 	  * Read in XML for Expression class.
@@ -1189,7 +1276,10 @@ public:
 	 * Abstract base class needs virtual destructor.
 	 */
 	~Expression() { freeVector(terms); }
-
+	//@}
+	
+	/** @name Virtual Public Member Functions */
+	//@{
 	/**
 	 * Get representation of expression as string.
 	 * String are terms separated by '+' or '-'.
@@ -1198,43 +1288,10 @@ public:
 	std::string toString() const;
 
 	/**
-	 * Output XML of this node.
-	 * @param xml XML output stream.
-	 */
-	void xml_out(XML::Stream& xml) const;
-	
-	/**
-	 * Calculate size of this node in given graphics context.
-	 * @param gc Graphics context.
-	 * @return Return frame containing size of this node.
-	 */
-	Frame calcSize(Graphics& gc);
-
-	/**
-	 * Calculate origin of this node offset from the point (x,y) given it.
-	 * @param gc Graphics context.
-	 * @param x Horizontal origin.
-	 * @param y Vertical origin.
-	 */
-	void calcOrig(Graphics& gc, int x, int y);
-
-	/**
-	 * Draw this node in the given graphical context.
-	 * @param gc Graphical context.
-	 */
-	void drawNode(Graphics& gc) const;
-
-	/**
 	 * Override for isLeaf virtual function.
 	 * @return False, this node has child nodes.
 	 */
 	bool isLeaf() const { return false; }
-
-	/**
-	 * Get value of this subtree.
-	 * @return Complex value of this subtree.
-	 */
-	Complex getNodeValue() const;
 
 	/**
 	 * Rescursive search to find deepest node at point (x,y).
@@ -1251,22 +1308,6 @@ public:
 	int numFactors() const;
 
 	/**
-	 * Get name of this class.
-	 * @return Name of this class.
-	 */
-	const std::string& getName() const { return name; }
-
-	/**
-	 * Get name of this class.
-	 * @return Name of this class.
-	 */
-	std::type_index getType() const { return type; }
-
-	static const std::string name;     ///< Name of this class.
-	static const std::type_index type; ///< Type of this class.
-
-
-	/**
 	 * Refactor subtree to a standard form.
 	 * For Expression class, reorder terms in alphabetical order
 	 * and combine common terms.
@@ -1279,6 +1320,22 @@ public:
 	 * @return True, if subtree was changed.
 	 */
 	bool simplify();
+
+	/**
+	 * Get name of this class.
+	 * @return Name of this class.
+	 */
+	const std::string& getName() const { return name; }
+
+	/**
+	 * Get name of this class.
+	 * @return Name of this class.
+	 */
+	std::type_index getType() const { return type; }
+	//@}
+	
+	static const std::string name;     ///< Name of this class.
+	static const std::type_index type; ///< Type of this class.
 
 	/**
 	 * Get number of terms.
@@ -1352,6 +1409,11 @@ public:
 	friend class FactorIterator;
 
 private:
+	TermVector terms; ///< Expression owns this tree a list of terms.
+	Box m_internal;   ///< Bounding box of this node.
+
+	/** @name Virtual Private Member Functions */
+	//@{
 	/**
 	 * Get left node.
 	 * For Expression class is its first term.
@@ -1379,10 +1441,40 @@ private:
 	 * @return Right sibiling or null.
 	 */
 	Node* getRightSibling(Node* node);
+	/**
+	 * Output XML of this node.
+	 * @param xml XML output stream.
+	 */
+	void xml_out(XML::Stream& xml) const;
+	
+	/**
+	 * Calculate size of this node in given graphics context.
+	 * @param gc Graphics context.
+	 * @return Return frame containing size of this node.
+	 */
+	Frame calcSize(Graphics& gc);
 
-	TermVector terms; ///< Expression owns this tree a list of terms.
-	Box m_internal;   ///< Bounding box of this node.
+	/**
+	 * Calculate origin of this node offset from the point (x,y) given it.
+	 * @param gc Graphics context.
+	 * @param x Horizontal origin.
+	 * @param y Vertical origin.
+	 */
+	void calcOrig(Graphics& gc, int x, int y);
 
+	/**
+	 * Draw this node in the given graphical context.
+	 * @param gc Graphical context.
+	 */
+	void drawNode(Graphics& gc) const;
+
+	/**
+	 * Get value of this subtree.
+	 * @return Complex value of this subtree.
+	 */
+	Complex getNodeValue() const;
+	//@}
+	
 	/**
 	 * Add terms to expression from parser.
 	 * @param p Parser object.
@@ -1415,6 +1507,8 @@ public:
 	 */
 	static Function* parse(Parser& p, Node* parent);
 
+	/** @name Virtual Public Member Functions */
+	//@{
 	/**
 	 * Get representation of Function as string.
 	 * String representation is function_name(argument).
@@ -1422,6 +1516,105 @@ public:
 	 */
 	std::string toString() const { return m_name + m_arg->toString(); }
 
+	/**
+	 * Override for isLeaf virtual function.
+	 * @return False, this node has child nodes.
+	 */
+	bool isLeaf() const { return false; }
+
+	/**
+	 * Rescursive search to find deepest node at point (x,y).
+	 * @param x horizontal coordinate.
+	 * @param y vertical coordinate.
+	 * @return Deepest node at point (x,y).	 
+	 */
+	Node* findNode(int x, int y);
+
+	/**
+	 * Get number of factors in this node.
+	 * @return Number of factors of argument plus this node.
+	 */
+	int numFactors() const { return m_arg->numFactors() + 1; }
+
+	/**
+	 * Refactor subtree to a standard form.
+	 * For Function class, normalize argument.
+	 */
+	void normalize() { m_arg->normalize(); }
+
+	/**
+	 * Function class specialization of default virtural member function.
+	 * Sort functions in reverse alphabetical order.
+	 * @param b Reference node.
+	 * @return True, if b is less than this node.
+	 */
+	bool less(Node* b) const;
+
+	/**
+	 * Get name of this class.
+	 * @return Name of this class.
+	 */
+	const std::string& getName() const { return name; }
+
+	/**
+	 * Get name of this class.
+	 * @return Name of this class.
+	 */
+	std::type_index getType() const { return type; }
+	//@}
+	
+	static const std::string name;     ///< Name of Function class.
+	static const std::type_index type; ///< Type of Function type.
+	
+	/** @name Constructor and Virtual Destructor */
+	//@{
+	/**
+	 * Constructor for Function class.
+	 * @param name Name of function.
+	 * @param fp Pointer to function to evaluate arguments.
+	 * @param p Parser object.
+	 * @param parent Parent node.
+	 * @param neg If true, node is negative.
+	 * @param s   Selection state of node.
+	 */
+    Function(const std::string& name, func_ptr fp, Parser& p, Node* parent, 
+			 bool neg = false, Node::Select s = Node::Select::NONE) : 
+	             Node(parent, neg, s), m_name(name), m_func(fp), m_arg(new Expression(p, this)) {}
+
+	 /**
+	  * XML constructor for Function class.
+	  * Read in XML for Function class.
+	  * @param in XML input stream.
+	  * @param parent Parent node object.	 
+	  */
+	Function(EqnXMLParser& in, Node* parent);
+
+	/**
+	 * Abstract base class needs virtual destructor.
+	 */
+	~Function() { delete m_arg; }
+	//@}
+private:
+	std::string m_name; ///< Name of function.
+	func_ptr m_func;    ///< Function pointer to evaluate function.
+	Node* m_arg;        ///< Function own this tree.
+	Box m_internal;     ///< Bounding box of this node.
+
+	/** @name Virtual Private Member Functions */
+	//@{
+	/**
+	 * Get left node.
+	 * For Function class left most node of argument.
+	 * @return Left node.
+	 */
+	Node* downLeft()  { return m_arg->first(); }
+
+	/**
+	 * Get right node.
+	 * For Function class right most node of argument.
+	 * @return Right node.
+	 */
+	Node* downRight() { return m_arg->last(); }
 	/**
 	 * Output XML of this node.
 	 * @param xml XML output stream.
@@ -1450,106 +1643,12 @@ public:
 	void drawNode(Graphics& gc) const;
 
 	/**
-	 * Override for isLeaf virtual function.
-	 * @return False, this node has child nodes.
-	 */
-	bool isLeaf() const { return false; }
-
-	/**
 	 * Get value of this subtree.
 	 * @return Complex value of this subtree.
 	 */
 	Complex getNodeValue() const;
-
-	/**
-	 * Rescursive search to find deepest node at point (x,y).
-	 * @param x horizontal coordinate.
-	 * @param y vertical coordinate.
-	 * @return Deepest node at point (x,y).	 
-	 */
-	Node* findNode(int x, int y);
-
-	/**
-	 * Get number of factors in this node.
-	 * @return Number of factors of argument plus this node.
-	 */
-	int numFactors() const { return m_arg->numFactors() + 1; }
-
-	/**
-	 * Get name of this class.
-	 * @return Name of this class.
-	 */
-	const std::string& getName() const { return name; }
-
-	/**
-	 * Get name of this class.
-	 * @return Name of this class.
-	 */
-	std::type_index getType() const { return type; }
-
-	static const std::string name;     ///< Name of Function class.
-	static const std::type_index type; ///< Type of Function type.
-
-	/**
-	 * Refactor subtree to a standard form.
-	 * For Function class, normalize argument.
-	 */
-	void normalize() { m_arg->normalize(); }
-
-	/**
-	 * Function class specialization of default virtural member function.
-	 * Sort functions in reverse alphabetical order.
-	 * @param b Reference node.
-	 * @return True, if b is less than this node.
-	 */
-	bool less(Node* b) const;
+	//@}
 	
-	/**
-	 * Constructor for Function class.
-	 * @param name Name of function.
-	 * @param fp Pointer to function to evaluate arguments.
-	 * @param p Parser object.
-	 * @param parent Parent node.
-	 * @param neg If true, node is negative.
-	 * @param s   Selection state of node.
-	 */
-    Function(const std::string& name, func_ptr fp, Parser& p, Node* parent, 
-			 bool neg = false, Node::Select s = Node::Select::NONE) : 
-	             Node(parent, neg, s), m_name(name), m_func(fp), m_arg(new Expression(p, this)) {}
-
-	 /**
-	  * XML constructor for Function class.
-	  * Read in XML for Function class.
-	  * @param in XML input stream.
-	  * @param parent Parent node object.	 
-	  */
-	Function(EqnXMLParser& in, Node* parent);
-
-	/**
-	 * Abstract base class needs virtual destructor.
-	 */
-	~Function() { delete m_arg; }
-
-private:
-	/**
-	 * Get left node.
-	 * For Function class left most node of argument.
-	 * @return Left node.
-	 */
-	Node* downLeft()  { return m_arg->first(); }
-
-	/**
-	 * Get right node.
-	 * For Function class right most node of argument.
-	 * @return Right node.
-	 */
-	Node* downRight() { return m_arg->last(); }
-
-	std::string m_name; ///< Name of function.
-	func_ptr m_func;    ///< Function pointer to evaluate function.
-	Node* m_arg;        ///< Function own this tree.
-	Box m_internal;     ///< Bounding box of this node.
-
 	/** Association of function names with their function pointers.	
 	 */
 	static const func_map functions;
@@ -1567,6 +1666,8 @@ private:
 class Differential : public Node
 {
 public:
+	/** @name Constructor and Virtual Destructor */
+	//@{
 	/**
 	 * Constructor for Differential class.
 	 * @param p Parser object.
@@ -1586,7 +1687,10 @@ public:
 	 * Abstract base class needs virtual destructor.
 	 */
 	~Differential() {}
-
+	//@}
+	
+	/** @name Virtual Public Member Functions */
+	//@{
 	/**
 	 * Override for isLeaf virtual function.
 	 * @return False, this node has child nodes.
@@ -1613,6 +1717,62 @@ public:
 	 */
 	std::string toString() const;
 
+	/**
+	 * Get name of this class.
+	 * @return Name of this class.
+	 */
+	const std::string& getName() const { return name; }
+
+	/**
+	 * Get name of this class.
+	 * @return Name of this class.
+	 */
+	std::type_index getType() const { return type; }
+
+	/**
+	 * Refactor subtree to a standard form.
+	 * For Differential class, normalize function argument.
+	 */
+	void normalize() { m_function->normalize(); }
+
+	/**
+	 * Attempt to algebraically simplify the subtree this node is the root.
+	 * @return True, if subtree was changed.
+	 */
+	bool simplify() { return false; }
+	//@}
+	
+	static const std::string name;     ///< Name of Differential class.
+	static const std::type_index type; ///< Type of Differential class.
+
+	/**
+	 * Get Differential object from Parser.
+	 * @param p Parser object.
+	 * @param parent Parent for new Differential object.
+	 * @return Differential object or null if no differential found in parser.
+	 */
+	static Differential* parse(Parser& p, Node* parent);
+
+private:
+	Box m_internal;          ///< Bounding box of this node.
+	char m_variable;         ///< Variable of Differential.
+	Expression* m_function;  ///< Function to be differentiated.
+
+	/** @name Virtual Private Member Functions */
+	//@{
+	/**
+	 * Get left node.
+	 * For Differential class left most node of function argument.
+	 * @return Left node.
+	 */
+	Node* downLeft()  { return m_function->first(); }
+
+	/**
+	 * Get right node.
+	 * For Differential class right most node of function argument.
+	 * @return Right node.
+	 */
+	Node* downRight() { return m_function->last(); }
 	/**
 	 * Output XML of this node.
 	 * @param xml XML output stream.
@@ -1645,60 +1805,7 @@ public:
 	 * @return Complex value of this subtree.
 	 */
 	Complex getNodeValue() const { return {0, 0}; }
-
-	/**
-	 * Get name of this class.
-	 * @return Name of this class.
-	 */
-	const std::string& getName() const { return name; }
-
-	/**
-	 * Get name of this class.
-	 * @return Name of this class.
-	 */
-	std::type_index getType() const { return type; }
-
-	/**
-	 * Refactor subtree to a standard form.
-	 * For Differential class, normalize function argument.
-	 */
-	void normalize() { m_function->normalize(); }
-
-	/**
-	 * Attempt to algebraically simplify the subtree this node is the root.
-	 * @return True, if subtree was changed.
-	 */
-	bool simplify() { return false; }
-
-	static const std::string name;     ///< Name of Differential class.
-	static const std::type_index type; ///< Type of Differential class.
-
-	/**
-	 * Get Differential object from Parser.
-	 * @param p Parser object.
-	 * @param parent Parent for new Differential object.
-	 * @return Differential object or null if no differential found in parser.
-	 */
-	static Differential* parse(Parser& p, Node* parent);
-
-private:
-	/**
-	 * Get left node.
-	 * For Differential class left most node of function argument.
-	 * @return Left node.
-	 */
-	Node* downLeft()  { return m_function->first(); }
-
-	/**
-	 * Get right node.
-	 * For Differential class right most node of function argument.
-	 * @return Right node.
-	 */
-	Node* downRight() { return m_function->last(); }
-
-	Box m_internal;          ///< Bounding box of this node.
-	char m_variable;         ///< Variable of Differential.
-	Expression* m_function;  ///< Function to be differentiated.
+	//@}
 };
 
 #endif // __NODES_H

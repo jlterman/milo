@@ -50,12 +50,15 @@ class Term;
 class Expression;
 class EqnXMLParser;
 
-/** 
- */
+/** @name Global Type Declerations  */
+//@{
 using Complex = std::complex<double>;   ///< @brief Specialized as complex double.
 using NodeVector = std::vector<Node*>;  ///< @brief Storage of node pointers.
 using NodeIter = NodeVector::iterator;  ///< @brief Iterator into vector of node pointers.
+//@}
 
+/** @name Global Utility Functions */
+//@{
 /**
  * Convert long integer to hex string no leading zeroes.
  * @return String containing converted hexidecimal string.
@@ -134,6 +137,7 @@ inline void insertElement(std::vector<T>& v, int index, T e)
 {
 	v.insert((index < 0 ? v.end() : v.begin()) + index, e);
 }
+//@}
 
 /**
  * Rectangle template class.
@@ -144,6 +148,8 @@ template <class T>
 class Rectangle
 {
 public:
+	/** @name Constructors */
+	//@{
 	/**
 	 * Default constructor for Rectangle.
 	 * Set origin and dimensions to zero.
@@ -158,9 +164,12 @@ public:
 	 * @param y0 Vertical origin of rectangle.
 	 */
     Rectangle(T x, T y, T x0, T y0) : m_rect{x, y, x0, y0} {}
+	//@}
 
+	/** @name Mutators */
+	//@{
 	/**
-	 * Mutator to set origin and dimension of Rectangle.
+	 * Set origin and dimension of Rectangle.
 	 * @param x Width of rectangle.
 	 * @param y Height of rectangle.
 	 * @param x0 Horizontal origin of rectangle.
@@ -169,19 +178,73 @@ public:
 	void set(T x, T y, T x0, T y0) { m_rect = {x, y, x0, y0}; }
 
 	/**
-	 * Mutator to set origin of Rectangle.
+	 * Set origin of Rectangle.
 	 * @param x0 Horizontal origin of rectangle.
 	 * @param y0 Vertical origin of rectangle.
 	 */
 	void setOrigin(T x0, T y0)     { m_rect[X0] = x0; m_rect[Y0] = y0; }
 
 	/**
-	 * Mutator to set dimension of Rectangle.
+	 * Set dimension of Rectangle.
 	 * @param x Width of rectangle.
 	 * @param y Height of rectangle.
 	 */
 	void setSize(T x, T y)         { m_rect[WIDTH] = x; m_rect[HEIGHT] = y; }
+	//@}
 
+	/** @name Accessors */
+	//@{
+	/**
+	 *  reference to Rectangle's horizontal origin.
+	 * @return Reference to Rectangle's horizontal origin.
+	 */
+	int& x0() { return m_rect[X0]; }
+
+	/**
+	 * Get reference to Rectangle's vertical origin.
+	 * @return Reference to Rectangle's vertical origin.
+	 */
+	int& y0() { return m_rect[Y0]; }
+
+	/**
+	 * Get reference to Rectangle's width.
+	 * @return Reference to Rectangle's width.
+	 */
+	int& width()   { return m_rect[WIDTH]; }
+
+	/**
+	 * Get reference to Rectangle's height.
+	 * @return Reference to Rectangle's height.
+	 */
+	int& height()  { return m_rect[HEIGHT]; }
+
+	/**
+	 * Get Rectangle's horizontal origin
+	 * @return Rectangle's horizontal origin
+	 */
+	int x0() const { return m_rect[X0]; }
+
+	/**
+	 * Get Rectangle's vertical origin
+	 * @return Rectangle's vertical origin
+	 */
+	int y0() const { return m_rect[Y0]; }
+
+	/**
+	 * Get Rectangle's width
+	 * @return Rectangle's width
+	 */
+	int width()  const { return m_rect[WIDTH]; }
+
+	/**
+	 * Get Rectangle's height
+	 * @return Rectangle's height
+	 */
+	int height() const { return m_rect[HEIGHT]; }
+	//@}
+
+	/** @name Helper Member Functions */
+	//@{
 	/**
 	 * Check if point is inside Rectangle.
 	 * @param x Horizontal origin of point.
@@ -192,54 +255,6 @@ public:
 		return ( x >= x0() && x < (x0() + width()) && 
 				 y >= y0() && y < (y0() + height()) );
 	}
-
-	/**
-	 * Accessor of reference to Rectangle's horizontal origin.
-	 * @return Reference to Rectangle's horizontal origin.
-	 */
-	int& x0() { return m_rect[X0]; }
-
-	/**
-	 * Accessor of reference to Rectangle's vertical origin.
-	 * @return Reference to Rectangle's vertical origin.
-	 */
-	int& y0() { return m_rect[Y0]; }
-
-	/**
-	 * Accessor of reference to Rectangle's width.
-	 * @return Reference to Rectangle's width.
-	 */
-	int& width()   { return m_rect[WIDTH]; }
-
-	/**
-	 * Accessor of reference to Rectangle's height.
-	 * @return Reference to Rectangle's height.
-	 */
-	int& height()  { return m_rect[HEIGHT]; }
-
-	/**
-	 * Accessor of Rectangle's horizontal origin
-	 * @return Rectangle's horizontal origin
-	 */
-	int x0() const { return m_rect[X0]; }
-
-	/**
-	 * Accessor of Rectangle's vertical origin
-	 * @return Rectangle's vertical origin
-	 */
-	int y0() const { return m_rect[Y0]; }
-
-	/**
-	 * Accessor of Rectangle's width
-	 * @return Rectangle's width
-	 */
-	int width()  const { return m_rect[WIDTH]; }
-
-	/**
-	 * Accessor of Rectangle's height
-	 * @return Rectangle's height
-	 */
-	int height() const { return m_rect[HEIGHT]; }
 
 	/**
 	 * Detect overlap between this rectangle and another.
@@ -253,7 +268,8 @@ public:
 		return !noOverlap;
 	}
 
-	/* Merge rectangle in class object with rectangle r
+	/**
+	 * Merge rectangle in class object with rectangle r
 	 */
 	void merge(const Rectangle& r) {
 		T x0 = min(x0(), r.x0());
@@ -263,20 +279,25 @@ public:
 		set(x1 - x0, y1 - y0, x0, y0);
 	}
 
-	/* return rectangle that is merger of r1 and r2
+	/**
+	 * return rectangle that is merger of r1 and r2
 	 */
 	static Rectangle merge(const Rectangle& r1, const Rectangle& r2) {
 		Rectangle r{r1};
 		r.merge(r2);
 		return r;
 	}
+	//@}
 
 private:
-	enum { WIDTH, HEIGHT, X0, Y0, SIZE };
-	std::array<T, SIZE> m_rect;
+	enum { WIDTH, HEIGHT, X0, Y0, SIZE }; ///< Name of rectangle parameters.
+	std::array<T, SIZE> m_rect;           ///< Storage of rectangle parameters.
 };
 
+/** @name Global Type Declerations  */
+//@{
 using Box = Rectangle<int>; ///< @brief Specialization of integer rectangle.
+//@}
 
 /**
  * Abstract base class for symbolic classes that make up an equation.
@@ -311,6 +332,8 @@ public:
 	 */
 	struct Frame { Box box; int base; };
 
+	/** @name Constructors and Virtual Destructor */
+	//@{
 	/**
 	 * Constructor for Node class.
 	 * Directly initialize the Node class private data members.
@@ -328,15 +351,12 @@ public:
 	 * @param parent Parent node object.
 	 */
 	Node(EqnXMLParser& in, Node* parent);
-
+	
 	virtual ~Node() {} ///< Abstract base class needs virtual desctructor.
+	//@}
 
-	/**
-	 * Serialize this node and child nodes to XML output stream.
-	 * @param xml XML ouput stream.
-	 */
-	void out(XML::Stream& xml);
-
+	/** @name Virtual Public Member Functions */
+	//@{
 	/**
 	 * Recursive virtual function to represent this subtree as string.
 	 * @return String representing this node and child nodes.
@@ -405,12 +425,19 @@ public:
 	 * @return Class type of node object.
 	 */
 	virtual std::type_index getType() const=0;
+	//@}
 
 	/**
 	 * Calculate size of node subtree in given graphics context.
 	 * @param gc Graphics context used to calculate size.
 	 */
 	void calculateSize(Graphics& gc);
+
+	/**
+	 * Serialize this node and child nodes to XML output stream.
+	 * @param xml XML ouput stream.
+	 */
+	void out(XML::Stream& xml);
 
 	/**
 	 * Calculate origin of each node in subtree.
@@ -540,6 +567,8 @@ public:
 	Complex getValue() const;
 
 private:
+	/** @name Virtual Private Member Functions */
+	//@{
 	/**
 	 * Get left most node of this node's subtree.
 	 * Default function returns NULL assuming it is leaf node.
@@ -601,6 +630,7 @@ private:
 	 * @param xml XML stream.
 	 */
 	virtual void xml_out(XML::Stream& xml) const=0;
+	//@}
 
 	Node* m_parent;    ///< Parent node of this node. Can be null if root.
 	bool m_sign;       ///< True if positve.
@@ -619,6 +649,8 @@ private:
 class Graphics
 {
 public:
+	/** @name Constructor and Virtual Destructor */
+	//@{
 	/**
 	 * Default constructor.
 	 */
@@ -628,12 +660,15 @@ public:
 	 * Abstract base class needs vertical destructor.
 	 */
 	virtual ~Graphics() {}
-
+	//@}
+	
 	/**
 	 * Predefined colors.
 	 */
 	enum Color { BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE };
 
+	/** @name Virtual Public Member Functions */
+	//@{
 	/**
 	 * Draw differential of width x0 and height y0 with char variable name.
 	 * @param x0 Horizontal origin of differential.
@@ -743,7 +778,8 @@ public:
 	virtual void set(int x, int y, int x0 = 0, int y0 = 0) { 
 		m_xSize = x; m_ySize = y; m_xOrig = x0, m_yOrig = y0;
 	}
-
+	//@}
+	
 	/**
 	 * Set size and origin of this graphics window from a rectangle.
 	 * @param box Rectangle containing origin and size of window.
@@ -811,6 +847,8 @@ public:
 	 */
 	NodeIterator(Node* node) : m_node(node) {}
 
+	/** @name Overloaded Operators */
+	//@{
 	/**
 	 * Overloaded dereference operator.
 	 * @return Current node.
@@ -865,6 +903,7 @@ public:
 	 * @return Copy of NodeIterator pointing to old iterator value.
 	 */
 	NodeIterator operator--(int) { NodeIterator tmp(*this); prev(); return tmp; }
+	//@}
 };
 
 /**
@@ -884,6 +923,8 @@ class FactorIterator : public std::iterator< std::bidirectional_iterator_tag, No
 	void prev();                   ///< Get previous factor in expression.
 
 public:
+	/** @name Constructors */
+	//@{
 	/**
 	 * Constructor for FactorIterator class.
 	 * Initialize the current node this iterator points to.
@@ -904,7 +945,10 @@ public:
 	 * @param expr New cucrrent node from first factor of expr.
 	 */
     FactorIterator(Expression* expr);
-
+	//@}
+	
+	/** @name Overloaded Operators */
+	//@{
 	/**
 	 * Overloaded dereference operator.
 	 * @return Current node.
@@ -959,7 +1003,10 @@ public:
 	 * @return Copy of NodeIterator pointing to old iterator value.
 	 */
 	FactorIterator operator--(int) { FactorIterator tmp(*this); prev(); return tmp; }
+	//@}
 
+	/** @name Overloaded Operators */
+	//@{	
 	/**
 	 * Erase factor pointed to by iterator. 
 	 * Erase current node leaving iterator pointing to next factor.
@@ -1014,6 +1061,7 @@ public:
 	 * @return New iterator pointing to last factor.
 	 */
 	FactorIterator getLast() { FactorIterator tmp(*this); tmp.getNode(-1, -1); return tmp; }
+	//@}
 	
 	friend class Equation;
 };
@@ -1026,6 +1074,8 @@ public:
 class Equation
 {
 public:
+	/** @name Constructors and Virtual Destructor */
+	//@{
 	/**
 	 * Constructor to load an equation represented by string such as 'a+b/c'.
 	 * @param eq String containing equation to be created.
@@ -1045,6 +1095,14 @@ public:
 	Equation(const Equation& eqn) { *this = eqn; }
 
 	/**
+	 * Destructor deletes node tree to clean up after itself.
+	 */
+	~Equation() { delete m_root; }
+	//@}
+	
+	/** @name Overloaded Equal Operators */
+	//@{
+	/**
 	 * Overloaded equal operator that copies node tree from another object.
 	 * Given equation object is serialized to xml and then deserialized into this object.
 	 * @param eqn Equation class object to be copied.
@@ -1053,12 +1111,8 @@ public:
 
 	Equation(Equation&& eqn)=delete;            ///< No move copy constructor.
 	Equation& operator=(Equation&& eqn)=delete; ///< No move equal operator.
-
-	/**
-	 * Destructor deletes node tree to clean up after itself.
-	 */
-	~Equation() { delete m_root; }
-
+	//@}
+	
 	/**
 	 * Get string representation of equation.
 	 * Example:  '(a+b/c)'.

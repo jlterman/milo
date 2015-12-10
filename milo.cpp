@@ -1,8 +1,4 @@
-/*
- * milo.cpp
- * This file is part of milo
- *
- * Copyright (C) 2015 - James Terman
+/* Copyright (C) 2015 - James Terman
  *
  * milo is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,6 +15,13 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+/**
+ * @file milo.cpp
+ * This file contains the implementation of member functions of classes 
+ * derived from Node not involved in construction from a parser, or 
+ * symbolic maninpulation. Mostly it is support for the GUI.
+ */
+
 #include <iostream>
 #include <vector>
 #include <iterator>
@@ -32,15 +35,23 @@
 
 using namespace std;
 
+/* Take the selection state and draw it in the graphics context.
+ */
 void Equation::setSelect(Graphics& gc)
 {
 	if (m_selectStart == nullptr && m_selectEnd == nullptr) {
+		/* No selection. Clear it.
+		 */
 		gc.setSelect(0, 0, 0, 0);
 	}
 	else if (m_selectStart != nullptr && m_selectStart == m_selectEnd) {
+		/* On one node selected.
+		 */
 		gc.setSelect(m_selectStart->getFrame().box);
 	}
 	else if (m_selectStart != nullptr) {
+		/* Multiple nodes selected. Figure out bounding box.
+		 */
 		auto it = FactorIterator(m_selectStart);
 		auto end = FactorIterator(m_selectEnd);
 		int x0 = it->getFrame().box.x0(), y0 = it->getFrame().box.y0(), x = 0, y = 0;
@@ -54,6 +65,8 @@ void Equation::setSelect(Graphics& gc)
 	}
 }
 
+/* Clear old input and set the new one active.
+ */
 void Equation::setCurrentInput(int in_sn)
 {
 	if (m_input_index >= 0) m_inputs[m_input_index]->m_current = false;

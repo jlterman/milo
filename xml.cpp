@@ -1,8 +1,4 @@
-/*
- * xml.cpp
- * This file is part of milo
- *
- * Copyright (C) 2015 - James Terman
+/* Copyright (C) 2015 - James Terman
  *
  * milo is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,6 +15,10 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+/**
+ * @file xml.cpp
+ * This file contains the implementation of the XML namespace.
+ */
 #include "xml.h"
 
 using namespace std;
