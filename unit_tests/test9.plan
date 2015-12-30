@@ -1,0 +1,31 @@
+--xml test9.xml --test
+---------
+(+(+[a])/(+?))
+---------
+<document>
+  <equation>
+    <expression>
+      <term>
+        <divide>
+          <expression>
+            <term>
+              <input text="a" current="true"/>
+            </term>
+          </expression>
+          <expression>
+            <term>
+              <input/>
+            </term>
+          </expression>
+        </divide>
+      </term>
+    </expression>
+  </equation>
+</document>
+---------
+a?
+--
+? 
+---------
+XML test passed
+---------

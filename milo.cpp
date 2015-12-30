@@ -54,10 +54,14 @@ void Equation::setSelect(Graphics& gc)
 		 */
 		auto it = FactorIterator(m_selectStart);
 		auto end = FactorIterator(m_selectEnd);
-		int x0 = it->getFrame().box.x0(), y0 = it->getFrame().box.y0(), x = 0, y = 0;
+		int x0 = it->getFrame().box.x0(), y0 = 0, x = 0, y = 0;
 		do {
 			x = it->getFrame().box.x0() - x0 + it->getFrame().box.width();
-			y = max(y, it->getFrame().box.height() - it->getFrame().base);
+			int y_new = it->getFrame().box.height();
+			if (y_new > y) {
+				y = y_new;
+				y0 = it->getFrame().box.y0();
+			}
 		}
 		while (it++ != end);
 
@@ -685,6 +689,10 @@ void Equation::eraseSelection(Node* node)
 
 bool Equation::handleChar(int ch)
 {
+	string store;
+	this->xml_out(store);
+	LOG_TRACE_MSG("handleChar eqn xml:\n" + store);
+
 	bool fResult = true;
 	if (m_selectStart != nullptr) {
 		if (isalnum(ch) || ch == '.') {
@@ -1187,7 +1195,7 @@ void FactorIterator::prev()
 	else if (m_term_index > 0) {
 		--m_term_index;
 		m_pTerm = m_gpExpr->terms[m_term_index];
-		m_factor_index += m_pTerm->factors.size();
+		m_factor_index += m_pTerm->factors.size() - 1;
 	}
 	else 
 		throw range_error("out of range");		

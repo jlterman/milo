@@ -614,7 +614,7 @@ Number::Number(EqnXMLParser& in, Node* parent) : Node(in, parent)
 	in.next(XML::ATOM_END);
 }
 
-Input::Input(EqnXMLParser& in, Node* parent) : Node(in, parent), m_sn(++input_sn), m_eqn(in.getEqn())
+Input::Input(EqnXMLParser& in, Node* parent) : Node(in, parent), m_sn(++input_sn), m_current(false), m_eqn(in.getEqn())
 {
 	m_eqn.addInput(this);
 	string value;
