@@ -90,14 +90,16 @@ public:
 	int getDifferentialBase(char)   { return 1; }
 
 	/**
-	 * Draw a string at x,y with a color.
+	 * Draw a character at x,y with a color.
 	 * @param x0 Horizontal origin of line.
 	 * @param y0 Vertical origin of line.
 	 * @param c  Character to be drawn at x0,y0.
+	 * @param chrAttr Attribute of character.
 	 * @param color Color of line.
 	 */
-	void at(int x, int y, int c, Color color = BLACK) {
+	void at(int x, int y, int c, Attributes chrAttr, Color color = BLACK) {
 		if (c == 'P') c = ACS_PI;
+		if (chrAttr != NONE) c |= attribute_map.at(chrAttr);
 		if (m_select.inside(x, y)) c |= A_REVERSE;
 		if (color != BLACK && m_has_colors) attron(COLOR_PAIR(color));
 		mvaddch(y + m_yOrig, x + m_xOrig, c);
@@ -109,16 +111,19 @@ public:
 	 * @param x0 Horizontal origin of line.
 	 * @param y0 Vertical origin of line.
 	 * @param s  String to be drawn at x0,y0.
+	 * @param chrAttr Attribute of character.
 	 * @param color Color of line.
 	 */
-	void at(int x, int y, const string& s, Color color = BLACK) {
+	void at(int x, int y, const string& s, Attributes chrAttr, Color color = BLACK) {
 		if (color != BLACK && m_has_colors) attron(COLOR_PAIR(color));
 		if (m_select.inside(x, y)) attron(A_REVERSE);
+		if (chrAttr != NONE) attron(attribute_map.at(chrAttr));
 
 		move(y + m_yOrig, x + m_xOrig); printw(s.c_str());
 
 		if (color != BLACK && m_has_colors) attroff(COLOR_PAIR(color));
 		if (m_select.inside(x, y)) attroff(A_REVERSE);
+		if (chrAttr != NONE) attroff(attribute_map.at(chrAttr));
 	}
 
 	/**
@@ -222,10 +227,30 @@ public:
 private:
 	static bool init;          ///< Singleton has been initialized.
 	static bool m_has_colors;  ///< Singleton flag is screen has colors.
+
+	static const map<Attributes, int> attribute_map;
+
+	/**
+	 * Draw a character at x,y.
+	 * @param x0 Horizontal origin of line.
+	 * @param y0 Vertical origin of line.
+	 * @param c  Character to be drawn at x0,y0.
+	 */
+	void at(int x, int y, int c) {
+		if (m_select.inside(x, y)) c |= A_REVERSE;
+		mvaddch(y + m_yOrig, x + m_xOrig, c);
+	}
 };
 
 bool CursesGraphics::init = false;
 bool CursesGraphics::m_has_colors = false;
+
+const map<Graphics::Attributes, int> CursesGraphics::attribute_map = {
+	{ Graphics::Attributes::NONE,   A_NORMAL },
+	{ Graphics::Attributes::BOLD,   A_BOLD },
+	{ Graphics::Attributes::ITALIC, A_ITALIC },
+	{ Graphics::Attributes::BOLD_ITALIC, A_ITALIC|A_BOLD }
+};
 
 void CursesGraphics::parenthesis(int x_size, int y_size, int x0, int y0)
 {
@@ -294,72 +319,68 @@ int main(int argc, char* argv[])
 		else mkey = string(1, (char)ch);
 		LOG_TRACE_MSG("Char typed: " + mkey);
 
-		bool fChanged = true;
-		if (!eqn->handleChar(ch)) {
-			switch (ch) 
-			{
-			    case 3: { // ctrl-c typed
-					LOG_TRACE_MSG("ctrl-c typed");
-					fRunning = false;
-					fChanged = false;
-					break;
+		bool fChanged = false;
+		switch (ch) 
+		{
+		    case 3: { // ctrl-c typed
+				LOG_TRACE_MSG("ctrl-c typed");
+				fRunning = false;
+				break;
+			}
+		    case 19: { // ctrl-s typed
+				string store;
+				eqn->xml_out(store);
+				fstream out("eqn.xml", fstream::out | fstream::trunc);
+				out << store << endl;
+				out.close();
+				break;
+			}
+		    case 26: { // ctrl-z typed
+				Equation* undo_eqn = eqns.undo();
+				if (undo_eqn) {
+					delete eqn;
+					eqn = undo_eqn;
+					LOG_TRACE_MSG("undo to " + eqn->toString());
 				}
-			    case 19: { // ctrl-s typed
-					string store;
-					eqn->xml_out(store);
-					fstream out("eqn.xml", fstream::out | fstream::trunc);
-					out << store << endl;
-					out.close();
-					fChanged = false;
-					break;
-				}
-			    case 26: { // ctrl-z typed
-					Equation* undo_eqn = eqns.undo();
-					if (undo_eqn) {
-						delete eqn;
-						eqn = undo_eqn;
-						fChanged = false;
-						LOG_TRACE_MSG("undo to " + eqn->toString());
-					}
-					break;
-			    }
-			    case KEY_MOUSE: {
-					static Node* start = nullptr;
-					static Node* end = nullptr;
-					MEVENT event;
-					if(getmouse(&event) == OK) {
+				break;
+			}
+		    case KEY_MOUSE: {
+				static Node* start = nullptr;
+				static Node* end = nullptr;
+				MEVENT event;
+				if(getmouse(&event) == OK) {
+					if(event.bstate & BUTTON1_PRESSED) {
 						LOG_TRACE_MSG("mouse event " + to_hexstring(event.bstate) + " click at: " + 
 									  to_string(event.x) + ", " + to_string(event.y));
-						if(event.bstate & BUTTON1_PRESSED) {
-							start = eqn->findNode(gc, event.x, event.y);
-							if (start == nullptr) break;
-							eqn->setSelect(start);
-							LOG_TRACE_MSG(string("found node: ") + typeid(start).name() + ": " + 
-										  start->toString());
-							fChanged = false;
-						}
-						else if(event.bstate & BUTTON1_RELEASED) {
-							end = eqn->findNode(gc, event.x, event.y);
-							if (end == nullptr) break;
-							eqn->setSelect(start, end);
-							LOG_TRACE_MSG(string("found node: ") + typeid(end).name() + ": " + 
-										  end->toString());
-							start = nullptr;
-							end = nullptr;
-						}
+						start = eqn->findNode(gc, event.x, event.y);
+						if (start == nullptr) break;
+						eqn->setSelect(start);
+						LOG_TRACE_MSG(string("found node: ") + typeid(start).name() + ": " + 
+									  start->toString());
 					}
-					break;
+					else if(event.bstate & BUTTON1_RELEASED) {
+						LOG_TRACE_MSG("mouse event " + to_hexstring(event.bstate) + " release at: " + 
+									  to_string(event.x) + ", " + to_string(event.y));
+						end = eqn->findNode(gc, event.x, event.y);
+						if (end == nullptr) break;
+						fChanged = true;
+						eqn->setSelect(start, end);
+						LOG_TRACE_MSG(string("found node: ") + typeid(end).name() + ": " + 
+									  end->toString());
+						start = nullptr;
+						end = nullptr;
+					}
 				}
-			    case KEY_RESIZE: {
-				    fChanged = false;
-					LOG_TRACE_MSG("screen resize detected");
-				    break;
-			    }
-				default: {
-					fChanged = false;
-					LOG_TRACE_MSG("char not handled");
-					break;
-				}
+				break;
+			}
+		    case KEY_RESIZE: {
+				LOG_TRACE_MSG("screen resize detected");
+				break;
+			}
+		    default: {
+				fChanged = eqn->handleChar(ch);
+				if (!fChanged) LOG_TRACE_MSG("character not handled");
+				break;
 			}
 		}
 		if (fChanged) {

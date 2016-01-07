@@ -257,3 +257,19 @@ void Parser::tokenize(const string& xml)
 	}
 ==================================
 bugs: 1/a/c, (1)/((a+b)/c) --normalize, '((a/b)^(2))' --normalize
+==================================
+#include <ncursesw/ncurses.h>
+#include <locale.h>
+int main(int argc, char *argv[])
+{
+	setlocale(LC_ALL,"");
+	initscr();
+	curs_set(0); //remove cursor
+	attron(A_ITALIC);
+	addstr("\u03c0"); //Print out the pi unicode character
+	refresh(); //update screen
+	getch();  //wait for input
+	endwin();
+	return 0;
+}
+gcc test.c -lncursesw -o test

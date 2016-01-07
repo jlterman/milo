@@ -667,6 +667,11 @@ public:
 	 */
 	enum Color { BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE };
 
+	/**
+	 * Predefined character attributes.
+	 */
+	enum Attributes { NONE=0, BOLD=1, ITALIC=2, BOLD_ITALIC=3 };
+
 	/** @name Virtual Public Member Functions */
 	//@{
 	/**
@@ -699,18 +704,20 @@ public:
 	 * @param x0 Horizontal origin of character.
 	 * @param y0 Vertical origin of character.
 	 * @param c  Character to be drawn at x0,y0.
+	 * @param chrAttr Attribute of character.
 	 * @param color Color of character.
 	 */
-	virtual void at(int x0, int y0, int c, Color color = BLACK)=0;
+	virtual void at(int x0, int y0, int c, Attributes chrAttr, Color color = BLACK)=0;
 
 	/**
 	 * Draw a string at x,y with a color.
 	 * @param x0 Horizontal origin of line.
 	 * @param y0 Vertical origin of line.
 	 * @param s  String to be drawn at x0,y0.
+	 * @param chrAttr Attribute of character.
 	 * @param color Color of line.
 	 */
-	virtual void at(int x0, int y0, const std::string& s, Color color = BLACK)=0;
+	virtual void at(int x0, int y0, const std::string& s, Attributes chrAttr, Color color = BLACK)=0;
 
 	/**
 	 * Flush all drawing so far to graphic interface.

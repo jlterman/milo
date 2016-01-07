@@ -104,7 +104,7 @@ public:
 	 * @param c  Character to be drawn at x0,y0.
 	 * @param color Color of line.
 	 */
-	void at(int x, int y, int c, Color color = BLACK) { m_field[y][x] = c; m_colors[y][x] = color; }
+	void at(int x, int y, int c, Attributes, Color color = BLACK) { m_field[y][x] = c; m_colors[y][x] = color; }
 
 	/**
 	 * Draw a string at x,y with a color.
@@ -113,7 +113,7 @@ public:
 	 * @param s  String to be drawn at x0,y0.
 	 * @param color Color of line.
 	 */
-	void at(int x, int y, const string& s, Color color = BLACK);
+	void at(int x, int y, const string& s, Attributes, Color color = BLACK);
 
 
 	/**
@@ -140,9 +140,17 @@ private:
 	vector<string> m_field;           ///< 2D text array.
 	vector< vector<Color> > m_colors; ///< 2D color array.
 	ostream& m_os;                    ///< Stream to ouput text array.
+
+	/**
+	 * Draw a string at x,y with a color.
+	 * @param x0 Horizontal origin of line.
+	 * @param y0 Vertical origin of line.
+	 * @param c  Character to be drawn at x0,y0.
+	 */
+	void at(int x, int y, int c) { m_field[y][x] = c; m_colors[y][x] = Color::BLACK; }
 };
 
-void AsciiGraphics::at(int x, int y, const string& s, Color color)
+void AsciiGraphics::at(int x, int y, const string& s, Attributes, Color color)
 {
 	for (unsigned int n = 0; n < s.length(); ++n) { 
 		m_field[y][x + n] = s[n]; m_colors[y][x + n] = color;

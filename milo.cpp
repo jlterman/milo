@@ -200,12 +200,13 @@ void Node::draw(Graphics& gc) const
 	if (m_fDrawParenthesis)  gc.parenthesis(m_parenthesis);
 	if (isFactor() && !m_sign) {
 		gc.at(m_frame.box.x0() + ( m_fDrawParenthesis ? gc.getParenthesisWidth() : 0 ), 
-			  m_frame.box.y0() + m_frame.base, '-');
+			  m_frame.box.y0() + m_frame.base, '-', Graphics::Attributes::NONE);
 	}
 
 	if (m_nth != 1) {
 		string n = to_string(m_nth);
-		gc.at(m_frame.box.x0() + m_frame.box.width() - gc.getTextLength(n), m_frame.box.y0(), n);
+		gc.at(m_frame.box.x0() + m_frame.box.width() - gc.getTextLength(n),
+			  m_frame.box.y0(), n, Graphics::Attributes::NONE);
 	}
 	drawNode(gc);	
 }
@@ -359,7 +360,8 @@ void Function::calcOrig(Graphics& gc, int x, int y)
 
 void Function::drawNode(Graphics& gc) const
 {
-	gc.at(m_internal.x0(), m_internal.y0(), m_name, Graphics::Color::GREEN);
+	gc.at(m_internal.x0(), m_internal.y0(), m_name,
+		  Graphics::Attributes::NONE, Graphics::Color::GREEN);
 	m_arg->draw(gc);
 }
 
@@ -417,7 +419,8 @@ void Constant::calcOrig(Graphics&, int x, int y)
 
 void Constant::drawNode(Graphics& gc) const
 {
-	gc.at(m_internal.x0(), m_internal.y0(), m_name, Graphics::Color::RED);
+	gc.at(m_internal.x0(), m_internal.y0(), m_name,
+		  Graphics::Attributes::ITALIC, Graphics::Color::RED);
 }
 
 Variable::var_map Variable::values;
@@ -436,7 +439,7 @@ void Variable::calcOrig(Graphics&, int x, int y)
 
 void Variable::drawNode(Graphics& gc) const
 {
-	gc.at(m_internal.x0(), m_internal.y0(), m_name);
+	gc.at(m_internal.x0(), m_internal.y0(), m_name, Graphics::Attributes::ITALIC);
 }
 
 void Variable::setValue(char name, Complex value)
@@ -477,7 +480,7 @@ void Number::calcOrig(Graphics&, int x, int y)
 
 void Number::drawNode(Graphics& gc) const
 {
-	gc.at(m_internal.x0(), m_internal.y0(), toString());
+	gc.at(m_internal.x0(), m_internal.y0(), toString(), Graphics::Attributes::NONE);
 }
 
 Node::Frame Term::calcSize(Graphics& gc) 
@@ -580,7 +583,7 @@ void Expression::drawNode(Graphics& gc) const
 		if (n != terms[0] || !n->getSign()) {
 			gc.at(n->getFrame().box.x0() - 1, 
 				  n->getFrame().box.y0() + n->getFrame().base,
-				  n->getSign() ? '+' : '-');
+				  n->getSign() ? '+' : '-', Graphics::Attributes::NONE);
 		}
 		n->draw(gc); 
 	}
@@ -644,7 +647,8 @@ void Input::calcOrig(Graphics&, int x, int y)
 
 void Input::drawNode(Graphics& gc) const
 {
-	gc.at(m_internal.x0(), m_internal.y0(), m_typed + "?");
+	gc.at(m_internal.x0(), m_internal.y0(), m_typed, Graphics::Attributes::ITALIC);
+	gc.at(m_internal.x0() + m_typed.length(), m_internal.y0(), '?', Graphics::Attributes::BOLD); 
 }
 
 string Input::toString() const
