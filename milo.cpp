@@ -399,6 +399,14 @@ void Differential::drawNode(Graphics& gc) const
 	m_function->draw(gc);
 }
 
+Node* Differential::findNode(const Box& b)
+{
+	if (getFrame().box.inside(b))
+		return this;
+	else
+		return m_function->findNode(b);
+}
+
 const Constant::const_map Constant::constants = {
 	{ 'e', Complex(exp(1.0), 0) },
 	{ 'P', Complex(4*atan(1.0), 0) },
@@ -998,6 +1006,29 @@ Node* Equation::findNode(Graphics& gc, int x, int y)
 		return node;
 }
 
+Node* Equation::findNode(Graphics& gc, Box b)
+{
+	gc.relativeOrig(b.x0(), b.y0());
+	return m_root->findNode(b);
+}
+
+
+void Equation::selectBox(Graphics& gc, Node* start, Box b)
+{
+	gc.relativeOrig(b.x0(), b.y0());
+	if (start->getParent() == nullptr || start->getParent()->getType() != Term::type) {
+		setSelect(start);
+		return;
+	}
+	Node* end = nullptr;
+	FactorIterator itr(start);
+	while (!itr.isEnd() && (*itr)->getFrame().box.inside(b)) {
+		end = *itr;
+		++itr;
+	}
+	setSelect(start, end);
+}
+
 FactorIterator Equation::insert(FactorIterator it, Node* node)
 { 
 	insertElement(it.m_pTerm->factors, it.m_factor_index, node);
@@ -1079,7 +1110,15 @@ FactorIterator Equation::forward_erase(FactorIterator it)
 
 Node* Node::findNode(int x, int y)
 {
-	if (m_frame.box.inside(x, y))
+	if (getFrame().box.inside(x, y))
+		return this;
+	else
+		return nullptr;
+}
+
+Node* Node::findNode(const Box& b)
+{
+	if (getFrame().box.inside(b))
 		return this;
 	else
 		return nullptr;
@@ -1090,6 +1129,14 @@ Node* Function::findNode(int x, int y)
 	return m_arg->findNode(x, y);
 }
 
+Node* Function::findNode(const Box& b)
+{
+	if (getFrame().box.inside(b))
+		return this;
+	else
+		return m_arg->findNode(b);
+}
+
 Node* Binary::findNode(int x, int y)
 {
 	Node* node = m_first->findNode(x, y);
@@ -1097,11 +1144,31 @@ Node* Binary::findNode(int x, int y)
 	return node;
 }
 
+Node* Binary::findNode(const Box& b)
+{
+	if (getFrame().box.inside(b))
+		return this;
+	else if (m_first->getFrame().box.intersect(b))
+		return m_first->findNode(b);
+	else
+		return m_second->findNode(b);
+}
+
 Node* Term::findNode(int x, int y)
 {
 	Node* node = nullptr;
 	for ( auto n : factors ) {
 		node = n->findNode(x, y);
+		if (node != nullptr) break;
+	}
+	return node;
+}
+
+Node* Term::findNode(const Box& b)
+{
+	Node* node = nullptr;
+	for ( auto n : factors ) {
+		node = n->findNode(b);
 		if (node != nullptr) break;
 	}
 	return node;
@@ -1119,6 +1186,18 @@ Node* Expression::findNode(int x, int y)
 	Node* node = nullptr;
 	for ( auto n : terms ) {
 		node = n->findNode(x, y);
+		if (node != nullptr) break;
+	}
+	return node;
+}
+
+Node* Expression::findNode(const Box& b)
+{
+	if (getFrame().box.inside(b)) return this;
+	
+	Node* node = nullptr;
+	for ( auto n : terms ) {
+		node = n->findNode(b);
 		if (node != nullptr) break;
 	}
 	return node;

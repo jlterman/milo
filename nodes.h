@@ -256,6 +256,14 @@ public:
 	Node* findNode(int x, int y);
 
 	/**
+	 * Recursive function to return first node from a top to bottom
+	 * search whose frame is inside Box b.
+	 * @param b Bounding box.
+	 * @return Top node inside bounding box.
+	 */
+	Node* findNode(const Box& b);
+
+	/**
 	 * Get number of factor in this subtree.
 	 * @return Return number of factors in both expressions.
 	 */
@@ -1037,6 +1045,14 @@ public:
 	Node* findNode(int x, int y);
 
 	/**
+	 * Recursive function to return first node from a top to bottom
+	 * search whose frame is inside Box b.
+	 * @param b Bounding box.
+	 * @return Top node inside bounding box.
+	 */
+	Node* findNode(const Box& b);
+
+	/**
 	 * Get number of factor in this subtree.
 	 * @return Return total number of factors in term.
 	 */
@@ -1302,6 +1318,14 @@ public:
 	Node* findNode(int x, int y);
 
 	/**
+	 * Recursive function to return first node from a top to bottom
+	 * search whose frame is inside Box b.
+	 * @param b Bounding box.
+	 * @return Top node inside bounding box.
+	 */
+	Node* findNode(const Box& b);
+
+	/**
 	 * Get number of factors in this node.
 	 * @return Number of factors.
 	 */
@@ -1531,6 +1555,14 @@ public:
 	Node* findNode(int x, int y);
 
 	/**
+	 * Recursive function to return first node from a top to bottom
+	 * search whose frame is inside Box b.
+	 * @param b Bounding box.
+	 * @return Top node inside bounding box.
+	 */
+	Node* findNode(const Box& b);
+
+	/**
 	 * Get number of factors in this node.
 	 * @return Number of factors of argument plus this node.
 	 */
@@ -1710,6 +1742,14 @@ public:
 	 * @return Deepest node at point (x,y).	 
 	 */
 	Node* findNode(int x, int y) { return m_function->findNode(x, y); }
+
+	/**
+	 * Recursive function to return first node from a top to bottom
+	 * search whose frame is inside Box b.
+	 * @param b Bounding box.
+	 * @return Top node inside bounding box.
+	 */
+	Node* findNode(const Box& b);
 
 	/**
 	 * Get string representation of this node.

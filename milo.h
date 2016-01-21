@@ -157,7 +157,7 @@ public:
     Rectangle() : m_rect{0, 0, 0, 0} {}
 
 	/**
-	 * Constructor for Rectangle.
+	 * Constructor for Rectangle from all 4 coordinates.
 	 * @param x Width of rectangle.
 	 * @param y Height of rectangle.
 	 * @param x0 Horizontal origin of rectangle.
@@ -246,6 +246,22 @@ public:
 	/** @name Helper Member Functions */
 	//@{
 	/**
+	 * Convert state of this class to string
+	 * @return Return string representing this object
+	 */
+	std::string toString()
+	{
+		std::string s = "width: " + width() + ", height: " + height() + ", x0: " + x0() + ", y0: " + y0();
+		return s;
+	}
+
+	/**
+	 * Return area of rectangle.
+	 * @return Area of rectangle.
+	 */
+	T area() { return width()*height(); }
+	
+	/**
 	 * Check if point is inside Rectangle.
 	 * @param x Horizontal origin of point.
 	 * @param y Vertical origin of point.
@@ -254,6 +270,16 @@ public:
 	bool inside(T x, T y) const { 
 		return ( x >= x0() && x < (x0() + width()) && 
 				 y >= y0() && y < (y0() + height()) );
+	}
+
+	/**
+	 * Check if this rectangle is inside given Rectangle r.
+	 * @param r Rectangle to be tested
+	 * @return Return true if this rectangle is inside r.
+	 */
+	bool inside(Rectangle r) const {
+		return ( x0() >= r.x0() && (x0() + width())  <= (r.x0() + r.width()) && 
+				 y0() >= r.y0() && (y0() + height()) <= (r.y0() + r.height()) );
 	}
 
 	/**
@@ -386,6 +412,14 @@ public:
 	 * @return Deepest node at point (x,y).
 	 */
 	virtual Node* findNode(int x, int y);
+
+	/**
+	 * Virtual recursive function to return first node from a top to bottom
+	 * search whose frame is inside Box b.
+	 * @param b Bounding box.
+	 * @return Top node inside bounding box.
+	 */
+	virtual Node* findNode(const Box& b);
 
 	/**
 	 * Virtual function that queries node of number of factor in its subtree.
@@ -526,6 +560,11 @@ public:
 	Node* getParent() const { return m_parent; }
 
 	/**
+	 * Get depth from root of this node. 0 is root.
+	 * @return Depth of this node.
+	 */
+	int getDepth() const { return getDepth(0); }
+	/**
 	 * Get value of integer power of this node.
 	 * @return Value of m_nth.
 	 */
@@ -631,6 +670,15 @@ private:
 	 */
 	virtual void xml_out(XML::Stream& xml) const=0;
 	//@}
+
+	/**
+	 * Recursively calculate the depth of this node.
+	 * @param depth Current calculated depth.
+	 * @return Return depth of this node.
+	 */
+	int getDepth(int depth) const {
+		return (m_parent == nullptr) ? depth : m_parent->getDepth(++depth);
+	}
 
 	Node* m_parent;    ///< Parent node of this node. Can be null if root.
 	bool m_sign;       ///< True if positve.
@@ -1220,13 +1268,33 @@ public:
 	void setSelectFromNode(Node* node);
 
 	/**
-	 * Query root node for deepest node at coordinates x, y in given graphics conext.
+	 * Query root node for deepest node at coordinates x, y in given graphics context.
 	 * Call findNode method of root node. If input node found, delete it and search again.
 	 * @param gc Graphics context.
 	 * @param x  Horizontal coordinate.
 	 * @param y  Vertical coordinate.
+	 * @return Node found at x,y coordinates. Null if none found.
 	 */
 	Node* findNode(Graphics& gc, int x, int y);
+
+	/**
+	 * Query root node for shallowest factor node at inside rectangle box in given graphics context.
+	 * Call findNode(Graphics&, Box&) method of root node.
+	 * @param gc Graphics context.
+	 * @param b Bounding box
+	 * @param y  Vertical coordinate.
+	 * @return Node found inside bounding box b. Null if none found.
+	 */
+	Node* findNode(Graphics& gc, Box b);
+
+	/**
+	 * Select region starting from Node object start to last node still in bounding
+	 * rectangle b.
+	 * @param gc Graphics context.
+	 * @param start Starting node.
+	 * @param b Bounding box.
+	 */
+	void selectBox(Graphics& gc, Node* start, Box b);
 
 	/**
 	 * Simplify equation algebracially.

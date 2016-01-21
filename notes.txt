@@ -273,3 +273,58 @@ int main(int argc, char *argv[])
 	return 0;
 }
 gcc test.c -lncursesw -o test
+
+	move(10, 0); printw("\u2320"); // top of intergal
+	move(11, 0); printw("\u23ae"); // vertical bar extending intergal
+	move(12, 0); printw("\u2321"); // bottom of intergal
+
+Left and right parenthesis
+	move(10, 0); printw("\u239b"); 
+	move(11, 0); printw("\u239c"); 
+	move(12, 0); printw("\u239d"); 
+	move(10, 3); printw("\u239e"); 
+	move(11, 3); printw("\u239f"); 
+	move(12, 3); printw("\u23a0");
+
+TERM=xterm-1002 to track mouse position
+
+_ _ E P T Y Θ I O Π
+ A Σ Δ Φ Γ H Ξ K Λ
+  Z X Ψ Ω B N M
+
+ϙ ς ε ρ τ υ θ ι ο π
+ α σ δ φ γ η ξ κ λ
+  ζ χ ψ ω β ν μ
+
+Q W E R T Y U I O P
+ A S D F G H J K L
+  Z X C V B N M
+
+A α	03B1
+B β	03B2
+C ψ	03C8
+D δ	03B4
+E ε	03B5
+F φ	03C6
+G γ	03B3
+H η	03B7
+I ι	03B9
+J ξ	03BE
+K κ	03BA
+L λ	03BB
+M μ	03BC
+N ν	03BD
+O ο	03BF
+P π	03C0
+Q ϙ 03D9
+R ρ	03C1
+S σ	03C3
+T τ	03C4
+U θ	03B8
+V ω	03C9
+W ς	03C2
+X χ	03C7
+Y υ	03C5
+Z ζ	03B6
+
+http://stackoverflow.com/questions/29020638/which-term-to-use-to-have-both-256-colors-and-mouse-move-events-in-python-curse

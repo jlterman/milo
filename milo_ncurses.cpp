@@ -15,12 +15,12 @@ public:
 	//@{
 	CursesGraphics() { 
 		if (!init) {
-			initscr(); raw(); noecho(); 
+			initscr(); raw(); noecho(); /* nodelay(stdscr, TRUE); */
 #ifndef DEBUG
 			curs_set(0);
 #endif
 			keypad(stdscr, TRUE);
-			mousemask(ALL_MOUSE_EVENTS, NULL);
+			mousemask(ALL_MOUSE_EVENTS | REPORT_MOUSE_POSITION, NULL);
 			m_has_colors = (has_colors() == TRUE);
 			if (m_has_colors) {
 				start_color();/* Start color */
@@ -202,7 +202,14 @@ public:
 	 * @param x Horizontal coordinate.
 	 * @return Character from keyboard.
 	 */
-	unsigned int getChar(int y, int x) {
+	unsigned int getChar(int y, int x, bool active) {
+		if (!active) {
+			move(0, 0);
+#ifndef DEBUG
+			curs_set(0);
+#endif
+			return getch();
+		}
 		curs_set(2);
 		mvaddch(y + m_yOrig, x + m_xOrig, ' '); 
 		move(y + m_yOrig, x + m_xOrig);
@@ -304,13 +311,20 @@ int main(int argc, char* argv[])
 	eqns.save(eqn);
 
 	bool fRunning = true;
+	bool fChanged = true;
+	Node* start_select = nullptr;
+	int start_mouse_x = ERR, start_mouse_y = ERR;
 	while (fRunning) {
-		eqn->draw(gc);
-		gc.out();
+		if (fChanged) {
+			eqns.save(eqn);
+			eqn->draw(gc);
+			gc.out();
+			fChanged = false;
+		}
+
 		int xCursor = 0, yCursor = 0;
 		eqn->getCursorOrig(xCursor, yCursor);
-		move(0,0);
-		int ch = (eqn->blink()) ? gc.getChar(yCursor, xCursor - 1) : getch();
+		int ch = gc.getChar(yCursor, xCursor - 1, eqn->blink());
 
 		string mkey;
 		if (ch < 32) mkey = "ctrl-" + string(1, (char) ch+'@');
@@ -319,7 +333,6 @@ int main(int argc, char* argv[])
 		else mkey = string(1, (char)ch);
 		LOG_TRACE_MSG("Char typed: " + mkey);
 
-		bool fChanged = false;
 		switch (ch) 
 		{
 		    case 3: { // ctrl-c typed
@@ -345,30 +358,39 @@ int main(int argc, char* argv[])
 				break;
 			}
 		    case KEY_MOUSE: {
-				static Node* start = nullptr;
-				static Node* end = nullptr;
 				MEVENT event;
-				if(getmouse(&event) == OK) {
-					if(event.bstate & BUTTON1_PRESSED) {
-						LOG_TRACE_MSG("mouse event " + to_hexstring(event.bstate) + " click at: " + 
-									  to_string(event.x) + ", " + to_string(event.y));
-						start = eqn->findNode(gc, event.x, event.y);
-						if (start == nullptr) break;
-						eqn->setSelect(start);
-						LOG_TRACE_MSG(string("found node: ") + typeid(start).name() + ": " + 
-									  start->toString());
-					}
-					else if(event.bstate & BUTTON1_RELEASED) {
-						LOG_TRACE_MSG("mouse event " + to_hexstring(event.bstate) + " release at: " + 
-									  to_string(event.x) + ", " + to_string(event.y));
-						end = eqn->findNode(gc, event.x, event.y);
-						if (end == nullptr) break;
+				if (getmouse(&event) == OK) {
+					if (event.bstate & BUTTON1_PRESSED) {
+						start_select = eqn->findNode(gc, event.x, event.y);
+						start_mouse_x = event.x; start_mouse_y = event.y;
+						if (start_select == nullptr) break;
+						eqn->setSelect(start_select);
 						fChanged = true;
-						eqn->setSelect(start, end);
-						LOG_TRACE_MSG(string("found node: ") + typeid(end).name() + ": " + 
-									  end->toString());
-						start = nullptr;
-						end = nullptr;
+					}
+					else if (event.bstate & BUTTON1_RELEASED) {
+						start_mouse_x = start_mouse_y = ERR;
+						start_select = nullptr;
+					}
+					else if (event.bstate & REPORT_MOUSE_POSITION) {
+						Box box = { 0, 0, 0, 0 };
+						if (start_mouse_x != ERR && start_mouse_y != ERR) {
+							box = { abs(start_mouse_x - event.x),
+									abs(start_mouse_y - event.y),
+									min(start_mouse_x,  event.x),
+									min(start_mouse_y,  event.y)
+							}; 
+						}
+						if (start_select != nullptr && box.area() > 1 ) {
+							Node* new_select = eqn->findNode(gc, box);
+							if (new_select != nullptr && new_select->getDepth() < start_select->getDepth()) start_select = new_select;
+							eqn->selectBox(gc, start_select, box);
+							fChanged = true;
+						}
+						else if (start_select == nullptr && box.area() > 0) {
+							start_select = eqn->findNode(gc, box);
+							eqn->setSelect(start_select);
+							fChanged = true;
+						}
 					}
 				}
 				break;
@@ -382,12 +404,6 @@ int main(int argc, char* argv[])
 				if (!fChanged) LOG_TRACE_MSG("character not handled");
 				break;
 			}
-		}
-		if (fChanged) {
-			eqns.save(eqn);
-			delete eqn;
-			eqn = eqns.top();
-			LOG_TRACE_MSG("got new eqn: " + eqn->toString());
 		}
 	}
 }
