@@ -1,6 +1,5 @@
-#include <ncurses.h>
-#include <iostream>
-#include <typeinfo>
+#include <ncursesw/ncurses.h>
+#include <locale.h>
 #include "milo.h"
 
 using namespace std;
@@ -15,7 +14,7 @@ public:
 	//@{
 	CursesGraphics() { 
 		if (!init) {
-			initscr(); raw(); noecho(); /* nodelay(stdscr, TRUE); */
+			setlocale(LC_ALL,""); initscr(); raw(); noecho();
 #ifndef DEBUG
 			curs_set(0);
 #endif
@@ -98,12 +97,17 @@ public:
 	 * @param color Color of line.
 	 */
 	void at(int x, int y, int c, Attributes chrAttr, Color color = BLACK) {
-		if (c == 'P') c = ACS_PI;
-		if (chrAttr != NONE) c |= attribute_map.at(chrAttr);
-		if (m_select.inside(x, y)) c |= A_REVERSE;
-		if (color != BLACK && m_has_colors) attron(COLOR_PAIR(color));
-		mvaddch(y + m_yOrig, x + m_xOrig, c);
-		if (color != BLACK && m_has_colors) attroff(COLOR_PAIR(color));
+		auto iter = char_map.find((char)c);
+		if (iter == char_map.end()) {
+			if (chrAttr != NONE) c |= attribute_map.at(chrAttr);
+			if (m_select.inside(x, y)) c |= A_REVERSE;
+			if (color != BLACK && m_has_colors) attron(COLOR_PAIR(color));
+			mvaddch(y + m_yOrig, x + m_xOrig, c);
+			if (color != BLACK && m_has_colors) attroff(COLOR_PAIR(color));
+		}
+		else {
+			at(x, y, iter->second, chrAttr, color);
+		}
 	}
 
 	/**
@@ -124,6 +128,18 @@ public:
 		if (color != BLACK && m_has_colors) attroff(COLOR_PAIR(color));
 		if (m_select.inside(x, y)) attroff(A_REVERSE);
 		if (chrAttr != NONE) attroff(attribute_map.at(chrAttr));
+	}
+
+	/**
+	 * Draw a c-string at x,y with black color.
+	 * @param x0 Horizontal origin of line.
+	 * @param y0 Vertical origin of line.
+	 * @param s  C-String to be drawn at x0,y0.
+	 * @param chrAttr Attribute of character.
+	 * @param color Color of line.
+	 */
+	void at(int x, int y, const char* s) {
+		at(x, y, string(s), NONE);
 	}
 
 	/**
@@ -237,6 +253,8 @@ private:
 
 	static const map<Attributes, int> attribute_map;
 
+	static const map<char, string> char_map;
+
 	/**
 	 * Draw a character at x,y.
 	 * @param x0 Horizontal origin of line.
@@ -259,21 +277,30 @@ const map<Graphics::Attributes, int> CursesGraphics::attribute_map = {
 	{ Graphics::Attributes::BOLD_ITALIC, A_ITALIC|A_BOLD }
 };
 
+const map<char, string> CursesGraphics::char_map = {
+	{ 'A', "\u03b1" }, { 'B', "\u03b2" }, { 'C', "\u03c8" }, { 'D', "\u03b4" }, 
+	{ 'E', "\u03b5" }, { 'F', "\u03c6" }, { 'G', "\u03b3" }, { 'H', "\u03b7" }, 
+	{ 'I', "\u03b9" }, { 'J', "\u03be" }, { 'K', "\u03ba" }, { 'L', "\u03bb" }, 
+	{ 'M', "\u03bc" }, { 'N', "\u03bd" }, { 'O', "\u03bf" }, { 'P', "\u03c0" }, 
+	{ 'Q', "\u03d9" }, { 'R', "\u03c1" }, { 'S', "\u03c3" }, { 'T', "\u03c4" }, 
+	{ 'U', "\u03b8" }, { 'V', "\u03c9" }, { 'W', "\u03c2" }, { 'X', "\u03c7" }, 
+	{ 'Y', "\u03c5" }, { 'Z', "\u03b6" }
+};
+
 void CursesGraphics::parenthesis(int x_size, int y_size, int x0, int y0)
 {
 	if (y_size == 1) {
-		at(x0, y0, '[');
-		at(x0 + x_size - 1, y0, ']');
+		at(x0, y0, '(');
+		at(x0 + x_size - 1, y0, ')');
 	}
 	else {
-		at(x0, y0 - 1, ins(x0, y0 - 1) == ACS_HLINE ? ACS_TTEE : ACS_ULCORNER);
-		at(x0, y0 + y_size, ins(x0, y0 + y_size) == ACS_HLINE ? ACS_BTEE : ACS_LLCORNER);
-		at(x0 + x_size - 1, y0 - 1, ins(x0 + x_size - 1, y0 - 1) == ACS_HLINE ? ACS_TTEE : ACS_URCORNER);
-		at(x0 + x_size - 1, y0 + y_size, ins(x0 + x_size - 1, y0 + y_size) == ACS_HLINE ? ACS_BTEE : ACS_LRCORNER);
-
-		for (int y = 0; y < y_size; ++y) {
-			at(x0, y + y0, ACS_VLINE);
-			at(x0 + x_size - 1, y + y0, ACS_VLINE);
+		at(x0, y0, "\u239b");
+		at(x0, y0 + y_size - 1, "\u239d");
+		at(x0 + x_size - 1, y0, "\u239e");
+		at(x0 + x_size - 1, y0 + y_size - 1, "\u23a0");
+		for (int y = 1; y < y_size - 1; ++y) {
+			at(x0, y + y0, "\u239c");
+			at(x0 + x_size - 1, y + y0, "\u239f");
 			
 		}
 	}
@@ -309,7 +336,7 @@ int main(int argc, char* argv[])
 	CursesGraphics& gc = CursesGraphics::getInstance();
 	EqnUndoList eqns;
 	eqns.save(eqn);
-
+	
 	bool fRunning = true;
 	bool fChanged = true;
 	Node* start_select = nullptr;

@@ -15,7 +15,7 @@ unit:
 	cd unit_tests; make all
 
 milo_ncurses: milo_ncurses.o $(OBJECTS)
-	g++ $(OBJECTS) milo_ncurses.o -o milo_ncurses -lncurses
+	g++ $(OBJECTS) milo_ncurses.o -o milo_ncurses -lncursesw
 
 milo_ncurses.o: milo_ncurses.cpp milo.h
 	g++ $(ARGS) milo_ncurses.cpp -c

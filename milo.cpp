@@ -655,8 +655,10 @@ void Input::calcOrig(Graphics&, int x, int y)
 
 void Input::drawNode(Graphics& gc) const
 {
-	gc.at(m_internal.x0(), m_internal.y0(), m_typed, Graphics::Attributes::ITALIC);
-	gc.at(m_internal.x0() + m_typed.length(), m_internal.y0(), '?', Graphics::Attributes::BOLD); 
+	for (size_t i = 0; i < m_typed.length(); ++i) {
+		gc.at(m_internal.x0() + i, m_internal.y0(), m_typed.at(i), Graphics::Attributes::ITALIC);
+	}
+	gc.at(m_internal.x0() + m_typed.length(), m_internal.y0(), '?', Graphics::Attributes::BOLD_ITALIC); 
 }
 
 string Input::toString() const
