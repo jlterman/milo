@@ -344,6 +344,8 @@ int main(int argc, char* argv[])
 	while (fRunning) {
 		if (fChanged) {
 			eqns.save(eqn);
+			delete eqn;
+			eqn = eqns.top();
 			eqn->draw(gc);
 			gc.out();
 			fChanged = false;
@@ -386,13 +388,14 @@ int main(int argc, char* argv[])
 			}
 		    case KEY_MOUSE: {
 				MEVENT event;
+				bool fRedraw = false;
 				if (getmouse(&event) == OK) {
 					if (event.bstate & BUTTON1_PRESSED) {
 						start_select = eqn->findNode(gc, event.x, event.y);
 						start_mouse_x = event.x; start_mouse_y = event.y;
 						if (start_select == nullptr) break;
 						eqn->setSelect(start_select);
-						fChanged = true;
+						fRedraw = true;
 					}
 					else if (event.bstate & BUTTON1_RELEASED) {
 						start_mouse_x = start_mouse_y = ERR;
@@ -411,14 +414,18 @@ int main(int argc, char* argv[])
 							Node* new_select = eqn->findNode(gc, box);
 							if (new_select != nullptr && new_select->getDepth() < start_select->getDepth()) start_select = new_select;
 							eqn->selectBox(gc, start_select, box);
-							fChanged = true;
+							fRedraw = true;
 						}
 						else if (start_select == nullptr && box.area() > 0) {
 							start_select = eqn->findNode(gc, box);
 							eqn->setSelect(start_select);
-							fChanged = true;
+							fRedraw = true;
 						}
 					}
+				}
+				if (fRedraw) {
+					eqn->draw(gc);
+					gc.out();
 				}
 				break;
 			}
