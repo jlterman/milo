@@ -14,6 +14,9 @@ release: exe
 unit: 
 	cd unit_tests; make all
 
+xterm:
+	tic -x xterm-milo.nic
+
 milo_ncurses: milo_ncurses.o $(OBJECTS)
 	g++ $(OBJECTS) milo_ncurses.o -o milo_ncurses -lncursesw
 

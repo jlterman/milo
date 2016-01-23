@@ -14,7 +14,9 @@ public:
 	//@{
 	CursesGraphics() { 
 		if (!init) {
-			setlocale(LC_ALL,""); initscr(); raw(); noecho();
+			setenv("TERM", "xterm-milo", true);
+			setlocale(LC_ALL,"");
+			initscr(); raw(); noecho();
 #ifndef DEBUG
 			curs_set(0);
 #endif
