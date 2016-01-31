@@ -89,7 +89,7 @@ public:
 	 * @param neg True if negative sign.
 	 * @param s   Selection state.
 	 */
-    Input(Equation& eqn, std::string txt = std::string(), bool current = false, Node* parent = nullptr,
+    Input(Equation& eqn, std::string txt = std::string(), bool current = true, Node* parent = nullptr,
 		  bool neg = false, Node::Select s = Node::Select::NONE);
 
 	/**
@@ -130,6 +130,74 @@ public:
 	std::type_index getType() const { return type; }
 	//@}
 
+	/** @name Helper Public Member functions */
+	//@{
+	/**
+	 * Check if input buffer is empty.
+	 * @return True if input buffer is empty
+	 */
+	bool empty() const { return m_typed.empty(); }
+
+	/**
+	 * Add charactor to end of input buffer.
+	 * @param ch Character to add to end of buffer.
+	 */
+	void add(char ch) { m_typed += std::string(1, ch); }
+
+	/**
+	 * Add string to end of input buffer.
+	 * @param s String to add to end of buffer.
+	 */
+	void add(const std::string& s) { m_typed += s; }
+	
+	/**
+	 * Remove character from end of input buffer.
+	 */
+	void remove() { m_typed.erase(m_typed.end() - 1); }
+
+	/**
+	 * Clear input buffer.
+	 */
+	void clear() { m_typed.clear(); }
+	
+	/**
+	 * Get input buffer.
+	 * @return Reference to input buffer.
+	 */
+	const std::string& getBuffer() { return m_typed; }
+
+	/**
+	 * Check if serial number matches this node.
+	 * @param sn Serial number to check.
+	 * @return True if serial number matches.
+	 */
+	bool checkSN(int sn) { return m_sn == sn; }
+	/**
+	 * Get state of this node being the active input.
+	 * @return If true, this is the current input.
+	 */
+	bool getCurrent() { return m_current; }
+
+	/**
+	 * Set state of this node being the active input.
+	 * @param current True, if current active input.
+	 */
+	void setCurrent(bool current) { m_current = current; }
+
+	/**
+	 * Make this node the current input.
+	 */
+	void makeCurrent() { m_eqn.setCurrentInput(m_sn); }
+
+	/**
+	 * Parse and empty the conents of the input buffer.
+	 * Parse the contents of the buffer and insert them before the Input object.
+	 * Clear the contents of the buffer and return iterator to new position of Input object.
+	 * @return Iterator to current position of this object.
+	 */
+	FactorIterator emptyBuffer();
+	//@}
+	
 	/**
 	 * Static helper function to parse Input class.
 	 * Parser class object should be pointing to a string
@@ -142,8 +210,6 @@ public:
 
 	static const std::string name;     ///< Name of Input class.
 	static const std::type_index type; ///< Type of Input class.
-
-	friend class Equation;
 private:
 	int m_sn;            ///< Unique serial number of Input class.
 	std::string m_typed; ///< Stored type characters from keyboard.
@@ -186,12 +252,6 @@ private:
 	 */
 	void xml_out(XML::Stream& xml) const;
 	//@}
-	
-	/**
-	 * Set state of this node being the active input.
-	 * @param current True, if current active input.
-	 */
-	void setCurrent(bool current) { m_current = current; }
 
 	static int input_sn; ///< Serial number of last created Input node.
 };
@@ -988,7 +1048,7 @@ public:
 	 * @param parent Parent expresion.
 	 */
     Term(NodeVector& f, Expression* parent) : Node((Node*) parent) { factors.swap(f); }
-
+	
  	/**
 	 * Constructor for Term class.
 	 * @param node Initialize node vector with this node.
@@ -1161,7 +1221,6 @@ public:
 	 */
 	void multiply(Term* old_term);
 
-	friend class Equation;
 	friend class FactorIterator;
 private:
 	NodeVector factors; ///< Term owns this tree
@@ -1398,7 +1457,7 @@ public:
 	 * @param parent Parent expression.
 	 * @return Created Term object.
 	 */
-	static Term* getTerm(Equation& eqn, std::string text, Expression* parent = nullptr);
+	static Term* getTerm(Equation& eqn, const std::string& text, Expression* parent = nullptr);
 
 	/**
 	 * Helper static function to parse term.
@@ -1429,9 +1488,7 @@ public:
 	 */
 	void add(Expression* old_expr);
 
-	friend class Equation;
 	friend class FactorIterator;
-
 private:
 	TermVector terms; ///< Expression owns this tree a list of terms.
 	Box m_internal;   ///< Bounding box of this node.

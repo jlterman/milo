@@ -48,7 +48,7 @@ public:
 	 * @param expr String containing equation.
 	 * @param eqn  Equation object container for node tree.
 	 */
-	Parser(string expr, Equation& eqn) : m_expr(expr), m_eqn(eqn), m_pos(0) {}
+	Parser(const string& expr, Equation& eqn) : m_expr(expr), m_eqn(eqn), m_pos(0) {}
 
 	/**
 	 * Get the next character to be parsed without advancing.
@@ -289,7 +289,7 @@ const map<string, EqnXMLParser::createPtr> EqnXMLParser::create_factors =
 	  {        Power::name, create<Power>        },
 	};
 
-Term* Expression::getTerm(Equation& eqn, std::string text, Expression* parent)
+Term* Expression::getTerm(Equation& eqn, const std::string& text, Expression* parent)
 {
 	Parser p(text, eqn);
 	return getTerm(p, parent);
@@ -403,18 +403,19 @@ void Expression::xml_out(XML::Stream& xml) const
 	xml << XML::FOOTER;
 }
 
-Equation::Equation(std::string eq)
+Equation::Equation(string eq)
 { 
 	Parser p(eq, *this); 
 	m_root = new Expression(p);
 	m_root->setDrawParenthesis(false);
 }
 
-void Equation::factor(string text, NodeVector& factors, Node* parent)
+void Equation::insert(FactorIterator& it, const string& text)
 {
 	Parser p(text, *this);
 	while (p.peek()) {
-		factors.push_back(Term::parse(p, parent));
+		it.insert(Term::parse(p, nullptr));
+		++it;
 	}	
 }
 

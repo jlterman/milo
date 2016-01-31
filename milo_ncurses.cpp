@@ -348,8 +348,7 @@ int main(int argc, char* argv[])
 			eqns.save(eqn);
 			delete eqn;
 			eqn = eqns.top();
-			eqn->draw(gc);
-			gc.out();
+			eqn->draw(gc, true);
 			fChanged = false;
 		}
 
@@ -385,23 +384,27 @@ int main(int argc, char* argv[])
 					delete eqn;
 					eqn = undo_eqn;
 					LOG_TRACE_MSG("undo to " + eqn->toString());
+					eqn->draw(gc, true);
 				}
 				break;
 			}
 		    case KEY_MOUSE: {
 				MEVENT event;
-				bool fRedraw = false;
 				if (getmouse(&event) == OK) {
 					if (event.bstate & BUTTON1_PRESSED) {
 						start_select = eqn->findNode(gc, event.x, event.y);
 						start_mouse_x = event.x; start_mouse_y = event.y;
 						if (start_select == nullptr) break;
 						eqn->setSelect(start_select);
-						fRedraw = true;
+						eqn->draw(gc, true);
 					}
 					else if (event.bstate & BUTTON1_RELEASED) {
 						start_mouse_x = start_mouse_y = ERR;
+						if (start_select->getSelect() == Node::Select::ALL) {
+							eqn->selectNodeOrInput(start_select);
+						}
 						start_select = nullptr;
+						fChanged = true;
 					}
 					else if (event.bstate & REPORT_MOUSE_POSITION) {
 						Box box = { 0, 0, 0, 0 };
@@ -416,18 +419,14 @@ int main(int argc, char* argv[])
 							Node* new_select = eqn->findNode(gc, box);
 							if (new_select != nullptr && new_select->getDepth() < start_select->getDepth()) start_select = new_select;
 							eqn->selectBox(gc, start_select, box);
-							fRedraw = true;
+							eqn->draw(gc, true);
 						}
 						else if (start_select == nullptr && box.area() > 0) {
 							start_select = eqn->findNode(gc, box);
 							eqn->setSelect(start_select);
-							fRedraw = true;
+							eqn->draw(gc, true);
 						}
 					}
-				}
-				if (fRedraw) {
-					eqn->draw(gc);
-					gc.out();
 				}
 				break;
 			}

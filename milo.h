@@ -122,7 +122,7 @@ inline void mergeVectors(std::vector<T>& a, std::vector<T>& b)
 template <class T>
 inline void eraseElement(std::vector<T>& v, int index)
 {
-	v.erase((index < 0 ? v.end() : v.begin()) + index);
+	v.erase((index < 0 ? v.end() - 1 : v.begin()) + index);
 }
 
 /**
@@ -1031,6 +1031,34 @@ public:
 	 */
 	bool operator!=(const FactorIterator& rhs) { return m_node != rhs.m_node; }
 
+	/** 
+	 * Overloaded greater operator.
+	 * @param rhs Node to be compared
+	 * @return True if rhs if after this node in same expression.
+	 */
+	bool operator>(const FactorIterator& rhs);
+
+	/** 
+	 * Overloaded greater or equal operator.
+	 * @param rhs Node to be compared
+	 * @return True if rhs if after this node in same expression.
+	 */
+	bool operator>=(const FactorIterator& rhs);
+
+	/** 
+	 * Overloaded lesser operator.
+	 * @param rhs Node to be compared
+	 * @return True if rhs if after this node in same expression.
+	 */
+	bool operator<(const FactorIterator& rhs);
+
+	/** 
+	 * Overloaded lesser or equal operator.
+	 * @param rhs Node to be compared
+	 * @return True if rhs if after this node in same expression.
+	 */
+	bool operator<=(const FactorIterator& rhs);
+	
 	/**
 	 * Overloaded postfix increment operator.
 	 * @return NodeIterator object pointing to next factor.
@@ -1060,19 +1088,77 @@ public:
 	FactorIterator operator--(int) { FactorIterator tmp(*this); prev(); return tmp; }
 	//@}
 
-	/** @name Overloaded Operators */
+	/** @name Helper Member Functions */
 	//@{	
 	/**
 	 * Erase factor pointed to by iterator. 
 	 * Erase current node leaving iterator pointing to next factor.
+	 * @param free If true, delete erased node.
 	 */
-	void erase();
+	void erase(bool free = true);
 
 	/**
-	 * Insert node after factor pointed to by this iterator.
+	 * Erase all nodes to given iterator.
+	 * Starting with this iterators node to node pointed to by given iterator is erased.
+	 * Iterator will be left pointing to next iterator.
+	 * @param end Final node to be erased.
+	 */
+	void erase(const FactorIterator& end, bool free = true);
+
+	/**
+	 * Merge term pointed to by this iterator with next term if it exists.
+	 */
+	void mergeNextTerm();
+
+	/**
+	 * Split current term at factor pointed to by this iterator.
+	 * @param fNeg If true, term is negative.
+	 * @return New term split from old one.
+	 */
+	Term* splitTerm(bool fNeg = false);
+	
+	/**
+	 * Replace the parent term of factor pointed to by iterator with new term.
+	 * @param term Term to replace factor's parent term pointed to by iterator.
+	 * @param free If true, delete erased term.
+	 */
+	void replace(Term* node, bool free = true);
+	
+	/**
+	 * Replace factor pointed to by iterator with node.
+	 * @param node Node to replace factor pointed to by iterator.
+	 * @param free If true, delete erased node.
+	 */
+	void replace(Node* node, bool free = true);
+
+	/**
+	 * Insert node before factor pointed to by this iterator.
+	 * After insertion this iterator will point to new node. 
 	 * @param node Factor to be inserted.
 	 */
 	void insert(Node* node);
+
+	/**
+	 * Insert node after factor pointed to by this iterator.
+	 * After insertion this iterator will point to new node. 
+	 * If iterator is end, exception thrown.
+	 * @param node Factor to be inserted.
+	 */
+	void insertAfter(Node* node);
+
+	/**
+	 * Insert term before the parent term of the current factor.
+	 * @param node Term to be inserted.
+	 * @param sign Sign of term.
+	 */
+	void insert(Term* node, bool sign = true);
+
+	/**
+	 * Insert term after the parent term of the current factor.
+	 * @param term Term to be inserted.
+	 * @param sign Sign of term.
+	 */
+	void insertAfter(Term* term, bool sign = true);
 
 	/**
 	 * Check if current factor is first in its grandparent expresion.
@@ -1117,8 +1203,8 @@ public:
 	 */
 	FactorIterator getLast() { FactorIterator tmp(*this); tmp.getNode(-1, -1); return tmp; }
 	//@}
-	
-	friend class Equation;
+
+	static void swap(FactorIterator& a, FactorIterator& b);
 };
 
 /**
@@ -1190,8 +1276,9 @@ public:
 	/**
 	 * Draw equation in given graphic context.
 	 * @param gc Grahics context.
+	 * @param fRefresh If true, complete all drawing to graphics context.
 	 */
-	void draw(Graphics& gc);
+	void draw(Graphics& gc, bool fRefresh = false);
 
 	/**
 	 * Get equation object that is copy of this equation object.
@@ -1259,6 +1346,12 @@ public:
 	void setSelect(Node* start, Node* end = nullptr);
 
 	/**
+	 * Either select single node or if Input node make current input.
+	 * @param node Node to be selected or input to be activated.
+	 */
+	void selectNodeOrInput(Node* node);
+	
+	/**
 	 * Set selection of this equation from selection state of node.
 	 * If node has selection set to start, set as start of selection.
 	 * If node has selection set to end, set as end of selection.
@@ -1324,18 +1417,12 @@ public:
 	NodeIterator last()  { return NodeIterator(m_root->last()); }
 
 	/**
-	 * Process string into subequation and insert after node pointed to by FactorIterator.
-	 * @param it   Position of insertion.
-	 * @param text String containing equation, i.e. '(a+b)/c'.
+	 * Use iterator to insert factors from parsed string.
+	 * @param[in,out] it Iterator to position to insert factors. 
+                         On exit points to factor after last factor inserted.
+	 * @param text String to get parsed factors.
 	 */
-	FactorIterator insert(FactorIterator it, std::string text);
-
-	/**
-	 * Erase node pointed to by iterator.
-	 * @param it   Iterator pointing to node.
-	 * @param free If true, free memory for deleted node.
-	 */
-	FactorIterator erase(FactorIterator it, bool free = true);
+	void insert(FactorIterator& it, const std::string& text);
 
 private:
 	Node* m_root = nullptr;        ///< Equation owns this tree.
@@ -1349,7 +1436,7 @@ private:
 	 * @return Current input node.
 	 */
 	Input* getCurrentInput() { 
-		return (m_inputs.empty()) ? nullptr : m_inputs[m_input_index];
+		return (m_inputs.empty() || m_input_index < 0) ? nullptr : m_inputs[m_input_index];
 	}
 
 	/**
@@ -1391,49 +1478,6 @@ private:
 	 * @param node Node to replace current selection.
 	 */
 	void eraseSelection(Node* node);
-
-	/**
-	 * Helper static function that inserts node after iterator position.
-	 * @param it   Iterator position for insert.
-	 * @param node Node to be inserted.
-	 */
-	static FactorIterator insert(FactorIterator it, Node* node);
-
-	/**
-	 * Helper static fucntion that inserts term after the parent term pointed to by FactorIterator.
-	 * @param it   Iterator position for insert.
-	 * @param term Term to be inserted.
-	 * @param sign Sign of term.
-	 */
-	static FactorIterator insert(FactorIterator it, Term* term, bool sign = true);
-
-	/**
-	 * Erase node behind the iterator position.
-	 * @param it   Iterator position for insert.
-	 */
-	FactorIterator back_erase(FactorIterator it);
-
-	/**
-	 * Erase node ahead the iterator position.
-	 * @param it   Iterator position for insert.
-	 */
-	FactorIterator forward_erase(FactorIterator it);
-
-	/**
-	 * Replace node pointed to by iterator.
-	 * @param it   Iterator pointing to node to be deleted.
-	 * @param node Node to replace deleted node.
-	 * @param free If true, free memory for deleted node.
-	 */
-	static void replace(FactorIterator it, Node* node, bool free = true);
-
-	/**
-	 * Replace node pointed to by iterator.
-	 * @param it   Iterator pointing to term to be deleted (current node's parent).
-	 * @param term Term to replace deleted term
-	 * @param free If true, free memory for deleted term.
-	 */
-	static void replace(FactorIterator it, Term* term, bool free = true);
 };
 
 /**
