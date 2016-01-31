@@ -686,6 +686,56 @@ FactorIterator Input::emptyBuffer()
 	return pos;
 }
 
+bool Divide::create(Equation& eqn)
+{
+	Input* in = eqn.getCurrentInput();
+	if (in == nullptr) return false;
+	
+	FactorIterator in_pos(in);
+	auto pos = in_pos;
+	bool fNeg = !in->getParent()->getSign();
+	if (fNeg) in->getParent()->negative();
+	Term* upper_term = dynamic_cast<Term*>(in->getParent());
+	
+	in_pos = in->emptyBuffer();
+	if (in_pos.isBeginTerm() && in->empty()) {
+		in_pos.insert(new Input(eqn));
+		++in_pos;
+		in->makeCurrent();
+	}
+	Term* lower_term = in_pos.splitTerm();
+	Expression* upper = new Expression(upper_term);
+	Expression* lower = new Expression(lower_term);
+	
+	Divide* d = new Divide(upper, lower, nullptr);
+	Term* divide_term = new Term(d, nullptr, fNeg);
+	pos.replace(divide_term, false);
+	return true;
+}
+
+bool Power::create(Equation& eqn)
+{
+	Input* in = eqn.getCurrentInput();
+	if (in == nullptr) return false;
+	
+	FactorIterator in_pos(in);
+	Node* a_factor = nullptr;
+	Expression* a = nullptr;
+	if (!in->empty()) {
+		in_pos = eqn.disableCurrentInput();
+		a_factor = *in_pos;
+	}
+	else {
+		a_factor = in;
+	}
+	a = new Expression(a_factor);
+	
+	Expression* b = new Expression(new Input(eqn));
+	Power* p = new Power(a, b, in->getParent());
+	in_pos.replace(p, false);
+	return true;
+}
+
 void Equation::eraseSelection(Node* node)
 {
 	Node* start = m_selectStart;
@@ -832,7 +882,7 @@ bool Equation::handleChar(int ch)
 			}
 		    case 10:
 	        case 13: {
-				if (getCurrentInput()->getParent()->numFactors() == 0) return false;
+				if (getCurrentInput()->unremovable()) return false;
 				disableCurrentInput();
 				nextInput();
 				break;
@@ -864,7 +914,7 @@ bool Equation::handleChar(int ch)
 				in_pos = in->emptyBuffer();
 				FactorIterator prev{in_pos};
 				--prev;
-				if (in_pos->getParent()->numFactors() == 0) {
+				if (in->unremovable()) {
 					disableCurrentInput();
 					setSelect(*prev);
 				} else
@@ -877,7 +927,7 @@ bool Equation::handleChar(int ch)
 				in_pos = in->emptyBuffer();
 				FactorIterator nxt{in_pos};
 				++nxt;
-				if (in_pos->getParent()->numFactors() == 0) {
+				if (in->unremovable()) {
 					disableCurrentInput();
 					setSelect(*nxt);
 				} else
@@ -917,41 +967,11 @@ bool Equation::handleChar(int ch)
 				break;
 			}
 	        case '/': {
-				auto pos = in_pos;
-				bool fNeg = !in->getParent()->getSign();
-				if (fNeg) in->getParent()->negative();
-				Term* upper_term = dynamic_cast<Term*>(in->getParent());
-			   
-				in_pos = in->emptyBuffer();
-				if (in_pos.isBeginTerm() && in->empty()) {
-					in_pos.insert(new Input(*this));
-					++in_pos;
-					in->makeCurrent();
-				}
-				Term* lower_term = in_pos.splitTerm();
-				Expression* upper = new Expression(upper_term);
-				Expression* lower = new Expression(lower_term);
-				
-				Divide* d = new Divide(upper, lower, nullptr);
-				Term* divide_term = new Term(d, nullptr, fNeg);
-				pos.replace(divide_term, false);
+				fResult = Divide::create(*this);
 				break;
 			}
 	        case '^': {
-				Node* a_factor = nullptr;
-				Expression* a = nullptr;
-				if (!in->empty()) {
-					in_pos = disableCurrentInput();
-					a_factor = *in_pos;
-				}
-				else {
-					a_factor = in;
-				}
-				a = new Expression(a_factor);
-
-				Expression* b = new Expression(new Input(*this));
-				Power* p = new Power(a, b, in->getParent());
-				in_pos.replace(p, false);
+				fResult = Power::create(*this);
 				break;
 			}
 	        case '(': {
@@ -1004,7 +1024,7 @@ void Equation::nextInput()
 	if (m_input_index < 0) {
 		m_input_index = 0;
 	}
-	else if (m_inputs[m_input_index]->getParent()->numFactors() == 0) {
+	else if (m_inputs[m_input_index]->unremovable()) {
 		m_inputs[m_input_index]->setCurrent(false);
 		m_input_index = (m_input_index + 1)%m_inputs.size();
 	}
@@ -1020,7 +1040,7 @@ FactorIterator Equation::disableCurrentInput()
 	if (m_input_index < 0) throw logic_error("no current input to disable");
 
 	Input* in = m_inputs[m_input_index];
-	if (in->getParent()->numFactors() == 0) {
+	if (in->unremovable()) {
 		in->setCurrent(false);
 		m_input_index = -1;
 		return FactorIterator(in);

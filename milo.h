@@ -1318,6 +1318,24 @@ public:
 	void removeInput(Input* in);
 
 	/**
+	 * Get current input node.
+	 * @return Current input node.
+	 */
+	Input* getCurrentInput() { 
+		return (m_inputs.empty() || m_input_index < 0) ? nullptr : m_inputs[m_input_index];
+	}
+
+	/**
+	 * Get next input in list after current input node.
+	 */
+	void nextInput();
+
+	/**
+	 * Remove current input node.
+	 */
+	FactorIterator disableCurrentInput();
+
+	/**
 	 * Process character as a command.
 	 * @return True if character is valid.
 	 */
@@ -1430,24 +1448,6 @@ private:
 	int m_input_index = -1;        ///< Index of current input.
 	Node* m_selectStart = nullptr; ///< Node at start of selection.
 	Node* m_selectEnd = nullptr;   ///< Node at end of selection.
-
-	/**
-	 * Get current input node.
-	 * @return Current input node.
-	 */
-	Input* getCurrentInput() { 
-		return (m_inputs.empty() || m_input_index < 0) ? nullptr : m_inputs[m_input_index];
-	}
-
-	/**
-	 * Get next input in list after current input node.
-	 */
-	void nextInput();
-
-	/**
-	 * Remove current input node.
-	 */
-	FactorIterator disableCurrentInput();
 
 	/**
 	 * Draw current selection in graphics context.

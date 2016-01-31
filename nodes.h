@@ -196,6 +196,14 @@ public:
 	 * @return Iterator to current position of this object.
 	 */
 	FactorIterator emptyBuffer();
+
+	/**
+	 * Determine if input is to be removed when deactivated.
+	 * Input nodes that are empy and the only factor in their term 
+	 * should not be removed when deactivated. All others are.
+	 * @return True if input node should be removed when deactivated.
+	 */
+	bool unremovable() { return getParent()->numFactors() == 0; }
 	//@}
 	
 	/**
@@ -465,6 +473,14 @@ public:
 	 */
 	bool simplify();
 	//@}
+
+	/**
+	 * Static helper function to create new Divide node object.
+	 * Create a new divide node object at the eqn's current input.
+	 * @param eqn Equation to create new divide object.
+	 * @return bool True, if divide object created.
+	 */
+	static bool create(Equation& eqn);
 	
 	static const std::string name;     ///< Name of Divide class.
 	static const std::type_index type; ///< Type of Divide class.
@@ -568,6 +584,15 @@ public:
 	 * @return True, if subtree was changed.
 	 */
 	bool simplify();
+	//@}
+
+	/**
+	 * Static helper function to create new Power node object.
+	 * Create a new power node object at the eqn's current input.
+	 * @param eqn Equation to create new power object.
+	 * @return bool True, if power object created.
+	 */
+	static bool create(Equation& eqn);
 
 	/**
 	 * Static helper function for simplifying Power expressions.
@@ -575,7 +600,6 @@ public:
 	 * @return True, if node vector was changed.
 	 */
 	static bool simplify(NodeVector& factors);
-	//@}
 	
 	static const std::string name;     ///< Name of Power class.
 	static const std::type_index type; ///< Type of Power class.
