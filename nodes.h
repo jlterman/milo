@@ -1,7 +1,7 @@
 #ifndef __NODES_H
 #define __NODES_H
 
-/* Copyright (C) 2015 - James Terman
+/* Copyright (C) 2016 - James Terman
  *
  * milo is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public

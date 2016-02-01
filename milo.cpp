@@ -18,9 +18,7 @@
 /**
  * @file milo.cpp
  * This file contains the implementation of member functions of classes 
- * Equation, FactorIterator as well as the classes Term and Expression 
- * derived from Node not involved in construction from a parser, or 
- * symbolic maninpulation. Mostly it is support for the GUI.
+ * Equation, Node, FactorIterator and NodeIterator.
  */
 
 #include <iostream>
