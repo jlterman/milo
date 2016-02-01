@@ -1,4 +1,4 @@
-OBJECTS = parser.o milo.o symbol.o xml.o
+OBJECTS = parser.o nodes.o milo.o symbol.o xml.o
 CPPARGS = -std=c++11 -Wall -Wextra -Werror -Wpedantic
 
 all: debug
@@ -32,7 +32,10 @@ milo_test.o: milo_test.cpp milo.h
 parser.o: parser.cpp milo.h nodes.h
 	g++ $(ARGS) parser.cpp -c
 
-milo.o: milo_key.h milo.cpp milo.h nodes.h
+nodes.o: nodes.cpp milo.h nodes.h
+	g++ $(ARGS) nodes.cpp -c
+
+milo.o: milo_key.h milo.cpp milo.h
 	g++ $(ARGS) milo.cpp -c
 
 symbol.o: symbol.cpp milo.h nodes.h
