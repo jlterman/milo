@@ -1,4 +1,4 @@
-OBJECTS = parser.o nodes.o milo.o symbol.o xml.o
+OBJECTS = parser.o nodes.o milo.o ui.o symbol.o xml.o
 CPPARGS = -std=c++11 -Wall -Wextra -Werror -Wpedantic
 
 all: debug
@@ -29,23 +29,23 @@ milo_test: milo_test.o $(OBJECTS)
 milo_test.o: milo_test.cpp milo.h
 	g++ $(ARGS) milo_test.cpp -c
 
-parser.o: parser.cpp milo.h nodes.h
+parser.o: parser.cpp milo.h util.h nodes.h
 	g++ $(ARGS) parser.cpp -c
 
-nodes.o: nodes.cpp milo.h nodes.h
+nodes.o: nodes.cpp milo.h util.h nodes.h
 	g++ $(ARGS) nodes.cpp -c
 
-milo.o: milo_key.h milo.cpp milo.h
+milo.o: milo.cpp milo.h util.h
 	g++ $(ARGS) milo.cpp -c
 
-symbol.o: symbol.cpp milo.h nodes.h
+symbol.o: symbol.cpp milo.h util.h nodes.h
 	g++ $(ARGS) symbol.cpp -c
 
-xml.o: xml.cpp xml.h
+xml.o: xml.cpp xml.h util.h
 	g++ $(ARGS) xml.cpp -c
 
-milo_key.h: genkey.sh
-	sh genkey.sh
+ui.o: ui.cpp ui.h milo.h util.h
+	g++ $(ARGS) ui.cpp -c
 
 test: test.o
 	g++ test.o -o test
@@ -54,4 +54,4 @@ test.o: test.cpp
 	g++ $(CPPARGS) -g test.cpp -c
 
 clean:
-	rm -f test milo_test milo_ncurses milo_key.h *.o
+	rm -f test milo_test milo_ncurses *.o

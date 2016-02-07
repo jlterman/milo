@@ -24,6 +24,7 @@
 #include <vector>
 #include <map>
 #include "milo.h"
+#include "ui.h"
 
 using namespace std;
 
@@ -39,6 +40,23 @@ public:
 
 	~AsciiGraphics() { }
 	//@}
+
+	/**
+	 * Get mouse poition from Graphics context
+	 * @param[out] xMouse Horizontal coordinate of mouse
+	 * @param[out] yMouse Vertical coordinate of mouse
+	 */
+	void getMouseCoords(int&, int&) {}
+  
+	/**
+	 * Get next event.
+	 * Blocking function that returns a reference to an base class that defines
+	 * an interface to get event info.
+	 * @param xCursor horiz coord of cursor
+	 * @param yCursor vertical coord of cursor
+	 * @return Reference to Event object
+	 */
+	const UI::Event& getNextEvent(int, int, bool) { return m_keyEvent; }
 
 	/** @name Virtual Public Member Functions */
 	//@{
@@ -162,6 +180,7 @@ private:
 	vector<string> m_field;           ///< 2D text array.
 	vector< vector<Color> > m_colors; ///< 2D color array.
 	ostream& m_os;                    ///< Stream to ouput text array.
+	UI::Event m_keyEvent = 0;         ///< dummy storage
 
 	/**
 	 * Draw a string at x,y with a color.

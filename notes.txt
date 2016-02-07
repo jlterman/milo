@@ -338,3 +338,115 @@ static const map<char, string> char_map = {
 };
 
 http://stackoverflow.com/questions/29020638/which-term-to-use-to-have-both-256-colors-and-mouse-move-events-in-python-curse
+
+#include <ncurses.h>
+
+enum { NONE, PRESSED, RELEASED, CLICKED, DOUBLE_CLICKED, TRIPLE_CLICKED };
+
+const char* state_str[] = {
+	"NONE",
+	"PRESSED ",
+	"RELEASED",
+	"CLICKED ",
+	"DOUBLE  ",
+	"TRIPLE  "
+};
+
+#define b(x) (x ? 't' : 'f')
+
+int main(int argc, char *argv[])
+{
+	initscr(); clear(); raw(); noecho(); cbreak(); mousemask(ALL_MOUSE_EVENTS, NULL);
+	mouseinterval(300); keypad(stdscr, TRUE);
+
+	MEVENT event;
+	int button, state, shift, ctrl, alt;
+	unsigned int c = getch();
+	int line = 0;
+	while (c != 3) {
+		mvprintw(20, 1, "Key found: %d", c);
+		if (c == KEY_MOUSE && getmouse(&event) == OK) {
+			if (event.bstate & BUTTON1_PRESSED) {
+				button = 1; state = PRESSED;
+			}
+			else if (event.bstate & BUTTON1_RELEASED) {
+				button = 1; state = RELEASED;
+			}
+			if (event.bstate & BUTTON1_CLICKED) {
+				button = 1; state = CLICKED;
+			}
+			if (event.bstate & BUTTON1_DOUBLE_CLICKED) {
+				button = 1; state = DOUBLE_CLICKED;
+			}
+			if (event.bstate & BUTTON1_TRIPLE_CLICKED) {
+				button = 1; state = TRIPLE_CLICKED;
+			}
+			if (event.bstate & BUTTON2_PRESSED) {
+				button = 2; state = PRESSED;
+			}
+			else if (event.bstate & BUTTON2_RELEASED) {
+				button = 2; state = RELEASED;
+			}
+			if (event.bstate & BUTTON2_CLICKED) {
+				button = 2; state = CLICKED;
+			}
+			if (event.bstate & BUTTON2_DOUBLE_CLICKED) {
+				button = 2; state = DOUBLE_CLICKED;
+			}
+			if (event.bstate & BUTTON2_TRIPLE_CLICKED) {
+				button = 2; state = TRIPLE_CLICKED;
+			}
+			if (event.bstate & BUTTON3_PRESSED) {
+				button = 3; state = PRESSED;
+			}
+			else if (event.bstate & BUTTON3_RELEASED) {
+				button = 3; state = RELEASED;
+			}
+			if (event.bstate & BUTTON3_CLICKED) {
+				button = 3; state = CLICKED;
+			}
+			if (event.bstate & BUTTON3_DOUBLE_CLICKED) {
+				button = 3; state = DOUBLE_CLICKED;
+			}
+			if (event.bstate & BUTTON3_TRIPLE_CLICKED) {
+				button = 3; state = TRIPLE_CLICKED;
+			}
+			shift = event.bstate & BUTTON_SHIFT;
+			ctrl  = event.bstate & BUTTON_CTRL;
+			alt   = event.bstate & BUTTON_ALT;
+			mvprintw(line, 1, "BUTTON%d_%s SHIFT:%c CTRL:%c ALT:%c                    ",
+					 button, state_str[state], b(shift), b(ctrl), b(alt));
+			line = (line+1%20);
+		}
+		refresh();
+		move(0,0); c = getch();
+	}
+	endwin();
+	return 0;
+}
+
+           %%%
+          =====
+         &%&%%%&
+         %& < <% 
+          &\__/
+           \ |____
+          .', ,  ()
+         / -.  _)| 
+        |_(_.    |
+        '-'\  )  |
+        mrf )    |
+           /  .  ).
+          /    _. |
+        /'---':.-'|
+       (__.' /    /
+        \   ( /  /
+         \ /  _  | 
+          \  |  '|
+          | . \  |
+          |(     | 
+          |  \ \ |
+           \  )\ |
+          __)/ / \
+       --"--(_.Ooo'----
+

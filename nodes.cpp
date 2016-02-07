@@ -31,6 +31,7 @@
 
 #include "milo.h"
 #include "nodes.h"
+#include "ui.h"
 
 using namespace std;
 
