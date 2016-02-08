@@ -1,3 +1,26 @@
+/* Copyright (C) 2016 - James Terman
+ *
+ * milo is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * milo is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ */
+
+/**
+ * @file ui.cpp
+ * This file implements the milo user interface implementing user generated
+ * events.
+ */
+
 #include <fstream>
 #include <unordered_map>
 #include "ui.h"
@@ -5,22 +28,39 @@
 
 using namespace std;
 
-static bool fRunning = true;
-static Node* start_select = nullptr;
-static int start_mouse_x = -1;
-static int start_mouse_y = -1;
-static Graphics* gc = nullptr;
-static EqnUndoList eqns;
-static Equation* eqn;
+/** @name File specific global variables. */
+//@{
+static bool fRunning = true;          ///< If true, keep running main loop.
+static Node* start_select = nullptr;  ///< If not null, node is selected.
+static int start_mouse_x = -1;        ///< Horiz coord of start of mouse drag.
+static int start_mouse_y = -1;        ///< Vertical coord of start of mouse drag.
+static Graphics* gc = nullptr;        ///< Pointer to graphics context.
+static EqnUndoList eqns;              ///< Equation undo stack
+static Equation* eqn;                 ///< Pointer to current equation.
+//@}
 
+/**
+ * Function pointer to handle an event. Pointer to event passed as argument.
+ * Return true, if event changed equation.
+ */
 typedef bool (*event_handler)(const UI::Event&);
 
+/**
+ * Handle quit event.
+ * Set fRunning false to exit main loop.
+ * @return Always false.
+ */
 static bool do_quit(const UI::Event&)
 {
 	fRunning = false;
-	return true;
+	return false;
 }
 
+/**
+ * Handle save event.
+ * Save equation to file "eqn.xml".
+ * @return Always true.
+ */
 static bool do_save(const UI::Event&)
 {
 	string store;
@@ -31,6 +71,11 @@ static bool do_save(const UI::Event&)
 	return true;
 }
 
+/**
+ * Handle undo event.
+ * If non empty, pop and load an equation off the top of the undo stack.
+ * @return If true, equation was loaded from undo stack.
+ */
 static bool do_undo(const UI::Event&)
 {
 	Equation* undo_eqn = eqns.undo();
@@ -39,10 +84,16 @@ static bool do_undo(const UI::Event&)
 		eqn = undo_eqn;
 		LOG_TRACE_MSG("undo to " + eqn->toString());
 		eqn->draw(*gc, true);
+		return true;
 	}
-	return true;
+	return false;
 }
 
+/**
+ * Handle mouse press event.
+ * If node has been selected, remember it and mouse coordinates.
+ * @return Always false.
+ */
 static bool do_mouse_pressed(const UI::Event&)
 {
 	gc->getMouseCoords(start_mouse_x, start_mouse_y);
@@ -56,6 +107,12 @@ static bool do_mouse_pressed(const UI::Event&)
 	return false;
 }
 
+/**
+ * Handle mouse release event.
+ * If mouse released where it was pressed, select node.
+ * Otherwise, end mouse dragging state.
+ * @return Always true.
+ */
 static bool do_mouse_released(const UI::Event&)
 {
 	start_mouse_x = start_mouse_y = -1;
@@ -66,6 +123,11 @@ static bool do_mouse_released(const UI::Event&)
 	return true;
 }
 
+/**
+ * Handle mouse click.
+ * If mouse clicks on node select it or activate input.
+ * @return True if node selected.
+ */
 static bool do_mouse_clicked(const UI::Event&)
 {
 	int mouse_x = -1, mouse_y = -1;
@@ -78,12 +140,22 @@ static bool do_mouse_clicked(const UI::Event&)
 	return true;	
 }
 
+/**
+ * Handle mouse double click.
+ * If no node found, return false. Otherwise activate if input selected
+ * or add input before selected node.
+ * @return True, if node found.
+ */
 static bool do_mouse_double(const UI::Event&)
 {
 	int mouse_x = -1, mouse_y = -1;
 	gc->getMouseCoords(mouse_x, mouse_y);
 	Node* node = eqn->findNode(*gc, mouse_x, mouse_y);
-	if (node == nullptr) return false;
+	if (node == nullptr || node == eqn->getCurrentInput()) return false;
+	if (node->getType() == Input::type) {
+		eqn->selectNodeOrInput(node);
+		return true;
+	}				   
 	if (eqn->getCurrentInput() != nullptr) eqn->disableCurrentInput();
 	eqn->clearSelect();
 	auto it = FactorIterator(node);
@@ -91,6 +163,11 @@ static bool do_mouse_double(const UI::Event&)
 	return true;
 }
 
+/**
+ * Handle mouse position reports,
+ * Update part of equation selected by mouse dragging.
+ * @return Always false.
+ */
 static bool do_mouse_position(const UI::Event&)
 {
 	Box box = { 0, 0, 0, 0 };
@@ -118,6 +195,12 @@ static bool do_mouse_position(const UI::Event&)
 	return false;
 }
 
+/**
+ * Handle letter or number key event.
+ * Insert letter or number key into equation if there is a current input or selection.
+ * @param event Key event.
+ * @return True if key was inserted.
+ */
 static bool do_key(const UI::Event& event)
 {
 	if (eqn->getSelectStart() != nullptr) {
@@ -131,6 +214,11 @@ static bool do_key(const UI::Event& event)
 	return true;
 }
 
+/**
+ * Handle backspace key event.
+ * Erase selection if it exists, or previous factor before current input.
+ * @return True if backspace is processed.
+ */
 static bool do_backspace(const UI::Event&)
 {
 	if (eqn->getSelectStart() != nullptr) {
@@ -161,6 +249,11 @@ static bool do_backspace(const UI::Event&)
 	return true;
 }
 
+/**
+ * Handle left arrow key event.
+ * Move to node to the left of selection or current input.
+ * @return True if left arrow proccessed.
+ */
 static bool do_left(const UI::Event&)
 {
 	Input* in = eqn->getCurrentInput();
@@ -188,6 +281,11 @@ static bool do_left(const UI::Event&)
 	return true;
 }
 
+/**
+ * Handle right arrow key event.
+ * Move to node to the right of selection or current input.
+ * @return True if right arrow proccessed.
+ */
 static bool do_right(const UI::Event&)
 {
 	Input* in = eqn->getCurrentInput();
@@ -218,6 +316,12 @@ static bool do_right(const UI::Event&)
 	return true;
 }
 
+/**
+ * Handle left arrow with shift key event.
+ * Either add factor on the left to selection or 
+ * select factor to left of cursor.
+ * @return True if shift left arrow is processed.
+ */
 static bool do_shift_left(const UI::Event&)
 {
 	if (eqn->getSelectStart() != nullptr) {
@@ -242,6 +346,12 @@ static bool do_shift_left(const UI::Event&)
 	return true;
 }
 
+/**
+ * Handle right arrow with shift key event.
+ * Either add factor on the right to selection or 
+ * select factor to right of cursor.
+ * @return True if shift right arrow is processed.
+ */
 static bool do_shift_right(const UI::Event&)
 {
 	if (eqn->getSelectStart() != nullptr) {
@@ -266,6 +376,13 @@ static bool do_shift_right(const UI::Event&)
 	return true;
 }
 
+/**
+ * Handle up arrow key event.
+ * Transverse the entire equation tree to the left 
+ * of the selection or the current input. Select first
+ * node if there is no selection or input.
+ * @return Always true.
+ */
 static bool do_up(const UI::Event&)
 {
 	Input* in = eqn->getCurrentInput();
@@ -289,6 +406,13 @@ static bool do_up(const UI::Event&)
 	return true;
 }
 
+/**
+ * Handle down arrow key event.
+ * Transverse the entire equation tree to the right
+ * of the selection or the current input. Select last
+ * node if there is no selection or input.
+ * @return Always true.
+ */
 static bool do_down(const UI::Event&)
 {
 	Input* in = eqn->getCurrentInput();
@@ -313,6 +437,12 @@ static bool do_down(const UI::Event&)
 	return true;
 }
 
+/**
+ * Handle up arrow with shift key event.
+ * Select the expression to the left of the current input
+ * or add it to the existing selection.
+ * @return True if up arrow with shift is processed.
+ */
 static bool do_shift_up(const UI::Event&)
 {
 	if (eqn->getSelectStart() != nullptr) {
@@ -335,6 +465,12 @@ static bool do_shift_up(const UI::Event&)
 	return true;
 }
 
+/**
+ * Handle down arrow with shift key event.
+ * Select the expression to the right of the current input
+ * or add it to the existing selection.
+ * @return True if down arrow with shift is processed.
+ */
 static bool do_shift_down(const UI::Event&)
 {
 	if (eqn->getSelectStart() != nullptr) {
@@ -357,11 +493,18 @@ static bool do_shift_down(const UI::Event&)
 	return true;
 }
 
+/**
+ * Handle enter key event.
+ * Either disable current input or replace 
+ * current selection with a new input.
+ * @return True if enter is proccessed.
+ */
 static bool do_enter(const UI::Event&)
 {
 	Input* in = eqn->getCurrentInput();
-	if (eqn->getSelectStart() != nullptr) {
-		auto it = FactorIterator(eqn->getSelectStart());
+	Node* start = eqn->getSelectStart();
+	if (start != nullptr) {
+		auto it = FactorIterator(start);
 		eqn->clearSelect();
 		it.insert(new Input(*eqn));
 	}
@@ -370,9 +513,17 @@ static bool do_enter(const UI::Event&)
 		eqn->disableCurrentInput();
 		eqn->nextInput();
 	}
+	else
+		return false;
 	return true;
 }
 
+/**
+ * Handle +/- key event.
+ * Add a new term with a new input. New term is positive 
+ * or negative depending on whether character is +/-.
+ * @return True if input is active.
+ */
 static bool do_plus_minus(const UI::Event& event)
 {
 	Input* in = eqn->getCurrentInput();
@@ -389,6 +540,10 @@ static bool do_plus_minus(const UI::Event& event)
 	return true;
 }
 
+/**
+ * Insert divide term.
+ * @return True if successful.
+ */
 static bool do_divide(const UI::Event&)
 {
 	Input* in = eqn->getCurrentInput();
@@ -397,6 +552,10 @@ static bool do_divide(const UI::Event&)
 	return Node::createNodeByName("divide", *eqn);
 }
 
+/**
+ * Insert power factor.
+ * @return True if successfull.
+ */
 static bool do_power(const UI::Event&)
 {
 	Input* in = eqn->getCurrentInput();
@@ -405,6 +564,11 @@ static bool do_power(const UI::Event&)
 	return Node::createNodeByName("power", *eqn);
 }
 
+/**
+ * Handle left parenthesis key event.
+ * Add "(*)". Side effect will be to add any functions
+ * that matches or an expression as a new factor.
+ */
 static bool do_left_parenthesis(const UI::Event&)
 {
 	Input* in = eqn->getCurrentInput();
@@ -415,6 +579,11 @@ static bool do_left_parenthesis(const UI::Event&)
 	return true;
 }
 
+/**
+ * Handle space key event.
+ * Either select factor at input or select one level higher.
+ * @return True if successful.
+ */
 static bool do_space(const UI::Event&)
 {
 	Input* in = eqn->getCurrentInput();
@@ -460,6 +629,9 @@ static bool do_space(const UI::Event&)
 	return true;
 }
 
+/**
+ * Map of events to functions that handle these events.
+ */
 static const unordered_map<UI::Event, event_handler> event_map = {
 	{ UI::Event(UI::Mouse::RELEASED, 1), do_mouse_released },
 	{ UI::Event(UI::Mouse::PRESSED,  1), do_mouse_pressed },
@@ -577,7 +749,7 @@ void UI::doMainLoop(int argc, char* argv[], Graphics& graphicsContext)
 		
 		int xCursor = 0, yCursor = 0;
 		eqn->getCursorOrig(xCursor, yCursor);
-		const UI::Event& event = gc->getNextEvent(xCursor, yCursor, eqn->blink());
+		auto event = gc->getNextEvent(xCursor, yCursor, eqn->blink());
 		if (event_map.find(event) != event_map.end()) {
 			fChanged = event_map.at(event)(event);
 		}

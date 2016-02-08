@@ -299,10 +299,18 @@ private:
 	int m_xMouse;             ///< Last mouse horizontal coordinate
 	int m_yMouse;             ///< Last mouse vertical coordinate
 
+	/** Map Graphics attributs to ncurses attributes.
+	 */
 	static const unordered_map<Attributes, int> attribute_map;
 
+	/** 
+	 * Special characters that are mapped to special unicode characters.
+	 * Upper case characters mapped to greek letters.
+	 */
 	static const unordered_map<char, string> char_map;
 
+	/** Map ncurses key and mouse code to UI:Event equivalents.
+	 */
 	static const unordered_map<int, UI::Event> event_map;
 
 	/**

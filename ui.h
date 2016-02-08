@@ -1,13 +1,46 @@
 #ifndef __UI_H
 #define __UI_H
 
+/* Copyright (C) 2016 - James Terman
+ *
+ * milo is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * milo is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ */
+
+/** 
+ * @file ui,h
+ * This file contains the common declerations for the abstract user interface of 
+ * milo. Key, menus and mouse events are defined in a neutral way so that it can
+ * be ported.
+ */
+
 #include <unordered_map>
 #include <string>
 #include "util.h"
 
+// Forward class declerations
 class Graphics;
 
+/**
+ * User Interface for milo namespace.
+ * This is the user interface for milo for porting to paticular interfaces.
+ */
 namespace UI {
+	/**
+	 * The values under 0x80 are just the ACCII character set. Above 0x80 are 
+	 * the special keyboard keys.
+	 */
 	enum Keys {
 		NO_KEY, CTRL_A, CTRL_B, CTRL_C, CTRL_D, CTRL_E, CTRL_F, CTRL_G, CTRL_H,
 		TAB, CTRL_J, CTRL_K, CTRL_L, ENTER, CTRL_N, CTRL_O, CTRL_P, CTRL_Q,
@@ -21,35 +54,74 @@ namespace UI {
 		F1 = 0x80, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, BACK_TAB,
 		INS, DEL, HOME, END, PAGE_UP, PAGE_DOWN, UP, DOWN, LEFT, RIGHT, BSPACE
 	};
-	
+
+	/**
+	 * All possible mouse events.
+	 */
 	enum Mouse {
 		NO_MOUSE, POSITION, PRESSED, RELEASED, CLICKED, DOUBLE
 	};
 
+	/**
+	 * Modifier key states for mouse and key events.
+	 */
 	enum Modifiers {
 		NO_MOD, ALT, SHIFT, ALT_SHIFT, CTRL, CRL_ALT, CTRL_SHIFT, CLTRL_ALT_SHIFT
 	};
-	
+
+	/**
+	 * Milo UI Event.
+	 * All milo UI events are uniquely stored in this class. It is designed
+	 * to uniquely designate an event for the unordered map of events to 
+	 * function calls.
+	 */
 	class Event
 	{
 	public:
+		/**
+		 * Event type, mouse, key or menu.
+		 */
 		enum Kind { Mouse, Key };
 		
-        Event(char k) :
-		    m_kind{Key}, m_key{(Keys)k}, m_mouse{NO_MOUSE}, m_mod{NO_MOD}, m_button{0} {}
-		
-        Event(enum Keys k, enum Modifiers m = NO_MOD) :
-	        m_kind{Key}, m_key{k}, m_mouse{NO_MOUSE}, m_mod{m}, m_button{0} {}
-		
+		/** @name Constructors */
+		//@{
+		/**
+		 * Default key event constructor Event class.
+		 * Construct an event for ascii code with no modifier keys.
+		 * @param key Ascii character.
+		 */
+        Event(char key) :
+		    m_kind{Key}, m_key{(Keys)key}, m_mouse{NO_MOUSE}, m_mod{NO_MOD}, m_button{0} {}
+		/**
+		 * Key event constructor for Event class.
+		 * Construct key event for all keys and modifiers.
+		 * @param key Key code.
+		 * @param m   Modifiers for key.
+		 */
+        Event(enum Keys key, enum Modifiers m = NO_MOD) :
+	        m_kind{Key}, m_key{key}, m_mouse{NO_MOUSE}, m_mod{m}, m_button{0} {}
+
+		/**
+		 * Mouse event constructor for Event class.
+		 * Construct mouse event.
+		 * @param m Mouse event type.
+		 * @param b Mouse button number.
+		 * @param md Modifiers key for mouse event.
+		 */
 	    Event(enum Mouse m, int b, enum Modifiers md = NO_MOD) :
 	        m_kind{Mouse}, m_key{NO_KEY}, m_mouse{m}, m_mod{md}, m_button{b} {}
+		//@}
+			
+		Kind getKind() const { return m_kind; }                ///< @return Event kind.
+		enum Keys getKey() const { return m_key; }             ///< @return Key codee.
+		enum Mouse getMouse() const { return m_mouse; }        ///< @return Mouse event type.
+		enum Modifiers getModifiers() const { return m_mod; }  ///< @return Modifiers state.
+		int getButton() const { return m_button; }             ///< @return Button number.
 
-		Kind getKind() const { return m_kind; }
-		enum Keys getKey() const { return m_key; }
-		enum Mouse getMouse() const { return m_mouse; }
-		enum Modifiers getModifiers() const { return m_mod; }
-		int getButton() const { return m_button; }
-
+		/**
+		 * Calculate hash for this class object. Used by unordered map.
+		 * @return Hash value.
+		 */
 		std::size_t hash() const
 		{
 			using std::hash;
@@ -61,6 +133,10 @@ namespace UI {
 				    (hash<int>()(m_button) << 1);
 		}
 
+		/**
+		 * Equal operator override.
+		 * Used by unordered map.
+		 */
 		bool operator==(const Event e) const
 		{
 			return  e.m_kind  == m_kind &&
@@ -71,17 +147,19 @@ namespace UI {
 		}
 
 	private:
-		Kind m_kind;
-		enum Keys  m_key;
-		enum Mouse m_mouse;
-		enum Modifiers m_mod;
-		int  m_button;
+		Kind m_kind;          ///< Type of event.
+		enum Keys  m_key;     ///< Key code.
+		enum Mouse m_mouse;   ///< Mouse type.
+		enum Modifiers m_mod; ///< Modifiers state.
+		int  m_button;        ///< Mouse button number.
 	};
 
+	/**
+	 * Main Event Loop.
+	 * Call to pass control to milo's main event loop from main() function.
+	 */
 	void doMainLoop(int argc, char* argv[], Graphics& gc);
 }
-
-class Graphics;
 
 /**
  * Abstract base class to provide a context free graphical interface.
@@ -297,6 +375,9 @@ protected:
 };
 
 namespace std {
+	/**
+	 * Specialization hash for UI::Event.
+	 */
 	template<> struct hash<UI::Event>
 	{
 		size_t operator()(UI::Event const& key) const
@@ -305,6 +386,9 @@ namespace std {
 		}
 	};
 
+	/**
+	 * Specialization hash for <Graphics::Attributes.
+	 */
 	template<> struct hash<Graphics::Attributes>
 	{
 		size_t operator()(Graphics::Attributes const& a) const

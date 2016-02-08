@@ -503,6 +503,9 @@ typedef bool (*create_ptr)(Equation&);
  */
 using create_map = std::map<std::string, create_ptr>;
 
+/**
+ * Map associates class names with functions that add them to current input.
+ */
 static const create_map createNodes = {
 	{ Divide::name, &Divide::create },
 	{  Power::name, &Power::create  }
