@@ -31,7 +31,7 @@ using namespace std;
 /**
  * Class derived from ABC graphics so Equation can draw to a 2D character array.
  */
-class AsciiGraphics : public Graphics
+class AsciiGraphics : public UI::Graphics
 {
 public:
 	/** @name Constructor and Virtual Destructor */
@@ -52,8 +52,6 @@ public:
 	 * Get next event.
 	 * Blocking function that returns a reference to an base class that defines
 	 * an interface to get event info.
-	 * @param xCursor horiz coord of cursor
-	 * @param yCursor vertical coord of cursor
 	 * @return Reference to Event object
 	 */
 	const UI::Event& getNextEvent(int, int, bool) { return m_keyEvent; }
@@ -93,21 +91,18 @@ public:
 
 	/**
 	 * Get height of differential in lines of text.
-	 * @param c Variable name of differential.
 	 * @return Height of differential in lines of text.
 	 */
 	int getDifferentialHeight(char) { return 3; }
 
 	/**
 	 * Get width of differential in lines of text.
-	 * @param c Variable name of differential.
 	 * @return Width of differential in lines of text.
 	 */
 	int getDifferentialWidth(char)  { return 2; }
 
 	/**
 	 * Get vertical offset of differential.
-	 * @param c Variable name of differential.
 	 * @return Vertical offset of differential in lines of text.
 	 */
 	int getDifferentialBase(char)   { return 1; }
@@ -139,8 +134,8 @@ public:
 
 	/**
 	 * Draw a string at x,y with a color.
-	 * @param x0 Horizontal origin of line.
-	 * @param y0 Vertical origin of line.
+	 * @param x Horizontal origin of line.
+	 * @param y Vertical origin of line.
 	 * @param c  Character to be drawn at x0,y0.
 	 * @param color Color of line.
 	 */
@@ -148,8 +143,8 @@ public:
 
 	/**
 	 * Draw a string at x,y with a color.
-	 * @param x0 Horizontal origin of line.
-	 * @param y0 Vertical origin of line.
+	 * @param x Horizontal origin of line.
+	 * @param y Vertical origin of line.
 	 * @param s  String to be drawn at x0,y0.
 	 * @param color Color of line.
 	 */
@@ -165,8 +160,6 @@ public:
 	 * Set size of the text array (origin is always 0,0).
 	 * @param x Horizontal size of text array.
 	 * @param y Vertical size of text array.
-	 * @param x0 Not used.
-	 * @param y0 Not used.
 	 */
 	virtual void set(int x, int y, int, int) { 
 		Graphics::set(x, y, 0, 0);
@@ -184,9 +177,9 @@ private:
 
 	/**
 	 * Draw a string at x,y with a color.
-	 * @param x0 Horizontal origin of line.
-	 * @param y0 Vertical origin of line.
-	 * @param c  Character to be drawn at x0,y0.
+	 * @param x Horizontal origin of line.
+	 * @param y Vertical origin of line.
+	 * @param c Character to be drawn at x0,y0.
 	 */
 	void at(int x, int y, int c) { m_field[y][x] = c; m_colors[y][x] = Color::BLACK; }
 };

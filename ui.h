@@ -19,7 +19,7 @@
  */
 
 /** 
- * @file ui,h
+ * @file ui.h
  * This file contains the common declerations for the abstract user interface of 
  * milo. Key, menus and mouse events are defined in a neutral way so that it can
  * be ported.
@@ -28,9 +28,6 @@
 #include <unordered_map>
 #include <string>
 #include "util.h"
-
-// Forward class declerations
-class Graphics;
 
 /**
  * User Interface for milo namespace.
@@ -124,13 +121,13 @@ namespace UI {
 		 */
 		std::size_t hash() const
 		{
-			using std::hash;
-			
-			return   hash<int>()((int) m_kind) ^
-				   ((hash<int>()((int) m_key) << 1) >> 1) ^
-				   ((hash<int>()((int) m_mouse) << 2) >> 2) ^
-				    (hash<int>()((int) m_mod) << 2) ^
-				    (hash<int>()(m_button) << 1);
+			std::size_t seed = 0;
+			std::hash_combine<int>(seed, (int) m_kind);
+			std::hash_combine<int>(seed, (int) m_key);
+			std::hash_combine<int>(seed, (int) m_mouse);
+			std::hash_combine<int>(seed, (int) m_mod);
+			std::hash_combine<int>(seed, m_button);
+			return seed;
 		}
 
 		/**
@@ -155,226 +152,227 @@ namespace UI {
 	};
 
 	/**
+	 * Abstract base class to provide a context free graphical interface.
+	 * Provides an interface of helper functions that allow nodes to draw themselves
+	 * on the current graphical interface.
+	 */
+	class Graphics
+	{
+	public:
+		/** @name Constructor and Virtual Destructor */
+		//@{
+		/**
+		 * Default constructor.
+		 */
+		Graphics() {}
+		
+		/**
+		 * Abstract base class needs vertical destructor.
+		 */
+		virtual ~Graphics() {}
+		//@}
+		
+		/**
+		 * Predefined colors.
+		 */
+		enum Color { BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE };
+		
+		/**
+		 * Predefined character attributes.
+		 */
+		enum Attributes { NONE=0, BOLD=1, ITALIC=2, BOLD_ITALIC=3 };
+		
+		/** @name Virtual Public Member Functions */
+		//@{
+		
+		/**
+		 * Get mouse poition from Graphics context
+		 * @param[out] xMouse Horizontal coordinate of mouse
+		 * @param[out] yMouse Vertical coordinate of mouse
+		 */
+		virtual void getMouseCoords(int& xMouse, int& yMouse)=0;
+		
+		/**
+		 * Get next event.
+		 * Blocking function that returns a reference to an base class that defines
+		 * an interface to get event info.
+		 * @param xCursor horiz coord of cursor
+		 * @param yCursor vertical coord of cursor
+		 * @param fBlink  If true, blink cursor
+		 * @return Reference to Event object
+		 */
+		virtual const UI::Event& getNextEvent(int xCursor, int yCursor, bool fBlink)=0;
+		
+		/**
+		 * Draw differential of width x0 and height y0 with char variable name.
+		 * @param x0 Horizontal origin of differential.
+		 * @param y0 Vertical origin of differential.
+		 * @param variable Name of variable of differential.
+		 */
+		virtual void differential(int x0, int y0, char variable)=0;
+		
+		/**
+		 * Draw pair of parenthesis around a node of size x_size, y_size and origin x0,y0.
+		 * @param x_size Horizontal size of both parenthesis.
+		 * @param y_size Vertical size of parenthesis.
+		 * @param x0 Horizontal origin of parenthesis.
+		 * @param y0 Vertical origin of parenthesis.
+		 */
+		virtual void parenthesis(int x_size, int y_size, int x0, int y0)=0;
+		
+		/**
+		 * Draw a horizontal line starting at x0,y0 length x_size.
+		 * @param x_size Horizontal size of both line.
+		 * @param x0 Horizontal origin of line.
+		 * @param y0 Vertical origin of line.
+		 */
+		virtual void horiz_line(int x_size, int x0, int y0)=0;
+		
+		/**
+		 * Draw a character at x,y with a color.
+		 * @param x0 Horizontal origin of character.
+		 * @param y0 Vertical origin of character.
+		 * @param c  Character to be drawn at x0,y0.
+		 * @param chrAttr Attribute of character.
+		 * @param color Color of character.
+		 */
+		virtual void at(int x0, int y0, int c, Attributes chrAttr, Color color = BLACK)=0;
+		
+		/**
+		 * Draw a string at x,y with a color.
+		 * @param x0 Horizontal origin of line.
+		 * @param y0 Vertical origin of line.
+		 * @param s  String to be drawn at x0,y0.
+		 * @param chrAttr Attribute of character.
+		 * @param color Color of line.
+		 */
+		virtual void at(int x0, int y0, const std::string& s, Attributes chrAttr, Color color = BLACK)=0;
+		
+		/**
+		 * Flush all drawing so far to graphic interface.
+		 */
+		virtual void out()=0;
+		
+		/**
+		 * Get height of text in pixels.
+		 * @return Height of text in pixels.
+		 */
+		virtual int getTextHeight()=0;
+		
+		/**
+		 * Get length of string in pixels.
+		 * @return Length of string in pixels.
+		 */
+		virtual int getTextLength(const std::string& s)=0;
+		
+		/**
+		 * Get length of character in pixels.
+		 * @return Length of character in pixels.
+		 */
+		virtual int getCharLength(char c)=0;
+		
+		/**
+		 * Get width of a parenthesis for a given height in pixels.
+		 * @return Width of parenthesis.
+		 */
+		virtual int getParenthesisWidth(int height = 1)=0;
+		
+		/**
+		 * Get height of line in a division node.
+		 * @return Height of division line.
+		 */
+		virtual int getDivideLineHeight()=0;
+		
+		/**
+		 * Get height of differential.
+		 * @param c Variable name of differential.
+		 * @return Height of differential in pixels.
+		 */
+		virtual int getDifferentialHeight(char c)=0;
+		
+		/**
+		 * Get width of differential.
+		 * @param c Variable name of differential.
+		 * @return Width of differential in pixels.
+		 */
+		virtual int getDifferentialWidth(char c)=0;
+		
+		/**
+		 * Get vertical offset of differential.
+		 * @param c Variable name of differential.
+		 * @return Vertical offset of differential in pixels.
+		 */
+		virtual int getDifferentialBase(char c)=0;
+		
+		/**
+		 * Set size and origin of this graphics window.
+		 * @param x Horizontal size of both graphics window.
+		 * @param y Vertical size of graphics window.
+		 * @param x0 Horizontal origin of graphics window.
+		 * @param y0 Vertical origin of graphics window.
+		 */
+		virtual void set(int x, int y, int x0 = 0, int y0 = 0) { 
+			m_xSize = x; m_ySize = y; m_xOrig = x0, m_yOrig = y0;
+		}
+		//@}
+		
+		/**
+		 * Set size and origin of this graphics window from a rectangle.
+		 * @param box Rectangle containing origin and size of window.
+		 */
+		void set(const Box& box) { 
+			set(box.width(), box.height(), box.x0(), box.y0());
+		}
+		
+		/**
+		 * Select the area of size x,y at origin x0,y0.
+		 * @param x Horizontal size of both selection area.
+		 * @param y Vertical size of selection area.
+		 * @param x0 Horizontal origin of selection area.
+		 * @param y0 Vertical origin of selection area.
+		 */
+		virtual void setSelect(int x, int y, int x0, int y0) { m_select.set(x, y, x0, y0); }
+		
+		/**
+		 * Set selection area from rectangle.
+		 * @param box Rectangle containing origin and size of selection area.
+		 */
+		void setSelect(const Box& box) { 
+			setSelect(box.width(), box.height(), box.x0(), box.y0());
+		}
+		
+		/**
+		 * Draw a pair of parenthesis inside the rectangle box.
+		 * @param box Rectangle containing origin and size of parenthesis.
+		 */
+		void parenthesis(const Box& box) {
+			parenthesis(box.width(), box.height(), box.x0(), box.y0());
+		}
+		
+		/**
+		 * Change the coordinates x,y to be relative to the graphic's window origin.
+		 * @param[in,out] x Horizontal coordinate to be shifted.
+		 * @param[in,out] y Vertical coordinate to be shifted.
+		 */
+		void relativeOrig(int& x, int& y) { x -= m_xOrig; y -= m_yOrig; }
+		
+	protected:
+		int m_xSize;   ///< Horizontal size of graphic window.
+		int m_ySize;   ///< Vertical size of graphic window.
+		int m_xOrig;   ///< Horizontal origin of graphic window.
+		int m_yOrig;   ///< Vertical origin of graphic window.
+		Box m_select;  ///< Currently selected area.
+	};
+	
+	/**
 	 * Main Event Loop.
 	 * Call to pass control to milo's main event loop from main() function.
 	 */
 	void doMainLoop(int argc, char* argv[], Graphics& gc);
 }
 
-/**
- * Abstract base class to provide a context free graphical interface.
- * Provides an interface of helper functions that allow nodes to draw themselves
- * on the current graphical interface.
- */
-class Graphics
+namespace std
 {
-public:
-	/** @name Constructor and Virtual Destructor */
-	//@{
-	/**
-	 * Default constructor.
-	 */
-    Graphics() {}
-
-	/**
-	 * Abstract base class needs vertical destructor.
-	 */
-	virtual ~Graphics() {}
-	//@}
-	
-	/**
-	 * Predefined colors.
-	 */
-	enum Color { BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE };
-
-	/**
-	 * Predefined character attributes.
-	 */
-	enum Attributes { NONE=0, BOLD=1, ITALIC=2, BOLD_ITALIC=3 };
-
-	/** @name Virtual Public Member Functions */
-	//@{
-
-	/**
-	 * Get mouse poition from Graphics context
-	 * @param[out] xMouse Horizontal coordinate of mouse
-	 * @param[out] yMouse Vertical coordinate of mouse
-	 */
-	virtual void getMouseCoords(int& xMouse, int& yMouse)=0;
-  
-	/**
-	 * Get next event.
-	 * Blocking function that returns a reference to an base class that defines
-	 * an interface to get event info.
-	 * @param xCursor horiz coord of cursor
-	 * @param yCursor vertical coord of cursor
-	 * @param fBlink  If true, blink cursor
-	 * @return Reference to Event object
-	 */
-	virtual const UI::Event& getNextEvent(int xCursor, int yCursor, bool fBlink)=0;
-	
-	/**
-	 * Draw differential of width x0 and height y0 with char variable name.
-	 * @param x0 Horizontal origin of differential.
-	 * @param y0 Vertical origin of differential.
-	 * @param variable Name of variable of differential.
-	 */
-	virtual void differential(int x0, int y0, char variable)=0;
-
-	/**
-	 * Draw pair of parenthesis around a node of size x_size, y_size and origin x0,y0.
-	 * @param x_size Horizontal size of both parenthesis.
-	 * @param y_size Vertical size of parenthesis.
-	 * @param x0 Horizontal origin of parenthesis.
-	 * @param y0 Vertical origin of parenthesis.
-	 */
-	virtual void parenthesis(int x_size, int y_size, int x0, int y0)=0;
-
-	/**
-	 * Draw a horizontal line starting at x0,y0 length x_size.
-	 * @param x_size Horizontal size of both line.
-	 * @param x0 Horizontal origin of line.
-	 * @param y0 Vertical origin of line.
-	 */
-	virtual void horiz_line(int x_size, int x0, int y0)=0;
-
-	/**
-	 * Draw a character at x,y with a color.
-	 * @param x0 Horizontal origin of character.
-	 * @param y0 Vertical origin of character.
-	 * @param c  Character to be drawn at x0,y0.
-	 * @param chrAttr Attribute of character.
-	 * @param color Color of character.
-	 */
-	virtual void at(int x0, int y0, int c, Attributes chrAttr, Color color = BLACK)=0;
-
-	/**
-	 * Draw a string at x,y with a color.
-	 * @param x0 Horizontal origin of line.
-	 * @param y0 Vertical origin of line.
-	 * @param s  String to be drawn at x0,y0.
-	 * @param chrAttr Attribute of character.
-	 * @param color Color of line.
-	 */
-	virtual void at(int x0, int y0, const std::string& s, Attributes chrAttr, Color color = BLACK)=0;
-
-	/**
-	 * Flush all drawing so far to graphic interface.
-	 */
-	virtual void out()=0;
-
-	/**
-	 * Get height of text in pixels.
-	 * @return Height of text in pixels.
-	 */
-	virtual int getTextHeight()=0;
-
-	/**
-	 * Get length of string in pixels.
-	 * @return Length of string in pixels.
-	 */
-	virtual int getTextLength(const std::string& s)=0;
-
-	/**
-	 * Get length of character in pixels.
-	 * @return Length of character in pixels.
-	 */
-	virtual int getCharLength(char c)=0;
-
-	/**
-	 * Get width of a parenthesis for a given height in pixels.
-	 * @return Width of parenthesis.
-	 */
-	virtual int getParenthesisWidth(int height = 1)=0;
-
-	/**
-	 * Get height of line in a division node.
-	 * @return Height of division line.
-	 */
-	virtual int getDivideLineHeight()=0;
-
-	/**
-	 * Get height of differential.
-	 * @param c Variable name of differential.
-	 * @return Height of differential in pixels.
-	 */
-	virtual int getDifferentialHeight(char c)=0;
-
-	/**
-	 * Get width of differential.
-	 * @param c Variable name of differential.
-	 * @return Width of differential in pixels.
-	 */
-	virtual int getDifferentialWidth(char c)=0;
-
-	/**
-	 * Get vertical offset of differential.
-	 * @param c Variable name of differential.
-	 * @return Vertical offset of differential in pixels.
-	 */
-	virtual int getDifferentialBase(char c)=0;
-
-	/**
-	 * Set size and origin of this graphics window.
-	 * @param x Horizontal size of both graphics window.
-	 * @param y Vertical size of graphics window.
-	 * @param x0 Horizontal origin of graphics window.
-	 * @param y0 Vertical origin of graphics window.
-	 */
-	virtual void set(int x, int y, int x0 = 0, int y0 = 0) { 
-		m_xSize = x; m_ySize = y; m_xOrig = x0, m_yOrig = y0;
-	}
-	//@}
-	
-	/**
-	 * Set size and origin of this graphics window from a rectangle.
-	 * @param box Rectangle containing origin and size of window.
-	 */
-	void set(const Box& box) { 
-		set(box.width(), box.height(), box.x0(), box.y0());
-	}
-
-	/**
-	 * Select the area of size x,y at origin x0,y0.
-	 * @param x Horizontal size of both selection area.
-	 * @param y Vertical size of selection area.
-	 * @param x0 Horizontal origin of selection area.
-	 * @param y0 Vertical origin of selection area.
-	 */
-	virtual void setSelect(int x, int y, int x0, int y0) { m_select.set(x, y, x0, y0); }
-
-	/**
-	 * Set selection area from rectangle.
-	 * @param box Rectangle containing origin and size of selection area.
-	 */
-	void setSelect(const Box& box) { 
-		setSelect(box.width(), box.height(), box.x0(), box.y0());
-	}
-
-	/**
-	 * Draw a pair of parenthesis inside the rectangle box.
-	 * @param box Rectangle containing origin and size of parenthesis.
-	 */
-	void parenthesis(const Box& box) {
-		parenthesis(box.width(), box.height(), box.x0(), box.y0());
-	}
-
-	/**
-	 * Change the coordinates x,y to be relative to the graphic's window origin.
-	 * @param[in,out] x Horizontal coordinate to be shifted.
-	 * @param[in,out] y Vertical coordinate to be shifted.
-	 */
-	void relativeOrig(int& x, int& y) { x -= m_xOrig; y -= m_yOrig; }
-
-protected:
-	int m_xSize;   ///< Horizontal size of graphic window.
-	int m_ySize;   ///< Vertical size of graphic window.
-	int m_xOrig;   ///< Horizontal origin of graphic window.
-	int m_yOrig;   ///< Vertical origin of graphic window.
-	Box m_select;  ///< Currently selected area.
-};
-
-namespace std {
 	/**
 	 * Specialization hash for UI::Event.
 	 */
@@ -383,19 +381,6 @@ namespace std {
 		size_t operator()(UI::Event const& key) const
 		{
 			return key.hash();
-		}
-	};
-
-	/**
-	 * Specialization hash for <Graphics::Attributes.
-	 */
-	template<> struct hash<Graphics::Attributes>
-	{
-		size_t operator()(Graphics::Attributes const& a) const
-		{
-			using std::hash;
-			
-			return hash<int>()((int) a);
 		}
 	};
 }

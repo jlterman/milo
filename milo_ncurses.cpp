@@ -32,7 +32,7 @@ using namespace std;
 /**
  * Class derived from ABC Graphics to allow milo to draw to a ncurses ascii screen.
  */
-class CursesGraphics : public Graphics
+class CursesGraphics : public UI::Graphics
 {
 public:
 	/** @name Constructor and Virtual Destructor */
@@ -80,7 +80,7 @@ public:
 	 * @param fBlink  If true, blink cursor
 	 * @return Reference to UI::Event object
 	 */
-	const UI::Event& getNextEvent(int xCursorX, int yCursor, bool fBlink);
+	const UI::Event& getNextEvent(int xCursor, int yCursor, bool fBlink);
 	
 	/**
 	 * Get height of text in lines.
@@ -114,30 +114,27 @@ public:
 
 	/**
 	 * Get height of differential in lines of text.
-	 * @param c Variable name of differential.
 	 * @return Height of differential in lines of text.
 	 */
 	int getDifferentialHeight(char) { return 3; }
 
 	/**
 	 * Get width of differential in lines of text.
-	 * @param c Variable name of differential.
 	 * @return Width of differential in lines of text.
 	 */
 	int getDifferentialWidth(char)  { return 2; }
 
 	/**
 	 * Get vertical offset of differential.
-	 * @param c Variable name of differential.
 	 * @return Vertical offset of differential in lines of text.
 	 */
 	int getDifferentialBase(char)   { return 1; }
 
 	/**
 	 * Draw a character at x,y with a color.
-	 * @param x0 Horizontal origin of line.
-	 * @param y0 Vertical origin of line.
-	 * @param c  Character to be drawn at x0,y0.
+	 * @param x Horizontal origin of line.
+	 * @param y Vertical origin of line.
+	 * @param c Character to be drawn at x0,y0.
 	 * @param chrAttr Attribute of character.
 	 * @param color Color of line.
 	 */
@@ -157,9 +154,9 @@ public:
 
 	/**
 	 * Draw a string at x,y with a color.
-	 * @param x0 Horizontal origin of line.
-	 * @param y0 Vertical origin of line.
-	 * @param s  String to be drawn at x0,y0.
+	 * @param x Horizontal origin of line.
+	 * @param y Vertical origin of line.
+	 * @param s String to be drawn at x0,y0.
 	 * @param chrAttr Attribute of character.
 	 * @param color Color of line.
 	 */
@@ -177,11 +174,9 @@ public:
 
 	/**
 	 * Draw a c-string at x,y with black color.
-	 * @param x0 Horizontal origin of line.
-	 * @param y0 Vertical origin of line.
-	 * @param s  C-String to be drawn at x0,y0.
-	 * @param chrAttr Attribute of character.
-	 * @param color Color of line.
+	 * @param x Horizontal origin of line.
+	 * @param y Vertical origin of line.
+	 * @param s C-String to be drawn at x0,y0.
 	 */
 	void at(int x, int y, const char* s) {
 		at(x, y, string(s), NONE);
@@ -196,8 +191,6 @@ public:
 	 * Set size of this graphics window (origin is always 0,0).
 	 * @param x Horizontal size of graphics window.
 	 * @param y Vertical size of graphics window.
-	 * @param x0 Not used.
-	 * @param y0 Not used.
 	 */
 	void set(int x, int y, int, int) { 
 		int row, col;
@@ -261,6 +254,7 @@ public:
 	 * Erase cursor after key press.
 	 * @param y Vertical coordinate.
 	 * @param x Horizontal coordinate.
+	 * @param active True if cursor should blink
 	 * @return Character from keyboard.
 	 */
 	unsigned int getChar(int y, int x, bool active) {
@@ -301,13 +295,13 @@ private:
 
 	/** Map Graphics attributs to ncurses attributes.
 	 */
-	static const unordered_map<Attributes, int> attribute_map;
+	static const map<Attributes, int> attribute_map;
 
 	/** 
 	 * Special characters that are mapped to special unicode characters.
 	 * Upper case characters mapped to greek letters.
 	 */
-	static const unordered_map<char, string> char_map;
+	static const map<char, string> char_map;
 
 	/** Map ncurses key and mouse code to UI:Event equivalents.
 	 */
@@ -315,9 +309,9 @@ private:
 
 	/**
 	 * Draw a character at x,y.
-	 * @param x0 Horizontal origin of line.
-	 * @param y0 Vertical origin of line.
-	 * @param c  Character to be drawn at x0,y0.
+	 * @param x Horizontal origin of line.
+	 * @param y Vertical origin of line.
+	 * @param c Character to be drawn at x0,y0.
 	 */
 	void at(int x, int y, int c) {
 		if (m_select.inside(x, y)) c |= A_REVERSE;
@@ -327,14 +321,14 @@ private:
 
 bool CursesGraphics::init = false;
 
-const unordered_map<Graphics::Attributes, int> CursesGraphics::attribute_map = {
-	{ Graphics::Attributes::NONE,   A_NORMAL },
-	{ Graphics::Attributes::BOLD,   A_BOLD },
-	{ Graphics::Attributes::ITALIC, A_ITALIC },
-	{ Graphics::Attributes::BOLD_ITALIC, A_ITALIC|A_BOLD }
+const map<UI::Graphics::Attributes, int> CursesGraphics::attribute_map = {
+	{ UI::Graphics::Attributes::NONE,   A_NORMAL },
+	{ UI::Graphics::Attributes::BOLD,   A_BOLD },
+	{ UI::Graphics::Attributes::ITALIC, A_ITALIC },
+	{ UI::Graphics::Attributes::BOLD_ITALIC, A_ITALIC|A_BOLD }
 };
 
-const unordered_map<char, string> CursesGraphics::char_map = {
+const map<char, string> CursesGraphics::char_map = {
 	{ 'A', "\u03b1" }, { 'B', "\u03b2" }, { 'C', "\u03c8" }, { 'D', "\u03b4" }, 
 	{ 'E', "\u03b5" }, { 'F', "\u03c6" }, { 'G', "\u03b3" }, { 'H', "\u03b7" }, 
 	{ 'I', "\u03b9" }, { 'J', "\u03be" }, { 'K', "\u03ba" }, { 'L', "\u03bb" }, 

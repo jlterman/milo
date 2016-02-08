@@ -38,15 +38,14 @@
 #include <typeindex>
 
 #include "xml.h"
-#include "util.h"
+#include "ui.h"
 
 // Forward class declerations
-class Graphics;
+namespace UI { class Graphics; }
 class Node;
 class Term;
 class Expression;
 class Input;
-class FactorIterator;
 class Equation;
 
 // Hidden class declerations for pointers and reference
@@ -201,7 +200,7 @@ public:
 	 * Calculate size of node subtree in given graphics context.
 	 * @param gc Graphics context used to calculate size.
 	 */
-	void calculateSize(Graphics& gc);
+	void calculateSize(UI::Graphics& gc);
 
 	/**
 	 * Serialize this node and child nodes to XML output stream.
@@ -216,19 +215,19 @@ public:
 	 * @param x  Horizontal origin of root node in subtree.
 	 * @param y  Vertical origin of root node in subtree.
 	 */
-	void calculateOrigin(Graphics& gc, int x, int y);
+	void calculateOrigin(UI::Graphics& gc, int x, int y);
 
 	/**
 	 * Calculate the size and origin of the subtree of this node.
 	 * @param gc Graphics context class object.
 	 */
-	void setUpDraw(Graphics& gc);
+	void setUpDraw(UI::Graphics& gc);
 
 	/**
 	 * Draw equation subtree whose root is this node.
 	 * @param gc Graphics context class object.
 	 */
-	void draw(Graphics& gc) const;
+	void draw(UI::Graphics& gc) const;
 
 	/**
 	 * Set selection state of this node.
@@ -385,7 +384,7 @@ private:
 	 * @param gc Graphics context.
 	 * @return Return frame of this subtree.
 	 */
-	virtual Frame calcSize(Graphics& gc)=0;
+	virtual Frame calcSize(UI::Graphics& gc)=0;
 
 	/**
 	 * Calculate origin of the nodes in the subtree relative to point x,y.
@@ -393,13 +392,13 @@ private:
 	 * @param x  Horizontal origin.
 	 * @param y  Vertical origin.
 	 */
-	virtual void calcOrig(Graphics& gc, int x, int y)=0;
+	virtual void calcOrig(UI::Graphics& gc, int x, int y)=0;
 
 	/**
 	 * Draw subtree in this graphics context.
 	 * @param gc Graphics context.
 	 */
-	virtual void drawNode(Graphics& gc) const=0;
+	virtual void drawNode(UI::Graphics& gc) const=0;
 
 	/**
 	 * Get value of this node's subtree.
@@ -687,7 +686,7 @@ private:
 	 * @param gc Graphics context.
 	 * @return Return frame containing size of this node.
 	 */
-	Frame calcSize(Graphics& gc);
+	Frame calcSize(UI::Graphics& gc);
 
 	/**
 	 * Calculate origin of this node offset from the point (x,y) given it.
@@ -695,13 +694,13 @@ private:
 	 * @param x Horizontal origin.
 	 * @param y Vertical origin.
 	 */
-	void calcOrig(Graphics& gc, int x, int y);
+	void calcOrig(UI::Graphics& gc, int x, int y);
 
 	/**
 	 * Draw this node in the given graphical context.
 	 * @param gc Graphical context.
 	 */
-	void drawNode(Graphics& gc) const;
+	void drawNode(UI::Graphics& gc) const;
 	//@}
 	
 	/**
@@ -946,7 +945,7 @@ private:
 	 * @param gc Graphics context.
 	 * @return Return frame containing size of this node.
 	 */
-	Frame calcSize(Graphics& gc);
+	Frame calcSize(UI::Graphics& gc);
 
 	/**
 	 * Calculate origin of this node offset from the point (x,y) given it.
@@ -954,13 +953,13 @@ private:
 	 * @param x Horizontal origin.
 	 * @param y Vertical origin.
 	 */
-	void calcOrig(Graphics& gc, int x, int y);
+	void calcOrig(UI::Graphics& gc, int x, int y);
 
 	/**
 	 * Draw this node in the given graphical context.
 	 * @param gc Graphical context.
 	 */
-	void drawNode(Graphics& gc) const;
+	void drawNode(UI::Graphics& gc) const;
 
 	/**
 	 * Get value of this subtree.
@@ -1197,6 +1196,7 @@ public:
 	 * Starting with this iterators node to node pointed to by given iterator is erased.
 	 * Iterator will be left pointing to next iterator.
 	 * @param end Final node to be erased.
+	 * @param free If true, delete erased node.
 	 */
 	void erase(const FactorIterator& end, bool free = true);
 
@@ -1217,7 +1217,7 @@ public:
 	 * @param term Term to replace factor's parent term pointed to by iterator.
 	 * @param free If true, delete erased term.
 	 */
-	void replace(Term* node, bool free = true);
+	void replace(Term* term, bool free = true);
 	
 	/**
 	 * Replace factor pointed to by iterator with node.
@@ -1373,7 +1373,7 @@ public:
 	 * @param gc Grahics context.
 	 * @param fRefresh If true, complete all drawing to graphics context.
 	 */
-	void draw(Graphics& gc, bool fRefresh = false);
+	void draw(UI::Graphics& gc, bool fRefresh = false);
 
 	/**
 	 * Get equation object that is copy of this equation object.
@@ -1475,17 +1475,16 @@ public:
 	 * @param y  Vertical coordinate.
 	 * @return Node found at x,y coordinates. Null if none found.
 	 */
-	Node* findNode(Graphics& gc, int x, int y);
+	Node* findNode(UI::Graphics& gc, int x, int y);
 
 	/**
 	 * Query root node for shallowest factor node at inside rectangle box in given graphics context.
-	 * Call findNode(Graphics&, Box&) method of root node.
+	 * Call findNode(UI::Graphics&, Box&) method of root node.
 	 * @param gc Graphics context.
 	 * @param b Bounding box
-	 * @param y  Vertical coordinate.
 	 * @return Node found inside bounding box b. Null if none found.
 	 */
-	Node* findNode(Graphics& gc, Box b);
+	Node* findNode(UI::Graphics& gc, Box b);
 
 	/**
 	 * Select region starting from Node object start to last node still in bounding
@@ -1494,7 +1493,7 @@ public:
 	 * @param start Starting node.
 	 * @param b Bounding box.
 	 */
-	void selectBox(Graphics& gc, Node* start, Box b);
+	void selectBox(UI::Graphics& gc, Node* start, Box b);
 
 	/**
 	 * Erase current selection and replace with new node.
@@ -1554,7 +1553,7 @@ private:
 	 * Draw current selection in graphics context.
 	 * @param gc Graphics context.
 	 */
-	void setSelect(Graphics& gc);
+	void setSelect(UI::Graphics& gc);
 
 	/**
 	 * Helper static function that parses term in string, load factors into array.
@@ -1742,7 +1741,7 @@ private:
 	 * @param gc Graphics context.
 	 * @return Return frame containing size of this node.
 	 */
-	Frame calcSize(Graphics& gc);
+	Frame calcSize(UI::Graphics& gc);
 
 	/**
 	 * Calculate origin of this node offset from the point (x,y) given it.
@@ -1750,13 +1749,13 @@ private:
 	 * @param x Horizontal origin.
 	 * @param y Vertical origin.
 	 */
-	void calcOrig(Graphics& gc, int x, int y);
+	void calcOrig(UI::Graphics& gc, int x, int y);
 
 	/**
 	 * Draw this node in the given graphical context.
 	 * @param gc Graphical context.
 	 */
-	void drawNode(Graphics& gc) const;
+	void drawNode(UI::Graphics& gc) const;
 
 	/**
 	 * Throw an error if this is called.

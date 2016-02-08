@@ -27,6 +27,7 @@
 #include "milo.h"
 
 using namespace std;
+using namespace UI;
 
 /** @name File specific global variables. */
 //@{
@@ -43,14 +44,14 @@ static Equation* eqn;                 ///< Pointer to current equation.
  * Function pointer to handle an event. Pointer to event passed as argument.
  * Return true, if event changed equation.
  */
-typedef bool (*event_handler)(const UI::Event&);
+typedef bool (*event_handler)(const Event&);
 
 /**
  * Handle quit event.
  * Set fRunning false to exit main loop.
  * @return Always false.
  */
-static bool do_quit(const UI::Event&)
+static bool do_quit(const Event&)
 {
 	fRunning = false;
 	return false;
@@ -61,7 +62,7 @@ static bool do_quit(const UI::Event&)
  * Save equation to file "eqn.xml".
  * @return Always true.
  */
-static bool do_save(const UI::Event&)
+static bool do_save(const Event&)
 {
 	string store;
 	eqn->xml_out(store);
@@ -76,7 +77,7 @@ static bool do_save(const UI::Event&)
  * If non empty, pop and load an equation off the top of the undo stack.
  * @return If true, equation was loaded from undo stack.
  */
-static bool do_undo(const UI::Event&)
+static bool do_undo(const Event&)
 {
 	Equation* undo_eqn = eqns.undo();
 	if (undo_eqn) {
@@ -94,7 +95,7 @@ static bool do_undo(const UI::Event&)
  * If node has been selected, remember it and mouse coordinates.
  * @return Always false.
  */
-static bool do_mouse_pressed(const UI::Event&)
+static bool do_mouse_pressed(const Event&)
 {
 	gc->getMouseCoords(start_mouse_x, start_mouse_y);
 	start_select = eqn->findNode(*gc, start_mouse_x, start_mouse_y);
@@ -113,7 +114,7 @@ static bool do_mouse_pressed(const UI::Event&)
  * Otherwise, end mouse dragging state.
  * @return Always true.
  */
-static bool do_mouse_released(const UI::Event&)
+static bool do_mouse_released(const Event&)
 {
 	start_mouse_x = start_mouse_y = -1;
 	if (start_select->getSelect() == Node::Select::ALL) {
@@ -128,7 +129,7 @@ static bool do_mouse_released(const UI::Event&)
  * If mouse clicks on node select it or activate input.
  * @return True if node selected.
  */
-static bool do_mouse_clicked(const UI::Event&)
+static bool do_mouse_clicked(const Event&)
 {
 	int mouse_x = -1, mouse_y = -1;
 	gc->getMouseCoords(mouse_x, mouse_y);
@@ -146,7 +147,7 @@ static bool do_mouse_clicked(const UI::Event&)
  * or add input before selected node.
  * @return True, if node found.
  */
-static bool do_mouse_double(const UI::Event&)
+static bool do_mouse_double(const Event&)
 {
 	int mouse_x = -1, mouse_y = -1;
 	gc->getMouseCoords(mouse_x, mouse_y);
@@ -168,7 +169,7 @@ static bool do_mouse_double(const UI::Event&)
  * Update part of equation selected by mouse dragging.
  * @return Always false.
  */
-static bool do_mouse_position(const UI::Event&)
+static bool do_mouse_position(const Event&)
 {
 	Box box = { 0, 0, 0, 0 };
 	if (start_mouse_x > 0 && start_mouse_y > 0) {
@@ -201,7 +202,7 @@ static bool do_mouse_position(const UI::Event&)
  * @param event Key event.
  * @return True if key was inserted.
  */
-static bool do_key(const UI::Event& event)
+static bool do_key(const Event& event)
 {
 	if (eqn->getSelectStart() != nullptr) {
 		eqn->eraseSelection(new Input(*eqn, string(1, (char)event.getKey())));
@@ -219,7 +220,7 @@ static bool do_key(const UI::Event& event)
  * Erase selection if it exists, or previous factor before current input.
  * @return True if backspace is processed.
  */
-static bool do_backspace(const UI::Event&)
+static bool do_backspace(const Event&)
 {
 	if (eqn->getSelectStart() != nullptr) {
 		eqn->eraseSelection(new Input(*eqn));
@@ -254,7 +255,7 @@ static bool do_backspace(const UI::Event&)
  * Move to node to the left of selection or current input.
  * @return True if left arrow proccessed.
  */
-static bool do_left(const UI::Event&)
+static bool do_left(const Event&)
 {
 	Input* in = eqn->getCurrentInput();
 	if (eqn->getSelectStart() != nullptr) {
@@ -286,7 +287,7 @@ static bool do_left(const UI::Event&)
  * Move to node to the right of selection or current input.
  * @return True if right arrow proccessed.
  */
-static bool do_right(const UI::Event&)
+static bool do_right(const Event&)
 {
 	Input* in = eqn->getCurrentInput();
 	if (eqn->getSelectStart() != nullptr) {
@@ -322,7 +323,7 @@ static bool do_right(const UI::Event&)
  * select factor to left of cursor.
  * @return True if shift left arrow is processed.
  */
-static bool do_shift_left(const UI::Event&)
+static bool do_shift_left(const Event&)
 {
 	if (eqn->getSelectStart() != nullptr) {
 		auto start = FactorIterator(eqn->getSelectStart());
@@ -352,7 +353,7 @@ static bool do_shift_left(const UI::Event&)
  * select factor to right of cursor.
  * @return True if shift right arrow is processed.
  */
-static bool do_shift_right(const UI::Event&)
+static bool do_shift_right(const Event&)
 {
 	if (eqn->getSelectStart() != nullptr) {
 		auto end = FactorIterator(eqn->getSelectEnd());
@@ -383,7 +384,7 @@ static bool do_shift_right(const UI::Event&)
  * node if there is no selection or input.
  * @return Always true.
  */
-static bool do_up(const UI::Event&)
+static bool do_up(const Event&)
 {
 	Input* in = eqn->getCurrentInput();
 	if (eqn->getSelectStart() != nullptr) {
@@ -413,7 +414,7 @@ static bool do_up(const UI::Event&)
  * node if there is no selection or input.
  * @return Always true.
  */
-static bool do_down(const UI::Event&)
+static bool do_down(const Event&)
 {
 	Input* in = eqn->getCurrentInput();
 	if (eqn->getSelectStart() != nullptr) {
@@ -443,7 +444,7 @@ static bool do_down(const UI::Event&)
  * or add it to the existing selection.
  * @return True if up arrow with shift is processed.
  */
-static bool do_shift_up(const UI::Event&)
+static bool do_shift_up(const Event&)
 {
 	if (eqn->getSelectStart() != nullptr) {
 		auto start = FactorIterator(eqn->getSelectStart());
@@ -471,7 +472,7 @@ static bool do_shift_up(const UI::Event&)
  * or add it to the existing selection.
  * @return True if down arrow with shift is processed.
  */
-static bool do_shift_down(const UI::Event&)
+static bool do_shift_down(const Event&)
 {
 	if (eqn->getSelectStart() != nullptr) {
 		auto end = FactorIterator(eqn->getSelectEnd());
@@ -499,7 +500,7 @@ static bool do_shift_down(const UI::Event&)
  * current selection with a new input.
  * @return True if enter is proccessed.
  */
-static bool do_enter(const UI::Event&)
+static bool do_enter(const Event&)
 {
 	Input* in = eqn->getCurrentInput();
 	Node* start = eqn->getSelectStart();
@@ -524,7 +525,7 @@ static bool do_enter(const UI::Event&)
  * or negative depending on whether character is +/-.
  * @return True if input is active.
  */
-static bool do_plus_minus(const UI::Event& event)
+static bool do_plus_minus(const Event& event)
 {
 	Input* in = eqn->getCurrentInput();
 	if (in == nullptr) return false;
@@ -544,7 +545,7 @@ static bool do_plus_minus(const UI::Event& event)
  * Insert divide term.
  * @return True if successful.
  */
-static bool do_divide(const UI::Event&)
+static bool do_divide(const Event&)
 {
 	Input* in = eqn->getCurrentInput();
 	if (in == nullptr) return false;
@@ -556,7 +557,7 @@ static bool do_divide(const UI::Event&)
  * Insert power factor.
  * @return True if successfull.
  */
-static bool do_power(const UI::Event&)
+static bool do_power(const Event&)
 {
 	Input* in = eqn->getCurrentInput();
 	if (in == nullptr) return false;
@@ -569,7 +570,7 @@ static bool do_power(const UI::Event&)
  * Add "(*)". Side effect will be to add any functions
  * that matches or an expression as a new factor.
  */
-static bool do_left_parenthesis(const UI::Event&)
+static bool do_left_parenthesis(const Event&)
 {
 	Input* in = eqn->getCurrentInput();
 	if (in == nullptr) return false;
@@ -584,7 +585,7 @@ static bool do_left_parenthesis(const UI::Event&)
  * Either select factor at input or select one level higher.
  * @return True if successful.
  */
-static bool do_space(const UI::Event&)
+static bool do_space(const Event&)
 {
 	Input* in = eqn->getCurrentInput();
 	if (in != nullptr) {
@@ -632,96 +633,96 @@ static bool do_space(const UI::Event&)
 /**
  * Map of events to functions that handle these events.
  */
-static const unordered_map<UI::Event, event_handler> event_map = {
-	{ UI::Event(UI::Mouse::RELEASED, 1), do_mouse_released },
-	{ UI::Event(UI::Mouse::PRESSED,  1), do_mouse_pressed },
-	{ UI::Event(UI::Mouse::CLICKED,  1), do_mouse_clicked },
-	{ UI::Event(UI::Mouse::DOUBLE,   1), do_mouse_double },
-    { UI::Event(UI::Mouse::POSITION, 0), do_mouse_position },
+static const unordered_map<Event, event_handler> event_map = {
+	{ Event(Mouse::RELEASED, 1), do_mouse_released },
+	{ Event(Mouse::PRESSED,  1), do_mouse_pressed },
+	{ Event(Mouse::CLICKED,  1), do_mouse_clicked },
+	{ Event(Mouse::DOUBLE,   1), do_mouse_double },
+    { Event(Mouse::POSITION, 0), do_mouse_position },
 	
-	{ UI::Event(UI::Keys::LEFT,  UI::Modifiers::SHIFT), do_shift_right },
-	{ UI::Event(UI::Keys::RIGHT, UI::Modifiers::SHIFT), do_shift_left },
-	{ UI::Event(UI::Keys::UP,    UI::Modifiers::SHIFT), do_shift_up },
-	{ UI::Event(UI::Keys::DOWN,  UI::Modifiers::SHIFT), do_shift_down },
+	{ Event(Keys::LEFT,  Modifiers::SHIFT), do_shift_right },
+	{ Event(Keys::RIGHT, Modifiers::SHIFT), do_shift_left },
+	{ Event(Keys::UP,    Modifiers::SHIFT), do_shift_up },
+	{ Event(Keys::DOWN,  Modifiers::SHIFT), do_shift_down },
 	
-	{ UI::Event(UI::Keys::PLUS),   do_plus_minus },
-	{ UI::Event(UI::Keys::MINUS),  do_plus_minus },
-	{ UI::Event(UI::Keys::DIVIDE), do_divide },
-	{ UI::Event(UI::Keys::POWER),  do_power },
-	{ UI::Event(UI::Keys::L_PAR),  do_left_parenthesis },
-	{ UI::Event(UI::Keys::SPACE),  do_space },
-	{ UI::Event(UI::Keys::LEFT),   do_left },
-	{ UI::Event(UI::Keys::RIGHT),  do_right },
-	{ UI::Event(UI::Keys::UP),     do_up },
-	{ UI::Event(UI::Keys::DOWN),   do_down },
-	{ UI::Event(UI::Keys::ENTER),  do_enter },
-	{ UI::Event(UI::Keys::BSPACE), do_backspace },
-	{ UI::Event(UI::Keys::CTRL_Q), do_quit },
-	{ UI::Event(UI::Keys::CTRL_S), do_save },
-	{ UI::Event(UI::Keys::CTRL_Z), do_undo },
-	{ UI::Event(UI::Keys::DOT),    do_key },
+	{ Event(Keys::PLUS),   do_plus_minus },
+	{ Event(Keys::MINUS),  do_plus_minus },
+	{ Event(Keys::DIVIDE), do_divide },
+	{ Event(Keys::POWER),  do_power },
+	{ Event(Keys::L_PAR),  do_left_parenthesis },
+	{ Event(Keys::SPACE),  do_space },
+	{ Event(Keys::LEFT),   do_left },
+	{ Event(Keys::RIGHT),  do_right },
+	{ Event(Keys::UP),     do_up },
+	{ Event(Keys::DOWN),   do_down },
+	{ Event(Keys::ENTER),  do_enter },
+	{ Event(Keys::BSPACE), do_backspace },
+	{ Event(Keys::CTRL_Q), do_quit },
+	{ Event(Keys::CTRL_S), do_save },
+	{ Event(Keys::CTRL_Z), do_undo },
+	{ Event(Keys::DOT),    do_key },
 	
-	{ UI::Event(UI::Keys::K0), do_key },
-	{ UI::Event(UI::Keys::K1), do_key },
-	{ UI::Event(UI::Keys::K2), do_key },
-	{ UI::Event(UI::Keys::K3), do_key },
-	{ UI::Event(UI::Keys::K4), do_key },
-	{ UI::Event(UI::Keys::K5), do_key },
-	{ UI::Event(UI::Keys::K6), do_key },
-	{ UI::Event(UI::Keys::K7), do_key },
-	{ UI::Event(UI::Keys::K8), do_key },
-	{ UI::Event(UI::Keys::K9), do_key },
-	{ UI::Event(UI::Keys::A), do_key },
-	{ UI::Event(UI::Keys::B), do_key },
-	{ UI::Event(UI::Keys::C), do_key },
-	{ UI::Event(UI::Keys::D), do_key },
-	{ UI::Event(UI::Keys::E), do_key },
-	{ UI::Event(UI::Keys::F), do_key },
-	{ UI::Event(UI::Keys::H), do_key },
-	{ UI::Event(UI::Keys::I), do_key },
-	{ UI::Event(UI::Keys::J), do_key },
-	{ UI::Event(UI::Keys::K), do_key },
-	{ UI::Event(UI::Keys::L), do_key },
-	{ UI::Event(UI::Keys::M), do_key },
-	{ UI::Event(UI::Keys::N), do_key },
-	{ UI::Event(UI::Keys::O), do_key },
-	{ UI::Event(UI::Keys::P), do_key },
-	{ UI::Event(UI::Keys::Q), do_key },
-	{ UI::Event(UI::Keys::R), do_key },
-	{ UI::Event(UI::Keys::S), do_key },
-	{ UI::Event(UI::Keys::T), do_key },
-	{ UI::Event(UI::Keys::U), do_key },
-	{ UI::Event(UI::Keys::V), do_key },
-	{ UI::Event(UI::Keys::W), do_key },
-	{ UI::Event(UI::Keys::X), do_key },
-	{ UI::Event(UI::Keys::Y), do_key },
-	{ UI::Event(UI::Keys::Z), do_key },
-	{ UI::Event(UI::Keys::a), do_key },
-	{ UI::Event(UI::Keys::b), do_key },
-	{ UI::Event(UI::Keys::c), do_key },
-	{ UI::Event(UI::Keys::d), do_key },
-	{ UI::Event(UI::Keys::e), do_key },
-	{ UI::Event(UI::Keys::f), do_key },
-	{ UI::Event(UI::Keys::g), do_key },
-	{ UI::Event(UI::Keys::h), do_key },
-	{ UI::Event(UI::Keys::i), do_key },
-	{ UI::Event(UI::Keys::j), do_key },
-	{ UI::Event(UI::Keys::k), do_key },
-	{ UI::Event(UI::Keys::l), do_key },
-	{ UI::Event(UI::Keys::m), do_key },
-	{ UI::Event(UI::Keys::n), do_key },
-	{ UI::Event(UI::Keys::o), do_key },
-	{ UI::Event(UI::Keys::p), do_key },
-	{ UI::Event(UI::Keys::q), do_key },
-	{ UI::Event(UI::Keys::r), do_key },
-	{ UI::Event(UI::Keys::s), do_key },
-	{ UI::Event(UI::Keys::t), do_key },
-	{ UI::Event(UI::Keys::u), do_key },
-	{ UI::Event(UI::Keys::v), do_key },
-	{ UI::Event(UI::Keys::w), do_key },
-	{ UI::Event(UI::Keys::x), do_key },
-	{ UI::Event(UI::Keys::y), do_key },
-	{ UI::Event(UI::Keys::z), do_key },
+	{ Event(Keys::K0), do_key },
+	{ Event(Keys::K1), do_key },
+	{ Event(Keys::K2), do_key },
+	{ Event(Keys::K3), do_key },
+	{ Event(Keys::K4), do_key },
+	{ Event(Keys::K5), do_key },
+	{ Event(Keys::K6), do_key },
+	{ Event(Keys::K7), do_key },
+	{ Event(Keys::K8), do_key },
+	{ Event(Keys::K9), do_key },
+	{ Event(Keys::A), do_key },
+	{ Event(Keys::B), do_key },
+	{ Event(Keys::C), do_key },
+	{ Event(Keys::D), do_key },
+	{ Event(Keys::E), do_key },
+	{ Event(Keys::F), do_key },
+	{ Event(Keys::H), do_key },
+	{ Event(Keys::I), do_key },
+	{ Event(Keys::J), do_key },
+	{ Event(Keys::K), do_key },
+	{ Event(Keys::L), do_key },
+	{ Event(Keys::M), do_key },
+	{ Event(Keys::N), do_key },
+	{ Event(Keys::O), do_key },
+	{ Event(Keys::P), do_key },
+	{ Event(Keys::Q), do_key },
+	{ Event(Keys::R), do_key },
+	{ Event(Keys::S), do_key },
+	{ Event(Keys::T), do_key },
+	{ Event(Keys::U), do_key },
+	{ Event(Keys::V), do_key },
+	{ Event(Keys::W), do_key },
+	{ Event(Keys::X), do_key },
+	{ Event(Keys::Y), do_key },
+	{ Event(Keys::Z), do_key },
+	{ Event(Keys::a), do_key },
+	{ Event(Keys::b), do_key },
+	{ Event(Keys::c), do_key },
+	{ Event(Keys::d), do_key },
+	{ Event(Keys::e), do_key },
+	{ Event(Keys::f), do_key },
+	{ Event(Keys::g), do_key },
+	{ Event(Keys::h), do_key },
+	{ Event(Keys::i), do_key },
+	{ Event(Keys::j), do_key },
+	{ Event(Keys::k), do_key },
+	{ Event(Keys::l), do_key },
+	{ Event(Keys::m), do_key },
+	{ Event(Keys::n), do_key },
+	{ Event(Keys::o), do_key },
+	{ Event(Keys::p), do_key },
+	{ Event(Keys::q), do_key },
+	{ Event(Keys::r), do_key },
+	{ Event(Keys::s), do_key },
+	{ Event(Keys::t), do_key },
+	{ Event(Keys::u), do_key },
+	{ Event(Keys::v), do_key },
+	{ Event(Keys::w), do_key },
+	{ Event(Keys::x), do_key },
+	{ Event(Keys::y), do_key },
+	{ Event(Keys::z), do_key },
 };
 
 void UI::doMainLoop(int argc, char* argv[], Graphics& graphicsContext)

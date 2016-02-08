@@ -261,7 +261,7 @@ public:
 	 * @param gc Graphics context.
 	 * @return Return frame containing size of this node.
 	 */
-	Frame calcSize(Graphics& gc);
+	Frame calcSize(UI::Graphics& gc);
 
 	/**
 	 * Calculate origin of this node offset from the point (x,y) given it.
@@ -269,13 +269,13 @@ public:
 	 * @param x Horizontal origin.
 	 * @param y Vertical origin.
 	 */
-	void calcOrig(Graphics& gc, int x, int y);
+	void calcOrig(UI::Graphics& gc, int x, int y);
 
 	/**
 	 * Draw this node in the given graphical context.
 	 * @param gc Graphical context.
 	 */
-	void drawNode(Graphics& gc) const;
+	void drawNode(UI::Graphics& gc) const;
 
 	/**
 	 * Get value of this subtree.
@@ -380,7 +380,7 @@ private:
 	 * @param gc Graphics context.
 	 * @return Return frame containing size of this node.
 	 */
-	Frame calcSize(Graphics& gc);
+	Frame calcSize(UI::Graphics& gc);
 
 	/**
 	 * Calculate origin of this node offset from the point (x,y) given it.
@@ -388,13 +388,13 @@ private:
 	 * @param x Horizontal origin.
 	 * @param y Vertical origin.
 	 */
-	void calcOrig(Graphics& gc, int x, int y);
+	void calcOrig(UI::Graphics& gc, int x, int y);
 
 	/**
 	 * Draw this node in the given graphical context.
 	 * @param gc Graphical context.
 	 */
-	void drawNode(Graphics& gc) const;
+	void drawNode(UI::Graphics& gc) const;
 
 	/**
 	 * Get value of this subtree.
@@ -507,7 +507,7 @@ private:
 	 * @param gc Graphics context.
 	 * @return Return frame containing size of this node.
 	 */
-	Frame calcSize(Graphics& gc);
+	Frame calcSize(UI::Graphics& gc);
 
 	/**
 	 * Calculate origin of this node offset from the point (x,y) given it.
@@ -515,13 +515,13 @@ private:
 	 * @param x Horizontal origin.
 	 * @param y Vertical origin.
 	 */
-	void calcOrig(Graphics& gc, int x, int y);
+	void calcOrig(UI::Graphics& gc, int x, int y);
 
 	/**
 	 * Draw this node in the given graphical context.
 	 * @param gc Graphical context.
 	 */
-	void drawNode(Graphics& gc) const;
+	void drawNode(UI::Graphics& gc) const;
 
 	/**
 	 * Get value of this constant.
@@ -634,7 +634,7 @@ private:
 	 * @param gc Graphics context.
 	 * @return Return frame containing size of this node.
 	 */
-	Frame calcSize(Graphics& gc);
+	Frame calcSize(UI::Graphics& gc);
 
 	/**
 	 * Calculate origin of this node offset from the point (x,y) given it.
@@ -642,13 +642,13 @@ private:
 	 * @param x Horizontal origin.
 	 * @param y Vertical origin.
 	 */
-	void calcOrig(Graphics& gc, int x, int y);
+	void calcOrig(UI::Graphics& gc, int x, int y);
 
 	/**
 	 * Draw this node in the given graphical context.
 	 * @param gc Graphical context.
 	 */
-	void drawNode(Graphics& gc) const;
+	void drawNode(UI::Graphics& gc) const;
 
 	/**
 	 * Get value of this subtree.
@@ -787,7 +787,7 @@ private:
 	 * @param gc Graphics context.
 	 * @return Return frame containing size of this node.
 	 */
-	Frame calcSize(Graphics& gc);
+	Frame calcSize(UI::Graphics& gc);
 
 	/**
 	 * Calculate origin of this node offset from the point (x,y) given it.
@@ -795,13 +795,13 @@ private:
 	 * @param x Horizontal origin.
 	 * @param y Vertical origin.
 	 */
-	void calcOrig(Graphics& gc, int x, int y);
+	void calcOrig(UI::Graphics& gc, int x, int y);
 
 	/**
 	 * Draw this node in the given graphical context.
 	 * @param gc Graphical context.
 	 */
-	void drawNode(Graphics& gc) const;
+	void drawNode(UI::Graphics& gc) const;
 
 	/**
 	 * Get value of this subtree.
@@ -962,7 +962,7 @@ private:
 	 * @param gc Graphics context.
 	 * @return Return frame containing size of this node.
 	 */
-	Frame calcSize(Graphics& gc);
+	Frame calcSize(UI::Graphics& gc);
 
 	/**
 	 * Calculate origin of this node offset from the point (x,y) given it.
@@ -970,13 +970,13 @@ private:
 	 * @param x Horizontal origin.
 	 * @param y Vertical origin.
 	 */
-	void calcOrig(Graphics& gc, int x, int y);
+	void calcOrig(UI::Graphics& gc, int x, int y);
 
 	/**
 	 * Draw this node in the given graphical context.
 	 * @param gc Graphical context.
 	 */
-	void drawNode(Graphics& gc) const;
+	void drawNode(UI::Graphics& gc) const;
 
 	/**
 	 * Get value of this subtree.
@@ -1128,7 +1128,7 @@ private:
 	 * @param gc Graphics context.
 	 * @return Return frame containing size of this node.
 	 */
-	Frame calcSize(Graphics& gc);
+	Frame calcSize(UI::Graphics& gc);
 
 	/**
 	 * Calculate origin of this node offset from the point (x,y) given it.
@@ -1136,13 +1136,13 @@ private:
 	 * @param x Horizontal origin.
 	 * @param y Vertical origin.
 	 */
-	void calcOrig(Graphics& gc, int x, int y);
+	void calcOrig(UI::Graphics& gc, int x, int y);
 
 	/**
 	 * Draw this node in the given graphical context.
 	 * @param gc Graphical context.
 	 */
-	void drawNode(Graphics& gc) const;
+	void drawNode(UI::Graphics& gc) const;
 
 	/**
 	 * Get value of this subtree.

@@ -403,7 +403,7 @@ void Expression::xml_out(XML::Stream& xml) const
 	xml << XML::FOOTER;
 }
 
-Equation::Equation(string eq)
+Equation::Equation(std::string eq)
 { 
 	Parser p(eq, *this); 
 	m_root = new Expression(p);

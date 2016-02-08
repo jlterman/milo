@@ -36,7 +36,7 @@
 using namespace std;
 
 
-Node::Frame Divide::calcSize(Graphics& gc)
+Node::Frame Divide::calcSize(UI::Graphics& gc)
 {
 	m_first->calculateSize(gc);
 	m_second->calculateSize(gc);
@@ -51,7 +51,7 @@ Node::Frame Divide::calcSize(Graphics& gc)
     return frame;
 }
 
-void Divide::calcOrig(Graphics& gc, int x, int y)
+void Divide::calcOrig(UI::Graphics& gc, int x, int y)
 {
 	m_internal.setOrigin(x, y);
 	m_first->calculateOrigin(gc,  x + (m_internal.width() - m_first->getFrame().box.width())/2, 
@@ -61,7 +61,7 @@ void Divide::calcOrig(Graphics& gc, int x, int y)
 }
 
 
-void Divide::drawNode(Graphics& gc) const
+void Divide::drawNode(UI::Graphics& gc) const
 {
 	gc.horiz_line(m_internal.width(), m_internal.x0(), m_internal.y0() + getFrame().base);
 	m_first->draw(gc);
@@ -75,7 +75,7 @@ Complex Divide::getNodeValue() const
 	return a / b;
 }
 
-Node::Frame Power::calcSize(Graphics& gc)
+Node::Frame Power::calcSize(UI::Graphics& gc)
 {
 	m_first->calculateSize(gc);
 	m_second->calculateSize(gc);
@@ -91,7 +91,7 @@ Node::Frame Power::calcSize(Graphics& gc)
     return frame;
 }
 
-void Power::calcOrig(Graphics& gc, int x, int y)
+void Power::calcOrig(UI::Graphics& gc, int x, int y)
 {
 	m_internal.setOrigin(x, y);
 	m_first->calculateOrigin(gc, x, y + getFrame().base);
@@ -100,7 +100,7 @@ void Power::calcOrig(Graphics& gc, int x, int y)
                                     + gc.getTextHeight()/2);
 }
 
-void Power::drawNode(Graphics& gc) const
+void Power::drawNode(UI::Graphics& gc) const
 {
 	m_first->draw(gc);
 	m_second->draw(gc);
@@ -147,7 +147,7 @@ const Function::func_map Function::functions = {
 	{ "exp", &expZ }
 };
 
-Node::Frame Function::calcSize(Graphics& gc) 
+Node::Frame Function::calcSize(UI::Graphics& gc) 
 {
 	m_arg->calculateSize(gc);
 	Frame frame = { 
@@ -160,17 +160,17 @@ Node::Frame Function::calcSize(Graphics& gc)
     return frame;
 }
 
-void Function::calcOrig(Graphics& gc, int x, int y)
+void Function::calcOrig(UI::Graphics& gc, int x, int y)
 {
 	m_internal.setOrigin(x, y);
 	m_arg->calculateOrigin(gc, x + gc.getTextLength(m_name), 
 						       y + getFrame().base - m_arg->getFrame().base);
 }
 
-void Function::drawNode(Graphics& gc) const
+void Function::drawNode(UI::Graphics& gc) const
 {
 	gc.at(m_internal.x0(), m_internal.y0(), m_name,
-		  Graphics::Attributes::NONE, Graphics::Color::GREEN);
+		  UI::Graphics::Attributes::NONE, UI::Graphics::Color::GREEN);
 	m_arg->draw(gc);
 }
 
@@ -180,7 +180,7 @@ Complex Function::getNodeValue() const
 	return m_func(arg);
 }
 
-Node::Frame Differential::calcSize(Graphics& gc)
+Node::Frame Differential::calcSize(UI::Graphics& gc)
 {
 	m_function->calculateSize(gc);
 	Frame frame = {
@@ -193,14 +193,14 @@ Node::Frame Differential::calcSize(Graphics& gc)
 	return frame;
 }
 
-void Differential::calcOrig(Graphics& gc, int x, int y)
+void Differential::calcOrig(UI::Graphics& gc, int x, int y)
 {
 	m_internal.setOrigin(x, y);
 	m_function->calculateOrigin(gc, x + gc.getDifferentialWidth(m_variable),
 								    y + getFrame().base - m_function->getFrame().base);
 }
 
-void Differential::drawNode(Graphics& gc) const 
+void Differential::drawNode(UI::Graphics& gc) const 
 {
 	gc.differential(m_internal.x0(), 
 					m_internal.y0() + getFrame().base - gc.getDifferentialBase(m_variable),
@@ -222,41 +222,41 @@ const Constant::const_map Constant::constants = {
 	{ 'i', Complex(0, 1) },
 };
 
-Node::Frame Constant::calcSize(Graphics& gc) 
+Node::Frame Constant::calcSize(UI::Graphics& gc) 
 {
     Frame frame = { { gc.getCharLength(m_name), gc.getTextHeight(), 0, 0 }, 0 };
 	m_internal = frame.box;
     return frame;
 }
 
-void Constant::calcOrig(Graphics&, int x, int y)
+void Constant::calcOrig(UI::Graphics&, int x, int y)
 {
 	m_internal.setOrigin(x, y + getFrame().base);
 }
 
-void Constant::drawNode(Graphics& gc) const
+void Constant::drawNode(UI::Graphics& gc) const
 {
 	gc.at(m_internal.x0(), m_internal.y0(), m_name,
-		  Graphics::Attributes::ITALIC, Graphics::Color::RED);
+		  UI::Graphics::Attributes::ITALIC, UI::Graphics::Color::RED);
 }
 
 Variable::var_map Variable::values;
 
-Node::Frame Variable::calcSize(Graphics& gc) 
+Node::Frame Variable::calcSize(UI::Graphics& gc) 
 {
 	Frame frame = { { gc.getCharLength(m_name), gc.getTextHeight(), 0, 0 }, 0 };
 	m_internal = frame.box;
     return frame;
 }
 
-void Variable::calcOrig(Graphics&, int x, int y)
+void Variable::calcOrig(UI::Graphics&, int x, int y)
 {
 	m_internal.setOrigin(x, y + getFrame().base);
 }
 
-void Variable::drawNode(Graphics& gc) const
+void Variable::drawNode(UI::Graphics& gc) const
 {
-	gc.at(m_internal.x0(), m_internal.y0(), m_name, Graphics::Attributes::ITALIC);
+	gc.at(m_internal.x0(), m_internal.y0(), m_name, UI::Graphics::Attributes::ITALIC);
 }
 
 void Variable::setValue(char name, Complex value)
@@ -283,24 +283,24 @@ string Number::toString() const
 	return n;
 }
 
-Node::Frame Number::calcSize(Graphics& gc) 
+Node::Frame Number::calcSize(UI::Graphics& gc) 
 {
 	Frame frame = { { gc.getTextLength(toString()), gc.getTextHeight(), 0, 0 }, 0 };
 	m_internal = frame.box;
     return frame;
 }
 
-void Number::calcOrig(Graphics&, int x, int y)
+void Number::calcOrig(UI::Graphics&, int x, int y)
 {
 	m_internal.setOrigin(x, y + getFrame().base);
 }
 
-void Number::drawNode(Graphics& gc) const
+void Number::drawNode(UI::Graphics& gc) const
 {
-	gc.at(m_internal.x0(), m_internal.y0(), toString(), Graphics::Attributes::NONE);
+	gc.at(m_internal.x0(), m_internal.y0(), toString(), UI::Graphics::Attributes::NONE);
 }
 
-Node::Frame Term::calcSize(Graphics& gc) 
+Node::Frame Term::calcSize(UI::Graphics& gc) 
 {
 	int x = 0, b = 0, y = 0;
 	for ( auto n : factors ) { 
@@ -315,7 +315,7 @@ Node::Frame Term::calcSize(Graphics& gc)
 	return frame;
 }
 
-void Term::calcOrig(Graphics& gc, int x, int y)
+void Term::calcOrig(UI::Graphics& gc, int x, int y)
 {
 	for ( auto n : factors ) {
 		n->calculateOrigin(gc, x, y + getFrame().base - n->getFrame().base);
@@ -323,7 +323,7 @@ void Term::calcOrig(Graphics& gc, int x, int y)
 	}
 }
 
-void Term::drawNode(Graphics& gc) const
+void Term::drawNode(UI::Graphics& gc) const
 {
 	for ( auto n : factors ) n->draw(gc);
 }
@@ -369,7 +369,7 @@ NodeIter Term::pos(Node* me)
 	return find(term->factors.begin(), term->factors.end(), me);
 }
 
-Node::Frame Expression::calcSize(Graphics& gc) 
+Node::Frame Expression::calcSize(UI::Graphics& gc) 
 {
 	int x = 0, b = 0, y = 0;
 	for ( auto n : terms ) { 
@@ -384,7 +384,7 @@ Node::Frame Expression::calcSize(Graphics& gc)
 	return frame;
 }
 
-void Expression::calcOrig(Graphics& gc, int x, int y)
+void Expression::calcOrig(UI::Graphics& gc, int x, int y)
 {
 	m_internal.setOrigin(x, y);
 	for ( auto n : terms ) {
@@ -394,13 +394,13 @@ void Expression::calcOrig(Graphics& gc, int x, int y)
 	}
 }
 
-void Expression::drawNode(Graphics& gc) const
+void Expression::drawNode(UI::Graphics& gc) const
 {
 	for ( auto n : terms ) {
 		if (n != terms[0] || !n->getSign()) {
 			gc.at(n->getFrame().box.x0() - 1, 
 				  n->getFrame().box.y0() + n->getFrame().base,
-				  n->getSign() ? '+' : '-', Graphics::Attributes::NONE);
+				  n->getSign() ? '+' : '-', UI::Graphics::Attributes::NONE);
 		}
 		n->draw(gc); 
 	}
@@ -450,24 +450,24 @@ Input::Input(Equation& eqn, std::string txt, bool current, Node* parent, bool ne
 	if (current) eqn.setCurrentInput(m_sn);
 }
 
-Node::Frame Input::calcSize(Graphics& gc)
+Node::Frame Input::calcSize(UI::Graphics& gc)
 {
 	Frame frame = { { gc.getTextLength(m_typed) + gc.getCharLength('?'), gc.getTextHeight(), 0, 0}, 0};
 	m_internal = frame.box;
     return frame;
 }
 
-void Input::calcOrig(Graphics&, int x, int y)
+void Input::calcOrig(UI::Graphics&, int x, int y)
 {
 	m_internal.setOrigin(x, y);
 }
 
-void Input::drawNode(Graphics& gc) const
+void Input::drawNode(UI::Graphics& gc) const
 {
 	for (size_t i = 0; i < m_typed.length(); ++i) {
-		gc.at(m_internal.x0() + i, m_internal.y0(), m_typed.at(i), Graphics::Attributes::ITALIC);
+		gc.at(m_internal.x0() + i, m_internal.y0(), m_typed.at(i), UI::Graphics::Attributes::ITALIC);
 	}
-	gc.at(m_internal.x0() + m_typed.length(), m_internal.y0(), '?', Graphics::Attributes::BOLD_ITALIC); 
+	gc.at(m_internal.x0() + m_typed.length(), m_internal.y0(), '?', UI::Graphics::Attributes::BOLD_ITALIC); 
 }
 
 string Input::toString() const

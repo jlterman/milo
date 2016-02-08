@@ -35,7 +35,7 @@ using namespace std;
 
 /* Take the selection state and draw it in the graphics context.
  */
-void Equation::setSelect(Graphics& gc)
+void Equation::setSelect(UI::Graphics& gc)
 {
 	if (m_selectStart == nullptr && m_selectEnd == nullptr) {
 		/* No selection. Clear it.
@@ -163,7 +163,7 @@ Complex Node::getValue() const
 	return z;
 }
 
-void Node::calculateSize(Graphics& gc)
+void Node::calculateSize(UI::Graphics& gc)
 {
 	Node::Frame frame = calcSize(gc);
 
@@ -182,7 +182,7 @@ void Node::calculateSize(Graphics& gc)
 	m_frame = frame;
 }
 
-void Node::calculateOrigin(Graphics& gc, int x, int y)
+void Node::calculateOrigin(UI::Graphics& gc, int x, int y)
 {
 	m_frame.box.setOrigin(x, y);
 	if (m_nth == 1) m_parenthesis.setOrigin(x, y); else m_parenthesis.setOrigin(x, y + gc.getTextHeight());
@@ -193,31 +193,31 @@ void Node::calculateOrigin(Graphics& gc, int x, int y)
 }
 
 // Draw this node and subtree in this graphic context
-void Node::draw(Graphics& gc) const
+void Node::draw(UI::Graphics& gc) const
 {
 	if (m_fDrawParenthesis)  gc.parenthesis(m_parenthesis);
 	if (isFactor() && !m_sign) {
 		gc.at(m_frame.box.x0() + ( m_fDrawParenthesis ? gc.getParenthesisWidth() : 0 ), 
-			  m_frame.box.y0() + m_frame.base, '-', Graphics::Attributes::NONE);
+			  m_frame.box.y0() + m_frame.base, '-', UI::Graphics::Attributes::NONE);
 	}
 
 	if (m_nth != 1) {
 		string n = to_string(m_nth);
 		gc.at(m_frame.box.x0() + m_frame.box.width() - gc.getTextLength(n),
-			  m_frame.box.y0(), n, Graphics::Attributes::NONE);
+			  m_frame.box.y0(), n, UI::Graphics::Attributes::NONE);
 	}
 	drawNode(gc);	
 }
 
 // Set up drawing for this node and its subtree
-void Node::setUpDraw(Graphics& gc)
+void Node::setUpDraw(UI::Graphics& gc)
 {
 	calculateSize(gc);
 	calculateOrigin(gc, 0, 0);
 	gc.set(m_frame.box);
 }
 
-void Equation::draw(Graphics& gc, bool fRefresh)
+void Equation::draw(UI::Graphics& gc, bool fRefresh)
 {
 	m_root->setUpDraw(gc);
 	setSelect(gc);
@@ -358,19 +358,19 @@ void Equation::setSelectFromNode(Node* node)
 	}
 }
 
-Node* Equation::findNode(Graphics& gc, int x, int y)
+Node* Equation::findNode(UI::Graphics& gc, int x, int y)
 {
 	gc.relativeOrig(x, y);
 	return m_root->findNode(x, y);
 }
 
-Node* Equation::findNode(Graphics& gc, Box b)
+Node* Equation::findNode(UI::Graphics& gc, Box b)
 {
 	gc.relativeOrig(b.x0(), b.y0());
 	return m_root->findNode(b);
 }
 
-void Equation::selectBox(Graphics& gc, Node* start, Box b)
+void Equation::selectBox(UI::Graphics& gc, Node* start, Box b)
 {
 	gc.relativeOrig(b.x0(), b.y0());
 	if (start->getParent() == nullptr || start->getParent()->getType() != Term::type) {

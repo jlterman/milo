@@ -299,6 +299,17 @@ private:
 using Box = Rectangle<int>; ///< @brief Specialization of integer rectangle.
 //@}
 
+namespace std
+{
+	/**
+	 * Combine hash keys for multi data member classes,
+	 */
+	template <class T> inline void hash_combine(std::size_t& seed, T v)
+	{
+		seed ^= hash<T>()(v) + 0x9e3779b9 + (seed<<6) + (seed>>2);
+	}
+}
+
 /**
  * Logging for milo program.
  */
