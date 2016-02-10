@@ -485,10 +485,11 @@ const UI::Event& CursesGraphics::getNextEvent(int xCursor, int yCursor, bool fBl
 		}
 		else if (code == KEY_MOUSE && getmouse(&event) == OK) {
 			code = event.bstate|MOUSE_EVENT_MASK;
+			m_xMouse = event.x; m_yMouse = event.y;
+			LOG_TRACE_MSG("mouse event: " + to_hexstring(code) + ", (x,y) = " +
+						  to_string(event.x) + ", " + to_string(event.y));
 			break;
 		}
-		else
-			code = 0;
 	}
 
 	return event_map.at(code);

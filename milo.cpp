@@ -29,7 +29,8 @@
 #include <typeinfo>
 
 #include "milo.h"
-#include "ui.h"
+
+namespace UI { class Graphics; }
 
 using namespace std;
 
@@ -668,7 +669,7 @@ Equation* EqnUndoList::top()
 
 namespace Log
 {
-	void msg(string m)
+	void msg(const string& m)
 	{
 		char timestamp[256];
 		time_t now = time(NULL);

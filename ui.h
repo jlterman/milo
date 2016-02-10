@@ -40,7 +40,7 @@ namespace UI {
 	 */
 	enum Keys {
 		NO_KEY, CTRL_A, CTRL_B, CTRL_C, CTRL_D, CTRL_E, CTRL_F, CTRL_G, CTRL_H,
-		TAB, CTRL_J, CTRL_K, CTRL_L, ENTER, CTRL_N, CTRL_O, CTRL_P, CTRL_Q,
+		TAB, ENTER, CTRL_K, CTRL_L, CTRL_M, CTRL_N, CTRL_O, CTRL_P, CTRL_Q,
 		CTRL_R, CTRL_S, CTRL_T, CTRL_U,	CTRL_V, CTRL_W, CTRL_X, CTRL_Y, CTRL_Z, ESC,
 		SPACE = 32, BANG, DBL_QUOTE, HASH, DOLLAR, PRCT, AMP, QUOTE, L_PAR, R_PAR,
 		STAR, PLUS, COMMA, MINUS, DOT, DIVIDE, K0, K1, K2, K3, K4, K5, K6, K7, K8, K9,
@@ -48,7 +48,7 @@ namespace UI {
 		L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, L_BRACKET, B_SLASH, R_BRACKET,
 		POWER, U_SCORE, ACCENT, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r,
 		s, t, u, v, w, x, y, z, L_BRACE, PIPE, R_BRACE, TILDE,
-		F1 = 0x80, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, BACK_TAB,
+		F1 = 0x80, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12,
 		INS, DEL, HOME, END, PAGE_UP, PAGE_DOWN, UP, DOWN, LEFT, RIGHT, BSPACE
 	};
 
@@ -63,7 +63,7 @@ namespace UI {
 	 * Modifier key states for mouse and key events.
 	 */
 	enum Modifiers {
-		NO_MOD, ALT, SHIFT, ALT_SHIFT, CTRL, CRL_ALT, CTRL_SHIFT, CLTRL_ALT_SHIFT
+		NO_MOD, ALT, SHIFT, ALT_SHIFT, CTRL, CRL_ALT, CTRL_SHIFT, CTRL_ALT_SHIFT
 	};
 
 	/**
@@ -110,7 +110,7 @@ namespace UI {
 		//@}
 			
 		Kind getKind() const { return m_kind; }                ///< @return Event kind.
-		enum Keys getKey() const { return m_key; }             ///< @return Key codee.
+		enum Keys getKey() const { return m_key; }             ///< @return Key code.
 		enum Mouse getMouse() const { return m_mouse; }        ///< @return Mouse event type.
 		enum Modifiers getModifiers() const { return m_mod; }  ///< @return Modifiers state.
 		int getButton() const { return m_button; }             ///< @return Button number.
@@ -122,11 +122,11 @@ namespace UI {
 		std::size_t hash() const
 		{
 			std::size_t seed = 0;
-			std::hash_combine<int>(seed, (int) m_kind);
-			std::hash_combine<int>(seed, (int) m_key);
-			std::hash_combine<int>(seed, (int) m_mouse);
-			std::hash_combine<int>(seed, (int) m_mod);
-			std::hash_combine<int>(seed, m_button);
+			std::hash_combine<int>(seed, ((int) m_kind) * 2654435761);
+			std::hash_combine<int>(seed, ((int) m_key) * 2654435761);
+			std::hash_combine<int>(seed, ((int) m_mouse) * 2654435761);
+			std::hash_combine<int>(seed, ((int) m_mod) * 2654435761);
+			std::hash_combine<int>(seed, m_button * 2654435761);
 			return seed;
 		}
 
@@ -142,6 +142,12 @@ namespace UI {
 			        e.m_mod   == m_mod &&
 			        e.m_button == m_button;
 		}
+
+		/**
+		 * Create string representing event.
+		 * @return String representing event
+		 */
+		std::string toString() const;
 
 	private:
 		Kind m_kind;          ///< Type of event.

@@ -20,19 +20,19 @@ xterm:
 milo_ncurses: milo_ncurses.o $(OBJECTS)
 	g++ $(OBJECTS) milo_ncurses.o -o milo_ncurses -lncursesw
 
-milo_ncurses.o: milo_ncurses.cpp milo.h
+milo_ncurses.o: milo_ncurses.cpp ui.h
 	g++ $(ARGS) milo_ncurses.cpp -c
 
 milo_test: milo_test.o $(OBJECTS)
 	g++ $(ARGS) $(OBJECTS) milo_test.o -o milo_test
 
-milo_test.o: milo_test.cpp milo.h
+milo_test.o: milo_test.cpp ui.h
 	g++ $(ARGS) milo_test.cpp -c
 
 parser.o: parser.cpp milo.h util.h nodes.h
 	g++ $(ARGS) parser.cpp -c
 
-nodes.o: nodes.cpp milo.h util.h nodes.h
+nodes.o: nodes.cpp milo.h ui.h util.h nodes.h
 	g++ $(ARGS) nodes.cpp -c
 
 milo.o: milo.cpp milo.h util.h

@@ -225,7 +225,8 @@ public:
 	 */
 	std::string toString()
 	{
-		std::string s = "width: " + width() + ", height: " + height() + ", x0: " + x0() + ", y0: " + y0();
+		std::string s = "width: " + std::to_string(width()) + ", height: " + std::to_string(height()) +
+			            ", x0: " + std::to_string(x0()) + ", y0: " + std::to_string(y0());
 		return s;
 	}
 
@@ -318,7 +319,7 @@ namespace Log
 	/**
 	 * Pint message along with file and line number information to milo log.
 	 */
-	void msg(std::string m);
+	void msg(const std::string& m);
 }
 
 #define LOG_TRACE_MSG(m) Log::msg(string("") + __FILE__ + ": " + to_string(__LINE__) + ": " + (m))

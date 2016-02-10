@@ -98,11 +98,13 @@ static bool do_undo(const Event&)
 static bool do_mouse_pressed(const Event&)
 {
 	gc->getMouseCoords(start_mouse_x, start_mouse_y);
+	LOG_TRACE_MSG("mouse press x: " + to_string(start_mouse_x) + ", y: " + to_string(start_mouse_y));
 	start_select = eqn->findNode(*gc, start_mouse_x, start_mouse_y);
 	if (start_select == nullptr) {
-		start_mouse_x = start_mouse_y = -1;
+		//start_mouse_x = start_mouse_y = -1;
 		return false;
 	}
+	LOG_TRACE_MSG("node found: " + start_select->toString());
 	eqn->setSelect(start_select);
 	eqn->draw(*gc, true);
 	return false;
@@ -116,8 +118,9 @@ static bool do_mouse_pressed(const Event&)
  */
 static bool do_mouse_released(const Event&)
 {
+	LOG_TRACE_MSG("mouse release");
 	start_mouse_x = start_mouse_y = -1;
-	if (start_select->getSelect() == Node::Select::ALL) {
+	if (start_select != nullptr && start_select->getSelect() == Node::Select::ALL) {
 		eqn->selectNodeOrInput(start_select);
 	}
 	start_select = nullptr;
@@ -133,8 +136,10 @@ static bool do_mouse_clicked(const Event&)
 {
 	int mouse_x = -1, mouse_y = -1;
 	gc->getMouseCoords(mouse_x, mouse_y);
+	LOG_TRACE_MSG("mouse clicked x: " + to_string(mouse_x) + ", y: " + to_string(mouse_y));
 	Node* node = eqn->findNode(*gc, mouse_x, mouse_y);
 	if (node == nullptr) return false;
+	LOG_TRACE_MSG("node found: " + node->toString());
 	eqn->clearSelect();
 	eqn->selectNodeOrInput(node);
 	eqn->draw(*gc, true);
@@ -151,8 +156,10 @@ static bool do_mouse_double(const Event&)
 {
 	int mouse_x = -1, mouse_y = -1;
 	gc->getMouseCoords(mouse_x, mouse_y);
+	LOG_TRACE_MSG("mouse double clicked x: " + to_string(mouse_x) + ", y: " + to_string(mouse_y));
 	Node* node = eqn->findNode(*gc, mouse_x, mouse_y);
 	if (node == nullptr || node == eqn->getCurrentInput()) return false;
+	LOG_TRACE_MSG("node found: " + node->toString());
 	if (node->getType() == Input::type) {
 		eqn->selectNodeOrInput(node);
 		return true;
@@ -180,9 +187,14 @@ static bool do_mouse_position(const Event&)
 				min(start_mouse_x,  event_x),
 				min(start_mouse_y,  event_y)
 		};
+		LOG_TRACE_MSG("mouse position current box: " + box.toString());
+	}
+	else {
+		gc->getMouseCoords(start_mouse_x, start_mouse_y);
 	}
 	if (start_select != nullptr && box.area() > 1 ) {
 		Node* new_select = eqn->findNode(*gc, box);
+		LOG_TRACE_MSG("node found: " + ((new_select == nullptr) ? "None" : new_select->toString()));
 		if (new_select != nullptr && new_select->getDepth() < start_select->getDepth())
 			start_select = new_select;
 		eqn->selectBox(*gc, start_select, box);
@@ -190,8 +202,11 @@ static bool do_mouse_position(const Event&)
 	}
 	else if (start_select == nullptr && box.area() > 0) {
 		start_select = eqn->findNode(*gc, box);
-		eqn->setSelect(start_select);
-		eqn->draw(*gc, true);
+		LOG_TRACE_MSG("node found: " + ((start_select == nullptr) ? "None" : start_select->toString()));
+		if (start_select != nullptr) {
+			eqn->setSelect(start_select);
+			eqn->draw(*gc, true);
+		}
 	}
 	return false;
 }
@@ -204,6 +219,7 @@ static bool do_mouse_position(const Event&)
  */
 static bool do_key(const Event& event)
 {
+	LOG_TRACE_MSG(event.toString());
 	if (eqn->getSelectStart() != nullptr) {
 		eqn->eraseSelection(new Input(*eqn, string(1, (char)event.getKey())));
 	}
@@ -218,10 +234,12 @@ static bool do_key(const Event& event)
 /**
  * Handle backspace key event.
  * Erase selection if it exists, or previous factor before current input.
+ * @param event Key event.
  * @return True if backspace is processed.
  */
-static bool do_backspace(const Event&)
+static bool do_backspace(const Event& event)
 {
+	LOG_TRACE_MSG(event.toString());
 	if (eqn->getSelectStart() != nullptr) {
 		eqn->eraseSelection(new Input(*eqn));
 	}
@@ -253,10 +271,12 @@ static bool do_backspace(const Event&)
 /**
  * Handle left arrow key event.
  * Move to node to the left of selection or current input.
+ * @param event Key event.
  * @return True if left arrow proccessed.
  */
-static bool do_left(const Event&)
+static bool do_left(const Event& event)
 {
+	LOG_TRACE_MSG(event.toString());
 	Input* in = eqn->getCurrentInput();
 	if (eqn->getSelectStart() != nullptr) {
 		FactorIterator n(eqn->getSelectStart());
@@ -271,9 +291,12 @@ static bool do_left(const Event&)
 		in_pos = in->emptyBuffer();
 		FactorIterator prev{in_pos};
 		--prev;
-		if (in->unremovable()) {
+		if (prev->getType() == Input::type) {
+			eqn->selectNodeOrInput(*prev);
+		}
+		else if (in->unremovable()) {
 			eqn->disableCurrentInput();
-			eqn->setSelect(*prev);
+			prev.insertAfter(new Input(*eqn));
 		} else
 			FactorIterator::swap(prev, in_pos);
 	}
@@ -285,10 +308,12 @@ static bool do_left(const Event&)
 /**
  * Handle right arrow key event.
  * Move to node to the right of selection or current input.
+ * @param event Key event.
  * @return True if right arrow proccessed.
  */
-static bool do_right(const Event&)
+static bool do_right(const Event& event)
 {
+	LOG_TRACE_MSG(event.toString());
 	Input* in = eqn->getCurrentInput();
 	if (eqn->getSelectStart() != nullptr) {
 		FactorIterator n(eqn->getSelectStart());
@@ -302,13 +327,16 @@ static bool do_right(const Event&)
 
 		FactorIterator in_pos(in);
 		if (in_pos == in_pos.getLast()) return false;
-				
+
 		in_pos = in->emptyBuffer();
 		FactorIterator nxt{in_pos};
-		--nxt;
-		if (in->unremovable()) {
+		++nxt;
+		if (nxt->getType() == Input::type) {
+			eqn->selectNodeOrInput(*nxt);
+		}
+		else if (in->unremovable()) {
 			eqn->disableCurrentInput();
-			eqn->setSelect(*nxt);
+			nxt.insert(new Input(*eqn));;
 		} else
 			FactorIterator::swap(nxt, in_pos);
 	}
@@ -321,10 +349,12 @@ static bool do_right(const Event&)
  * Handle left arrow with shift key event.
  * Either add factor on the left to selection or 
  * select factor to left of cursor.
+ * @param event Key event.
  * @return True if shift left arrow is processed.
  */
-static bool do_shift_left(const Event&)
+static bool do_shift_left(const Event& event)
 {
+	LOG_TRACE_MSG(event.toString());
 	if (eqn->getSelectStart() != nullptr) {
 		auto start = FactorIterator(eqn->getSelectStart());
 		
@@ -340,9 +370,8 @@ static bool do_shift_left(const Event&)
 		FactorIterator in_pos(in);
 		if (in->empty() && in_pos.isBegin()) return false;
 
-		auto start = in->emptyBuffer();
-		auto end   = in_pos--;
-		eqn->setSelect(*start, *end);
+		in_pos = eqn->disableCurrentInput();
+		eqn->setSelect(*in_pos, *in_pos);
 	}
 	return true;
 }
@@ -351,10 +380,12 @@ static bool do_shift_left(const Event&)
  * Handle right arrow with shift key event.
  * Either add factor on the right to selection or 
  * select factor to right of cursor.
+ * @param event Key event.
  * @return True if shift right arrow is processed.
  */
-static bool do_shift_right(const Event&)
+static bool do_shift_right(const Event& event)
 {
+	LOG_TRACE_MSG(event.toString());
 	if (eqn->getSelectStart() != nullptr) {
 		auto end = FactorIterator(eqn->getSelectEnd());
 		
@@ -370,9 +401,8 @@ static bool do_shift_right(const Event&)
 		FactorIterator in_pos(in);
 		if (in_pos.isEnd()) return false;
 
-		auto end   = in->emptyBuffer();
-		auto start = in_pos++;
-		eqn->setSelect(*start, *end);
+		in_pos = ++eqn->disableCurrentInput();
+		eqn->setSelect(*in_pos, *in_pos);
 	}
 	return true;
 }
@@ -382,10 +412,12 @@ static bool do_shift_right(const Event&)
  * Transverse the entire equation tree to the left 
  * of the selection or the current input. Select first
  * node if there is no selection or input.
+ * @param event Key event.
  * @return Always true.
  */
-static bool do_up(const Event&)
+static bool do_up(const Event& event)
 {
+	LOG_TRACE_MSG(event.toString());
 	Input* in = eqn->getCurrentInput();
 	if (eqn->getSelectStart() != nullptr) {
 		NodeIterator n(eqn->getSelectStart());
@@ -412,10 +444,12 @@ static bool do_up(const Event&)
  * Transverse the entire equation tree to the right
  * of the selection or the current input. Select last
  * node if there is no selection or input.
+ * @param event Key event.
  * @return Always true.
  */
-static bool do_down(const Event&)
+static bool do_down(const Event& event)
 {
+	LOG_TRACE_MSG(event.toString());
 	Input* in = eqn->getCurrentInput();
 	if (eqn->getSelectStart() != nullptr) {
 		NodeIterator n(eqn->getSelectEnd());
@@ -442,10 +476,12 @@ static bool do_down(const Event&)
  * Handle up arrow with shift key event.
  * Select the expression to the left of the current input
  * or add it to the existing selection.
+ * @param event Key event.
  * @return True if up arrow with shift is processed.
  */
-static bool do_shift_up(const Event&)
+static bool do_shift_up(const Event& event)
 {
+	LOG_TRACE_MSG(event.toString());
 	if (eqn->getSelectStart() != nullptr) {
 		auto start = FactorIterator(eqn->getSelectStart());
 		
@@ -470,10 +506,12 @@ static bool do_shift_up(const Event&)
  * Handle down arrow with shift key event.
  * Select the expression to the right of the current input
  * or add it to the existing selection.
+ * @param event Key event.
  * @return True if down arrow with shift is processed.
  */
-static bool do_shift_down(const Event&)
+static bool do_shift_down(const Event& event)
 {
+	LOG_TRACE_MSG(event.toString());
 	if (eqn->getSelectStart() != nullptr) {
 		auto end = FactorIterator(eqn->getSelectEnd());
 		
@@ -498,16 +536,18 @@ static bool do_shift_down(const Event&)
  * Handle enter key event.
  * Either disable current input or replace 
  * current selection with a new input.
+ * @param event Key event.
  * @return True if enter is proccessed.
  */
-static bool do_enter(const Event&)
+static bool do_enter(const Event& event)
 {
+	LOG_TRACE_MSG(event.toString());
 	Input* in = eqn->getCurrentInput();
 	Node* start = eqn->getSelectStart();
 	if (start != nullptr) {
 		auto it = FactorIterator(start);
 		eqn->clearSelect();
-		it.insert(new Input(*eqn));
+		it.insertAfter(new Input(*eqn));
 	}
 	else if (in != nullptr) {
 		if (eqn->getCurrentInput()->unremovable()) return false;
@@ -523,10 +563,12 @@ static bool do_enter(const Event&)
  * Handle +/- key event.
  * Add a new term with a new input. New term is positive 
  * or negative depending on whether character is +/-.
+ * @param event Key event.
  * @return True if input is active.
  */
 static bool do_plus_minus(const Event& event)
 {
+	LOG_TRACE_MSG(event.toString());
 	Input* in = eqn->getCurrentInput();
 	if (in == nullptr) return false;
 
@@ -543,10 +585,12 @@ static bool do_plus_minus(const Event& event)
 
 /**
  * Insert divide term.
+ * @param event Key event.
  * @return True if successful.
  */
-static bool do_divide(const Event&)
+static bool do_divide(const Event& event)
 {
+	LOG_TRACE_MSG(event.toString());
 	Input* in = eqn->getCurrentInput();
 	if (in == nullptr) return false;
 
@@ -555,10 +599,12 @@ static bool do_divide(const Event&)
 
 /**
  * Insert power factor.
+ * @param event Key event.
  * @return True if successfull.
  */
-static bool do_power(const Event&)
+static bool do_power(const Event& event)
 {
+	LOG_TRACE_MSG(event.toString());
 	Input* in = eqn->getCurrentInput();
 	if (in == nullptr) return false;
 
@@ -569,9 +615,12 @@ static bool do_power(const Event&)
  * Handle left parenthesis key event.
  * Add "(*)". Side effect will be to add any functions
  * that matches or an expression as a new factor.
+ * @param event Key event.
+ * @return True if successful.
  */
-static bool do_left_parenthesis(const Event&)
+static bool do_left_parenthesis(const Event& event)
 {
+	LOG_TRACE_MSG(event.toString());
 	Input* in = eqn->getCurrentInput();
 	if (in == nullptr) return false;
 
@@ -583,10 +632,12 @@ static bool do_left_parenthesis(const Event&)
 /**
  * Handle space key event.
  * Either select factor at input or select one level higher.
+ * @param event Key event.
  * @return True if successful.
  */
-static bool do_space(const Event&)
+static bool do_space(const Event& event)
 {
+	LOG_TRACE_MSG(event.toString());
 	Input* in = eqn->getCurrentInput();
 	if (in != nullptr) {
 		if (in->empty()) return false;
@@ -640,8 +691,8 @@ static const unordered_map<Event, event_handler> event_map = {
 	{ Event(Mouse::DOUBLE,   1), do_mouse_double },
     { Event(Mouse::POSITION, 0), do_mouse_position },
 	
-	{ Event(Keys::LEFT,  Modifiers::SHIFT), do_shift_right },
-	{ Event(Keys::RIGHT, Modifiers::SHIFT), do_shift_left },
+	{ Event(Keys::LEFT,  Modifiers::SHIFT), do_shift_left },
+	{ Event(Keys::RIGHT, Modifiers::SHIFT), do_shift_right },
 	{ Event(Keys::UP,    Modifiers::SHIFT), do_shift_up },
 	{ Event(Keys::DOWN,  Modifiers::SHIFT), do_shift_down },
 	
@@ -759,3 +810,37 @@ void UI::doMainLoop(int argc, char* argv[], Graphics& graphicsContext)
 	}
 }
 
+string UI::Event::toString() const
+{
+	const map<enum Keys, string> key_string = {
+		{ F1, "F1" }, { F2, "F2" }, { F3, "F3" }, { F4, "F4" }, { F5, "F5" }, { F6, "F6" }, 
+		{ F7, "F7" }, { F8, "F8" }, { F9, "F9" }, { F10, "F10" }, { F11, "F11" }, { F12, "F12" },
+		{ INS, "INS" }, { DEL, "DEL" }, { HOME, "HOME" }, { END, "END" }, { PAGE_UP, "PAGE_UP" },
+		{ PAGE_DOWN, "PAGE_DOWN" }, { UP, "UP" }, { DOWN, "DOWN" }, { LEFT, "LEFT" },
+		{ RIGHT, "RIGHT" }, { BSPACE, "BACKSPACE" }, { SPACE, "SPACE" }
+	};
+
+	const map<enum Mouse, string> mouse_string = {
+		{ POSITION, "POSITION" }, { PRESSED, "PRESSED" }, { RELEASED, "RELEASED" },
+		{ CLICKED, "CLICKED" }, { DOUBLE, "DOUBLE" }
+	};
+
+	const map<enum Modifiers, string> mod_string = {
+		{ ALT, "ALT-" }, { SHIFT, "SHIFT-" }, { ALT_SHIFT, "ALT-SHIFT-" }, { CTRL, "CTRL-" },
+		{ CTRL_SHIFT, "CTRL-SHIFT-" }, { CTRL_ALT_SHIFT, "CTRL-ALT-SHIFT-" }, { NO_MOD, string() }
+	};
+
+	if ( m_kind == Mouse ) {
+		return string("Mouse event: ") + mod_string.at(m_mod) + mouse_string.at(m_mouse);
+	}
+	else if ( m_kind == Key ) {
+		if ( m_key < ESC )
+			return string("Key event: " + mod_string.at(CTRL) + string(1, (char) '@' + m_key));
+		else if ( m_key > SPACE && m_key < F1)
+			return string("key event: " + mod_string.at(m_mod) +  string(1, (char) m_key));
+		else
+			return string("Key event: ") + mod_string.at(m_mod) + key_string.at(m_key);
+	}
+	else
+		return string();
+}
