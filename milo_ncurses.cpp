@@ -287,11 +287,11 @@ public:
 	}
 
 private:
-	static bool init;         ///< Singleton has been initialized.
-	bool m_has_colors;        ///< If true, flag is screen has colors.
-	UI::Event m_keyEvent = 0; ///< Storage for key event.
-	int m_xMouse;             ///< Last mouse horizontal coordinate
-	int m_yMouse;             ///< Last mouse vertical coordinate
+	static bool init;       ///< Singleton has been initialized.
+	bool m_has_colors;      ///< If true, flag is screen has colors.
+	UI::Event m_event = 0;  ///< Storage for key event.
+	int m_xMouse;           ///< Last mouse horizontal coordinate
+	int m_yMouse;           ///< Last mouse vertical coordinate
 
 	/** Map Graphics attributs to ncurses attributes.
 	 */
@@ -480,15 +480,18 @@ const UI::Event& CursesGraphics::getNextEvent(int xCursor, int yCursor, bool fBl
 		code = getChar(yCursor, xCursor - 1, fBlink);
 		
 		if (code < 0x80) {
-			m_keyEvent = UI::Event((char)code);
-			return m_keyEvent;
+			m_event = UI::Event((char)code);
+			return m_event;
+		}
+		else if (code == KEY_RESIZE) {
+			m_event = UI::Event(UI::Event::Refresh);
+			return m_event;
 		}
 		else if (code == KEY_MOUSE && getmouse(&event) == OK) {
 			code = event.bstate|MOUSE_EVENT_MASK;
 			m_xMouse = event.x; m_yMouse = event.y;
 			LOG_TRACE_MSG("mouse event: " + to_hexstring(code) + ", (x,y) = " +
 						  to_string(event.x) + ", " + to_string(event.y));
-			break;
 		}
 	}
 

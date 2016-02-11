@@ -682,9 +682,21 @@ static bool do_space(const Event& event)
 }
 
 /**
+ * Refresh screen.
+ * Returning true will cause UI to redraw screen.
+ * @return Always true;
+ */
+static bool do_refresh(const Event& event)
+{
+	LOG_TRACE_MSG(event.toString());
+	return true;
+}
+
+/**
  * Map of events to functions that handle these events.
  */
 static const unordered_map<Event, event_handler> event_map = {
+	{ Event(Event::Refresh),     do_refresh },
 	{ Event(Mouse::RELEASED, 1), do_mouse_released },
 	{ Event(Mouse::PRESSED,  1), do_mouse_pressed },
 	{ Event(Mouse::CLICKED,  1), do_mouse_clicked },

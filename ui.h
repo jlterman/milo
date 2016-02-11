@@ -78,35 +78,38 @@ namespace UI {
 		/**
 		 * Event type, mouse, key or menu.
 		 */
-		enum Kind { Mouse, Key };
+		enum Kind { Mouse, Key, Refresh };
 		
 		/** @name Constructors */
 		//@{
 		/**
-		 * Default key event constructor Event class.
+		 * Universal event constructor.
+		 */
+	    Event(enum Kind knd, enum Keys key = NO_KEY, enum Modifiers md = NO_MOD, enum Mouse m = NO_MOUSE, int b = 0) :
+		    m_kind{knd}, m_key{key}, m_mouse{m}, m_mod{md}, m_button{b} {}
+			
+		/**
+		 * Default key event constructor.
 		 * Construct an event for ascii code with no modifier keys.
 		 * @param key Ascii character.
 		 */
-        Event(char key) :
-		    m_kind{Key}, m_key{(Keys)key}, m_mouse{NO_MOUSE}, m_mod{NO_MOD}, m_button{0} {}
+	    Event(char key) : Event(Key, (Keys) key) {}
 		/**
-		 * Key event constructor for Event class.
+		 * Key event constructor.
 		 * Construct key event for all keys and modifiers.
 		 * @param key Key code.
 		 * @param m   Modifiers for key.
 		 */
-        Event(enum Keys key, enum Modifiers m = NO_MOD) :
-	        m_kind{Key}, m_key{key}, m_mouse{NO_MOUSE}, m_mod{m}, m_button{0} {}
+	     Event(enum Keys key, enum Modifiers m = NO_MOD) : Event(Key, key, m) {}
 
 		/**
-		 * Mouse event constructor for Event class.
+		 * Mouse event constructor.
 		 * Construct mouse event.
 		 * @param m Mouse event type.
 		 * @param b Mouse button number.
 		 * @param md Modifiers key for mouse event.
 		 */
-	    Event(enum Mouse m, int b, enum Modifiers md = NO_MOD) :
-	        m_kind{Mouse}, m_key{NO_KEY}, m_mouse{m}, m_mod{md}, m_button{b} {}
+	     Event(enum Mouse m, int b, enum Modifiers md = NO_MOD) : Event(Mouse, NO_KEY, md, m, b) {} 
 		//@}
 			
 		Kind getKind() const { return m_kind; }                ///< @return Event kind.
