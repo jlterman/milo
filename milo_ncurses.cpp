@@ -459,6 +459,7 @@ const unordered_map<int, UI::Event> CursesGraphics::event_map = {
 	{ KEY_SF,     UI::Event(UI::Keys::DOWN, UI::Modifiers::SHIFT) },
 	{ KEY_SPREVIOUS, UI::Event(UI::Keys::PAGE_UP, UI::Modifiers::SHIFT) },
 	{ KEY_BACKSPACE, UI::Event(UI::Keys::BSPACE, UI::Modifiers::NO_MOD) },
+	{ KEY_RESIZE, UI::Event(UI::Event::Refresh) },
 	{ 0x10000001, UI::Event(UI::Mouse::RELEASED, 1, UI::Modifiers::NO_MOD) },
 	{ 0x12000001, UI::Event(UI::Mouse::RELEASED, 1, UI::Modifiers::SHIFT) },
 	{ 0x10000002, UI::Event(UI::Mouse::PRESSED,  1, UI::Modifiers::NO_MOD) },
@@ -481,10 +482,6 @@ const UI::Event& CursesGraphics::getNextEvent(int xCursor, int yCursor, bool fBl
 		
 		if (code < 0x80) {
 			m_event = UI::Event((char)code);
-			return m_event;
-		}
-		else if (code == KEY_RESIZE) {
-			m_event = UI::Event(UI::Event::Refresh);
 			return m_event;
 		}
 		else if (code == KEY_MOUSE && getmouse(&event) == OK) {
