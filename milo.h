@@ -735,7 +735,8 @@ public:
 	 */
     Expression(Parser& p, Node* parent = nullptr) : Node(parent)
 	{
-		while(add(p)); setDrawParenthesis(true);
+		while(add(p));
+		setDrawParenthesis(true);
 	}
 
  	/**
