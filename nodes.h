@@ -26,7 +26,7 @@
  */
 #include <vector>
 #include <exception>
-#include <map>
+#include <unordered_map>
 #include "milo.h"
 
 // Forward class decleration
@@ -454,7 +454,7 @@ public:
 	~Constant() {}
 	//@}
 	
-	using const_map = std::map<char, Complex>; ///< @brief Specialization for mapping name to value.
+	using const_map = std::unordered_map<char, Complex>; ///< @brief Specialization for mapping name to value.
 
 	/** @name Virtual Public Member Functions */
 	//@{
@@ -574,7 +574,7 @@ public:
 	~Variable() {}
 	//@}
 	
-	using var_map = std::map<char, Complex>; ///< @brief Specialization for mapping name to value.
+	using var_map = std::unordered_map<char, Complex>; ///< @brief Specialization for mapping name to value.
 
 	/** @name Virtual Public Member Functions */
 	//@{
@@ -825,7 +825,7 @@ public:
 	/**
 	 * @brief Map that associates function name with its function call.
 	 */
-	using func_map = std::map<std::string, func_ptr>;
+	using func_map = std::unordered_map<std::string, func_ptr>;
 
 	/**
 	 * Get function object from Parser.

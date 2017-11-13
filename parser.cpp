@@ -122,7 +122,7 @@ private:
 	/**
 	 * Map associating class Node names with a function that will create it.
 	 */
-	static const std::map<std::string, createPtr> create_factors;
+	static const unordered_map<std::string, createPtr> create_factors;
 };
 
 // Get next character to be parsed or '\0' if at end.
@@ -277,7 +277,7 @@ static Node* create(EqnXMLParser& in, Node* parent)
 
 
 // Map of class name to named constructor.
-const map<string, EqnXMLParser::createPtr> EqnXMLParser::create_factors =
+const unordered_map<string, EqnXMLParser::createPtr> EqnXMLParser::create_factors =
 	{ { Differential::name, create<Differential> },
 	  {   Expression::name, create<Expression>   },
 	  {     Function::name, create<Function>     },

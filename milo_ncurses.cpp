@@ -295,13 +295,13 @@ private:
 
 	/** Map Graphics attributs to ncurses attributes.
 	 */
-	static const map<Attributes, int> attribute_map;
+	static const unordered_map<Attributes, int> attribute_map;
 
 	/** 
 	 * Special characters that are mapped to special unicode characters.
 	 * Upper case characters mapped to greek letters.
 	 */
-	static const map<char, string> char_map;
+	static const unordered_map<char, string> char_map;
 
 	/** Map ncurses key and mouse code to UI:Event equivalents.
 	 */
@@ -321,14 +321,14 @@ private:
 
 bool CursesGraphics::init = false;
 
-const map<UI::Graphics::Attributes, int> CursesGraphics::attribute_map = {
+const unordered_map<UI::Graphics::Attributes, int> CursesGraphics::attribute_map = {
 	{ UI::Graphics::Attributes::NONE,   A_NORMAL },
 	{ UI::Graphics::Attributes::BOLD,   A_BOLD },
 	{ UI::Graphics::Attributes::ITALIC, A_ITALIC },
 	{ UI::Graphics::Attributes::BOLD_ITALIC, A_ITALIC|A_BOLD }
 };
 
-const map<char, string> CursesGraphics::char_map = {
+const unordered_map<char, string> CursesGraphics::char_map = {
 	{ 'A', "\u03b1" }, { 'B', "\u03b2" }, { 'C', "\u03c8" }, { 'D', "\u03b4" }, 
 	{ 'E', "\u03b5" }, { 'F', "\u03c6" }, { 'G', "\u03b3" }, { 'H', "\u03b7" }, 
 	{ 'I', "\u03b9" }, { 'J', "\u03be" }, { 'K', "\u03ba" }, { 'L', "\u03bb" }, 

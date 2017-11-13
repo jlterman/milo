@@ -32,7 +32,7 @@
 
 #include <iostream>
 #include <vector>
-#include <map>
+#include <unordered_map>
 #include <stack>
 #include <regex>
 
@@ -329,7 +329,7 @@ namespace XML {
 		 * The name/value pairs of the attributes from the last
 		 * header processed, i.e. text="foo".
 		 */
-		std::map<std::string, std::string> m_attributes;
+		std::unordered_map<std::string, std::string> m_attributes;
 
 		FSM fsm;               ///< XML finite state machine
 		std::string m_tag;     ///< last heder name tag processed

@@ -83,7 +83,7 @@ namespace XML
 	 */
 	string to_string(State state)
 	{
-		static const map<State, string> state_strings = {
+		static const unordered_map<State, string> state_strings = {
 			{ HEADER,     "HEADER"     }, 
 			{ HEADER_END, "HEADER_END" }, 
 			{ FOOTER,     "FOOTER"     }, 
@@ -218,7 +218,7 @@ namespace XML
 	 */
 	void escape_tag(string& tag)
 	{
-		const map<char, string> escape = {
+		const unordered_map<char, string> escape = {
 			{ '<',  "&lt;"   },
 			{ '>',  "&gt;"   },
 			{ '"',  "&quot;" },
@@ -241,7 +241,7 @@ namespace XML
 	 */
 	void unescape_tag(string& tag)
 	{
-		const map<string, string> unescape = {
+		const unordered_map<string, string> unescape = {
 			{ "&lt;",   "<", },
 			{ "&gt;",   ">", },
 			{ "&quot;", "\"" },

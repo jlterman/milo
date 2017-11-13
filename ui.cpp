@@ -824,7 +824,7 @@ void UI::doMainLoop(int argc, char* argv[], Graphics& graphicsContext)
 
 string UI::Event::toString() const
 {
-	const map<enum Keys, string> key_string = {
+	const unordered_map<enum Keys, string> key_string = {
 		{ F1, "F1" }, { F2, "F2" }, { F3, "F3" }, { F4, "F4" }, { F5, "F5" }, { F6, "F6" }, 
 		{ F7, "F7" }, { F8, "F8" }, { F9, "F9" }, { F10, "F10" }, { F11, "F11" }, { F12, "F12" },
 		{ INS, "INS" }, { DEL, "DEL" }, { HOME, "HOME" }, { END, "END" }, { PAGE_UP, "PAGE_UP" },
@@ -832,12 +832,12 @@ string UI::Event::toString() const
 		{ RIGHT, "RIGHT" }, { BSPACE, "BACKSPACE" }, { SPACE, "SPACE" }
 	};
 
-	const map<enum Mouse, string> mouse_string = {
+	const unordered_map<enum Mouse, string> mouse_string = {
 		{ POSITION, "POSITION" }, { PRESSED, "PRESSED" }, { RELEASED, "RELEASED" },
 		{ CLICKED, "CLICKED" }, { DOUBLE, "DOUBLE" }
 	};
 
-	const map<enum Modifiers, string> mod_string = {
+	const unordered_map<enum Modifiers, string> mod_string = {
 		{ ALT, "ALT-" }, { SHIFT, "SHIFT-" }, { ALT_SHIFT, "ALT-SHIFT-" }, { CTRL, "CTRL-" },
 		{ CTRL_SHIFT, "CTRL-SHIFT-" }, { CTRL_ALT_SHIFT, "CTRL-ALT-SHIFT-" }, { NO_MOD, string() }
 	};

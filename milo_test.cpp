@@ -327,7 +327,7 @@ typedef void (*func_ptr)(const string& s);
 
 /** Associate command with an internal function. ':' means it takes argument.
  */
-const map<string, func_ptr> test_funcs = {
+const unordered_map<string, func_ptr> test_funcs = {
 	{ "parse:",    parse     },
 	{ "xml:",      xml_in    },
 	{ "test",      test      },
