@@ -17,14 +17,8 @@ unit_tests: FORCE
 	$(MAKE) -C $@
 FORCE:
 
-xterm:
-	tic -x xterm-milo.nic
-
-milo_ncurses: milo_ncurses.o $(OBJECTS)
-	$(CXX) $(OBJECTS) milo_ncurses.o -o milo_ncurses -lncursesw
-
-milo_ncurses.o: milo_ncurses.cpp ui.h
-	$(CXX) $(ARGS) milo_ncurses.cpp -c
+milo_ncurses: $(OBJECTS) FORCE
+	$(MAKE) -C ncurses
 
 milo_test: milo_test.o $(OBJECTS)
 	$(CXX) $(ARGS) $(OBJECTS) milo_test.o -o milo_test
@@ -57,4 +51,5 @@ test.o: test.cpp
 	$(CXX) $(CPPARGS) -g test.cpp -c
 
 clean:
-	rm -f test milo_test milo_ncurses *.o
+	rm -f test milo_test *.o
+	$(MAKE) -C ncurses clean
