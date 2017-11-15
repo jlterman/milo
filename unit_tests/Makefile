@@ -1,17 +1,17 @@
-ARGS    = -g -std=c++11 -I ../
+ARGS = $(CPPARGS) -g -I ../
 
-all: xml_test
+all: clean xml_test
 	./xml_test
 	./milo_test.sh
 
 xml_test.o: xml_test.cpp ../xml.h
-	g++ $(ARGS) xml_test.cpp  -c
+	$(CXX) $(ARGS) xml_test.cpp  -c
 
 xml.o: ../xml.cpp ../xml.h
-	g++ $(ARGS) ../xml.cpp  -c
+	$(CXX) $(ARGS) ../xml.cpp  -c
 
 xml_test: xml_test.o xml.o
-	g++ xml_test.o xml.o -o xml_test
+	$(CXX) xml_test.o xml.o -o xml_test
 
 clean:
-	rm *.o xml_test
+	rm -f *.o xml_test
