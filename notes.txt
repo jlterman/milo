@@ -459,3 +459,116 @@ int main(int argc, char *argv[])
 #endif
 
 #define INSTALL_PATH_STR STR(INSTALL_PATH)
+
+#include <iostream>
+#include <vector>
+#include <unordered_map>
+
+namespace std
+{
+	/**
+	 * Combine hash keys for multi data member classes,
+	 */
+	template <class T> inline void hash_combine(std::size_t& seed, T v)
+	{
+		seed ^= hash<T>()(v) + 0x9e3779b9 + (seed<<6) + (seed>>2);
+	}
+
+	/**
+	 * Calculate final hash from given list of values
+	 */
+	template <class T> inline std::size_t hash_calculate(std::initializer_list<T> l)
+	{
+		std::size_t seed = 0;
+		for (auto n : l) {
+			std::hash_combine<T>(seed, ((T) n) * 0x9e3779b1);
+		}
+		return seed;
+	}
+}
+
+class A
+{
+public:
+	A(int x, int y) : m_x(x), m_y(y) {}
+
+	std::size_t hash() const
+	{
+		return std::hash_calculate<int>({m_x, m_y});
+	}
+
+	bool operator==(const A a) const
+	{
+		return (a.m_x == m_x) && (a.m_y == m_y);
+	}
+private:
+	int m_x;
+	int m_y;
+};
+
+namespace std
+{
+	template<> struct hash<A>
+	{
+		size_t operator()(A const& key) const
+		{
+			return key.hash();
+		}
+	};
+}
+
+std::unordered_map<A, std::string> test_map = {
+	{ A(2, 3), "first" },
+	{ A(3, 4), "second" }
+};
+
+int main()
+{
+	std::cout << test_map.at(A(3,4)) << std::endl;
+}
+
+#include <iostream>
+#include <vector>
+#include <memory>
+
+using namespace std;
+
+class A
+{
+public:
+	A(int x, int y) : m_x(x), m_y(y) {}
+
+	virtual int value()=0;
+protected:
+	int m_x;
+	int m_y;
+};
+
+class Plus : public A
+{
+public:
+	Plus(int x, int y) : A(x,y) {}
+
+	virtual int value() { return m_x + m_y; }
+};
+
+class Multiply : public A
+{
+public:
+	Multiply(int x, int y) : A(x, y) {}
+
+	virtual int value() { return m_x*m_y; }
+};
+
+using APtr = shared_ptr<A>;
+using AVector = vector<APtr>;
+int main()
+{
+	AVector vec;
+	Plus* p = new Plus(2, 3);
+	vec.emplace_back(p);
+	shared_ptr<A> mult = make_shared<Multiply>(4, 5);
+	vec.push_back(mult);
+	cout << "2 + 3 = " << vec[0]->value() << endl;
+	cout << "4 x 5 = " << vec.at(1)->value() << endl;
+}

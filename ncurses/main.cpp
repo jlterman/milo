@@ -1,4 +1,4 @@
-/* Copyright (C) 2016 - James Terman
+/* Copyright (C) 2017 - James Terman
  *
  * milo is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -16,15 +16,14 @@
  */
 
 /**
- * @file milo_ncurses.cpp
+ * @file ncurses/main.cpp
  * This file implements CursesGraphics that implments the ABC Graphics
- * for ncurses.
+ * and runs the event loop for ncurses.
  */
 
 #include <ncursesw/ncurses.h>
 #include <locale.h>
 #include <unordered_map>
-#include <map>
 #include "ui.h"
 
 using namespace std;
@@ -63,24 +62,6 @@ public:
 
 	/** @name Virtual Public Member Functions */
 	//@{
-
-	/**
-	 * Get mouse poition from Graphics context
-	 * @param[out] xMouse Horizontal coordinate of mouse
-	 * @param[out] yMouse Vertical coordinate of mouse
-	 */
-	void getMouseCoords(int& xMouse, int& yMouse) { xMouse = m_xMouse; yMouse = m_yMouse; }
-
-	/**
-	 * Get next event.
-	 * Blocking function that returns a reference to an base class that defines
-	 * an interface to get event info.
-	 * @param yCursor horiz coord of cursor
-	 * @param xCursor vertical coord of cursor
-	 * @param fBlink  If true, blink cursor
-	 * @return Reference to UI::Event object
-	 */
-	const UI::Event& getNextEvent(int xCursor, int yCursor, bool fBlink);
 	
 	/**
 	 * Get height of text in lines.
@@ -181,6 +162,11 @@ public:
 	void at(int x, int y, const char* s) {
 		at(x, y, string(s), NONE);
 	}
+
+	/**
+	 * ncurses handles refresh event.
+	 */
+	void refresh() {}
 
 	/**
 	 * Flush all characters to the ncurses screen.
@@ -289,7 +275,6 @@ public:
 private:
 	static bool init;       ///< Singleton has been initialized.
 	bool m_has_colors;      ///< If true, flag is screen has colors.
-	UI::Event m_event = 0;  ///< Storage for key event.
 	int m_xMouse;           ///< Last mouse horizontal coordinate
 	int m_yMouse;           ///< Last mouse vertical coordinate
 
@@ -305,7 +290,7 @@ private:
 
 	/** Map ncurses key and mouse code to UI:Event equivalents.
 	 */
-	static const unordered_map<int, UI::Event> event_map;
+	static const unordered_map<int, UI::KeyEvent> event_map;
 
 	/**
 	 * Draw a character at x,y.
@@ -365,134 +350,173 @@ void CursesGraphics::differential(int x0, int y0, char variable)
 	at(x0+1, y0+2, variable);
 }
 
-const unordered_map<int, UI::Event> CursesGraphics::event_map = {
-	{ KEY_F(1),   UI::Event(UI::Keys::F1,  UI::Modifiers::NO_MOD) },
-	{ KEY_F(2),   UI::Event(UI::Keys::F2,  UI::Modifiers::NO_MOD) },
-	{ KEY_F(3),   UI::Event(UI::Keys::F3,  UI::Modifiers::NO_MOD) },
-	{ KEY_F(4),   UI::Event(UI::Keys::F4,  UI::Modifiers::NO_MOD) },
-	{ KEY_F(5),   UI::Event(UI::Keys::F5,  UI::Modifiers::NO_MOD) },
-	{ KEY_F(6),   UI::Event(UI::Keys::F6,  UI::Modifiers::NO_MOD) },
-	{ KEY_F(7),   UI::Event(UI::Keys::F7,  UI::Modifiers::NO_MOD) },
-	{ KEY_F(8),   UI::Event(UI::Keys::F8,  UI::Modifiers::NO_MOD) },
-	{ KEY_F(9),   UI::Event(UI::Keys::F9,  UI::Modifiers::NO_MOD) },
-	{ KEY_F(10),  UI::Event(UI::Keys::F10, UI::Modifiers::NO_MOD) },
-	{ KEY_F(11),  UI::Event(UI::Keys::F11, UI::Modifiers::NO_MOD) },
-	{ KEY_F(12),  UI::Event(UI::Keys::F12, UI::Modifiers::NO_MOD) },
-	{ KEY_F(13),  UI::Event(UI::Keys::F1,  UI::Modifiers::SHIFT) },
-	{ KEY_F(14),  UI::Event(UI::Keys::F2,  UI::Modifiers::SHIFT) },
-	{ KEY_F(15),  UI::Event(UI::Keys::F3,  UI::Modifiers::SHIFT) },
-	{ KEY_F(16),  UI::Event(UI::Keys::F4,  UI::Modifiers::SHIFT) },
-	{ KEY_F(17),  UI::Event(UI::Keys::F5,  UI::Modifiers::SHIFT) },
-	{ KEY_F(18),  UI::Event(UI::Keys::F6,  UI::Modifiers::SHIFT) },
-	{ KEY_F(19),  UI::Event(UI::Keys::F7,  UI::Modifiers::SHIFT) },
-	{ KEY_F(20),  UI::Event(UI::Keys::F8,  UI::Modifiers::SHIFT) },
-	{ KEY_F(21),  UI::Event(UI::Keys::F9,  UI::Modifiers::SHIFT) },
-	{ KEY_F(22),  UI::Event(UI::Keys::F10, UI::Modifiers::SHIFT) },
-	{ KEY_F(23),  UI::Event(UI::Keys::F11, UI::Modifiers::SHIFT) },
-	{ KEY_F(24),  UI::Event(UI::Keys::F12, UI::Modifiers::SHIFT) },
-	{ KEY_F(25),  UI::Event(UI::Keys::F1,  UI::Modifiers::CTRL) },
-	{ KEY_F(26),  UI::Event(UI::Keys::F2,  UI::Modifiers::CTRL) },
-	{ KEY_F(27),  UI::Event(UI::Keys::F3,  UI::Modifiers::CTRL) },
-	{ KEY_F(28),  UI::Event(UI::Keys::F4,  UI::Modifiers::CTRL) },
-	{ KEY_F(29),  UI::Event(UI::Keys::F5,  UI::Modifiers::CTRL) },
-	{ KEY_F(30),  UI::Event(UI::Keys::F6,  UI::Modifiers::CTRL) },
-	{ KEY_F(31),  UI::Event(UI::Keys::F7,  UI::Modifiers::CTRL) },
-	{ KEY_F(32),  UI::Event(UI::Keys::F8,  UI::Modifiers::CTRL) },
-	{ KEY_F(33),  UI::Event(UI::Keys::F9,  UI::Modifiers::CTRL) },
-	{ KEY_F(34),  UI::Event(UI::Keys::F10, UI::Modifiers::CTRL) },
-	{ KEY_F(35),  UI::Event(UI::Keys::F11, UI::Modifiers::CTRL) },
-	{ KEY_F(36),  UI::Event(UI::Keys::F12, UI::Modifiers::CTRL) },
-	{ KEY_F(37),  UI::Event(UI::Keys::F1,  UI::Modifiers::CTRL_SHIFT) },
-	{ KEY_F(38),  UI::Event(UI::Keys::F2,  UI::Modifiers::CTRL_SHIFT) },
-	{ KEY_F(39),  UI::Event(UI::Keys::F3,  UI::Modifiers::CTRL_SHIFT) },
-	{ KEY_F(40),  UI::Event(UI::Keys::F4,  UI::Modifiers::CTRL_SHIFT) },
-	{ KEY_F(41),  UI::Event(UI::Keys::F5,  UI::Modifiers::CTRL_SHIFT) },
-	{ KEY_F(42),  UI::Event(UI::Keys::F6,  UI::Modifiers::CTRL_SHIFT) },
-	{ KEY_F(43),  UI::Event(UI::Keys::F7,  UI::Modifiers::CTRL_SHIFT) },
-	{ KEY_F(44),  UI::Event(UI::Keys::F8,  UI::Modifiers::CTRL_SHIFT) },
-	{ KEY_F(45),  UI::Event(UI::Keys::F9,  UI::Modifiers::CTRL_SHIFT) },
-	{ KEY_F(46),  UI::Event(UI::Keys::F10, UI::Modifiers::CTRL_SHIFT) },
-	{ KEY_F(47),  UI::Event(UI::Keys::F11, UI::Modifiers::CTRL_SHIFT) },
-	{ KEY_F(48),  UI::Event(UI::Keys::F12, UI::Modifiers::CTRL_SHIFT) },
-	{ KEY_F(49),  UI::Event(UI::Keys::F1,  UI::Modifiers::ALT) },
-	{ KEY_F(50),  UI::Event(UI::Keys::F2,  UI::Modifiers::ALT) },
-	{ KEY_F(51),  UI::Event(UI::Keys::F3,  UI::Modifiers::ALT) },
-	{ KEY_F(52),  UI::Event(UI::Keys::F4,  UI::Modifiers::ALT) },
-	{ KEY_F(53),  UI::Event(UI::Keys::F5,  UI::Modifiers::ALT) },
-	{ KEY_F(54),  UI::Event(UI::Keys::F6,  UI::Modifiers::ALT) },
-	{ KEY_F(55),  UI::Event(UI::Keys::F7,  UI::Modifiers::ALT) },
-	{ KEY_F(56),  UI::Event(UI::Keys::F8,  UI::Modifiers::ALT) },
-	{ KEY_F(57),  UI::Event(UI::Keys::F9,  UI::Modifiers::ALT) },
-	{ KEY_F(58),  UI::Event(UI::Keys::F10, UI::Modifiers::ALT) },
-	{ KEY_F(59),  UI::Event(UI::Keys::F11, UI::Modifiers::ALT) },
-	{ KEY_F(60),  UI::Event(UI::Keys::F12, UI::Modifiers::ALT) },
-	{ KEY_BTAB,   UI::Event(UI::Keys::TAB, UI::Modifiers::SHIFT) },
-	{ KEY_IC,     UI::Event(UI::Keys::INS,  UI::Modifiers::NO_MOD) },
-	{ 01032,      UI::Event(UI::Keys::INS,  UI::Modifiers::ALT) },
-	{ KEY_DC,     UI::Event(UI::Keys::DEL,  UI::Modifiers::NO_MOD) },
-	{ 01005,      UI::Event(UI::Keys::DEL,  UI::Modifiers::ALT) },
-	{ KEY_SDC,    UI::Event(UI::Keys::DEL,  UI::Modifiers::SHIFT) },
-	{ 01007,      UI::Event(UI::Keys::DEL,  UI::Modifiers::CTRL)  },
-	{ 01010,      UI::Event(UI::Keys::DEL,  UI::Modifiers::CTRL_SHIFT)  },
-	{ KEY_HOME,   UI::Event(UI::Keys::HOME, UI::Modifiers::NO_MOD) },
-	{ 01025,      UI::Event(UI::Keys::HOME, UI::Modifiers::ALT) },
-	{ KEY_SHOME,  UI::Event(UI::Keys::HOME, UI::Modifiers::SHIFT) },
-	{ 01027,      UI::Event(UI::Keys::HOME, UI::Modifiers::CTRL)  },
-	{ 01026,      UI::Event(UI::Keys::HOME, UI::Modifiers::ALT_SHIFT) },
-	{ 01030,      UI::Event(UI::Keys::HOME, UI::Modifiers::CTRL_SHIFT)  },
-	{ KEY_END,    UI::Event(UI::Keys::END,  UI::Modifiers::NO_MOD) },
-	{ 01020,      UI::Event(UI::Keys::END,  UI::Modifiers::ALT) },
-	{ KEY_SEND,   UI::Event(UI::Keys::END,  UI::Modifiers::SHIFT) },
-	{ 01022,      UI::Event(UI::Keys::END,  UI::Modifiers::CTRL)  },
-	{ 01021,      UI::Event(UI::Keys::END,  UI::Modifiers::ALT_SHIFT) },
-	{ 01023,      UI::Event(UI::Keys::END,  UI::Modifiers::CTRL_SHIFT)  },
-	{ KEY_PPAGE,  UI::Event(UI::Keys::PAGE_UP, UI::Modifiers::NO_MOD) },
-	{ KEY_NPAGE,  UI::Event(UI::Keys::PAGE_DOWN, UI::Modifiers::NO_MOD) },
-	{ KEY_SNEXT,  UI::Event(UI::Keys::PAGE_DOWN, UI::Modifiers::SHIFT) },
-	{ KEY_LEFT,   UI::Event(UI::Keys::LEFT, UI::Modifiers::NO_MOD) },
-	{ KEY_SLEFT,  UI::Event(UI::Keys::LEFT, UI::Modifiers::SHIFT) },
-	{ KEY_RIGHT,  UI::Event(UI::Keys::RIGHT, UI::Modifiers::NO_MOD) },
-	{ KEY_SRIGHT, UI::Event(UI::Keys::RIGHT, UI::Modifiers::SHIFT) },
-	{ KEY_UP,     UI::Event(UI::Keys::UP, UI::Modifiers::NO_MOD) },
-	{ KEY_SR,     UI::Event(UI::Keys::UP, UI::Modifiers::SHIFT) },
-	{ KEY_DOWN,   UI::Event(UI::Keys::DOWN, UI::Modifiers::NO_MOD) },
-	{ KEY_SF,     UI::Event(UI::Keys::DOWN, UI::Modifiers::SHIFT) },
-	{ KEY_SPREVIOUS, UI::Event(UI::Keys::PAGE_UP, UI::Modifiers::SHIFT) },
-	{ KEY_BACKSPACE, UI::Event(UI::Keys::BSPACE, UI::Modifiers::NO_MOD) },
-	{ KEY_RESIZE, UI::Event(UI::Event::Refresh) },
-	{ 0x10000001, UI::Event(UI::Mouse::RELEASED, 1, UI::Modifiers::NO_MOD) },
-	{ 0x12000001, UI::Event(UI::Mouse::RELEASED, 1, UI::Modifiers::SHIFT) },
-	{ 0x10000002, UI::Event(UI::Mouse::PRESSED,  1, UI::Modifiers::NO_MOD) },
-	{ 0x12000002, UI::Event(UI::Mouse::PRESSED,  1, UI::Modifiers::SHIFT) },
-	{ 0x10000004, UI::Event(UI::Mouse::CLICKED,  1, UI::Modifiers::NO_MOD) },
-	{ 0x12000004, UI::Event(UI::Mouse::CLICKED,  1, UI::Modifiers::SHIFT) },
-	{ 0x10000008, UI::Event(UI::Mouse::DOUBLE,   1, UI::Modifiers::NO_MOD) },
-	{ 0x12000008, UI::Event(UI::Mouse::DOUBLE,   1, UI::Modifiers::SHIFT) },
-	{ 0x18000000, UI::Event(UI::Mouse::POSITION, 0, UI::Modifiers::NO_MOD) }
+/**
+ * Map ncurses key code to a key event.
+ */
+const unordered_map<int, UI::KeyEvent> CursesGraphics::event_map = {
+	{ KEY_F(1),      UI::KeyEvent(UI::Keys::F1,        UI::Modifiers::NO_MOD) },
+	{ KEY_F(2),      UI::KeyEvent(UI::Keys::F2,        UI::Modifiers::NO_MOD) },
+	{ KEY_F(3),      UI::KeyEvent(UI::Keys::F3,        UI::Modifiers::NO_MOD) },
+	{ KEY_F(4),      UI::KeyEvent(UI::Keys::F4,        UI::Modifiers::NO_MOD) },
+	{ KEY_F(5),      UI::KeyEvent(UI::Keys::F5,        UI::Modifiers::NO_MOD) },
+	{ KEY_F(6),      UI::KeyEvent(UI::Keys::F6,        UI::Modifiers::NO_MOD) },
+	{ KEY_F(7),      UI::KeyEvent(UI::Keys::F7,        UI::Modifiers::NO_MOD) },
+	{ KEY_F(8),      UI::KeyEvent(UI::Keys::F8,        UI::Modifiers::NO_MOD) },
+	{ KEY_F(9),      UI::KeyEvent(UI::Keys::F9,        UI::Modifiers::NO_MOD) },
+	{ KEY_F(10),     UI::KeyEvent(UI::Keys::F10,       UI::Modifiers::NO_MOD) },
+	{ KEY_F(11),     UI::KeyEvent(UI::Keys::F11,       UI::Modifiers::NO_MOD) },
+	{ KEY_F(12),     UI::KeyEvent(UI::Keys::F12,       UI::Modifiers::NO_MOD) },
+	{ KEY_F(13),     UI::KeyEvent(UI::Keys::F1,        UI::Modifiers::SHIFT) },
+	{ KEY_F(14),     UI::KeyEvent(UI::Keys::F2,        UI::Modifiers::SHIFT) },
+	{ KEY_F(15),     UI::KeyEvent(UI::Keys::F3,        UI::Modifiers::SHIFT) },
+	{ KEY_F(16),     UI::KeyEvent(UI::Keys::F4,        UI::Modifiers::SHIFT) },
+	{ KEY_F(17),     UI::KeyEvent(UI::Keys::F5,        UI::Modifiers::SHIFT) },
+	{ KEY_F(18),     UI::KeyEvent(UI::Keys::F6,        UI::Modifiers::SHIFT) },
+	{ KEY_F(19),     UI::KeyEvent(UI::Keys::F7,        UI::Modifiers::SHIFT) },
+	{ KEY_F(20),     UI::KeyEvent(UI::Keys::F8,        UI::Modifiers::SHIFT) },
+	{ KEY_F(21),     UI::KeyEvent(UI::Keys::F9,        UI::Modifiers::SHIFT) },
+	{ KEY_F(22),     UI::KeyEvent(UI::Keys::F10,       UI::Modifiers::SHIFT) },
+	{ KEY_F(23),     UI::KeyEvent(UI::Keys::F11,       UI::Modifiers::SHIFT) },
+	{ KEY_F(24),     UI::KeyEvent(UI::Keys::F12,       UI::Modifiers::SHIFT) },
+	{ KEY_F(25),     UI::KeyEvent(UI::Keys::F1,        UI::Modifiers::CTRL) },
+	{ KEY_F(26),     UI::KeyEvent(UI::Keys::F2,        UI::Modifiers::CTRL) },
+	{ KEY_F(27),     UI::KeyEvent(UI::Keys::F3,        UI::Modifiers::CTRL) },
+	{ KEY_F(28),     UI::KeyEvent(UI::Keys::F4,        UI::Modifiers::CTRL) },
+	{ KEY_F(29),     UI::KeyEvent(UI::Keys::F5,        UI::Modifiers::CTRL) },
+	{ KEY_F(30),     UI::KeyEvent(UI::Keys::F6,        UI::Modifiers::CTRL) },
+	{ KEY_F(31),     UI::KeyEvent(UI::Keys::F7,        UI::Modifiers::CTRL) },
+	{ KEY_F(32),     UI::KeyEvent(UI::Keys::F8,        UI::Modifiers::CTRL) },
+	{ KEY_F(33),     UI::KeyEvent(UI::Keys::F9,        UI::Modifiers::CTRL) },
+	{ KEY_F(34),     UI::KeyEvent(UI::Keys::F10,       UI::Modifiers::CTRL) },
+	{ KEY_F(35),     UI::KeyEvent(UI::Keys::F11,       UI::Modifiers::CTRL) },
+	{ KEY_F(36),     UI::KeyEvent(UI::Keys::F12,       UI::Modifiers::CTRL) },
+	{ KEY_F(37),     UI::KeyEvent(UI::Keys::F1,        UI::Modifiers::CTRL_SHIFT) },
+	{ KEY_F(38),     UI::KeyEvent(UI::Keys::F2,        UI::Modifiers::CTRL_SHIFT) },
+	{ KEY_F(39),     UI::KeyEvent(UI::Keys::F3,        UI::Modifiers::CTRL_SHIFT) },
+	{ KEY_F(40),     UI::KeyEvent(UI::Keys::F4,        UI::Modifiers::CTRL_SHIFT) },
+	{ KEY_F(41),     UI::KeyEvent(UI::Keys::F5,        UI::Modifiers::CTRL_SHIFT) },
+	{ KEY_F(42),     UI::KeyEvent(UI::Keys::F6,        UI::Modifiers::CTRL_SHIFT) },
+	{ KEY_F(43),     UI::KeyEvent(UI::Keys::F7,        UI::Modifiers::CTRL_SHIFT) },
+	{ KEY_F(44),     UI::KeyEvent(UI::Keys::F8,        UI::Modifiers::CTRL_SHIFT) },
+	{ KEY_F(45),     UI::KeyEvent(UI::Keys::F9,        UI::Modifiers::CTRL_SHIFT) },
+	{ KEY_F(46),     UI::KeyEvent(UI::Keys::F10,       UI::Modifiers::CTRL_SHIFT) },
+	{ KEY_F(47),     UI::KeyEvent(UI::Keys::F11,       UI::Modifiers::CTRL_SHIFT) },
+	{ KEY_F(48),     UI::KeyEvent(UI::Keys::F12,       UI::Modifiers::CTRL_SHIFT) },
+	{ KEY_F(49),     UI::KeyEvent(UI::Keys::F1,        UI::Modifiers::ALT) },
+	{ KEY_F(50),     UI::KeyEvent(UI::Keys::F2,        UI::Modifiers::ALT) },
+	{ KEY_F(51),     UI::KeyEvent(UI::Keys::F3,        UI::Modifiers::ALT) },
+	{ KEY_F(52),     UI::KeyEvent(UI::Keys::F4,        UI::Modifiers::ALT) },
+	{ KEY_F(53),     UI::KeyEvent(UI::Keys::F5,        UI::Modifiers::ALT) },
+	{ KEY_F(54),     UI::KeyEvent(UI::Keys::F6,        UI::Modifiers::ALT) },
+	{ KEY_F(55),     UI::KeyEvent(UI::Keys::F7,        UI::Modifiers::ALT) },
+	{ KEY_F(56),     UI::KeyEvent(UI::Keys::F8,        UI::Modifiers::ALT) },
+	{ KEY_F(57),     UI::KeyEvent(UI::Keys::F9,        UI::Modifiers::ALT) },
+	{ KEY_F(58),     UI::KeyEvent(UI::Keys::F10,       UI::Modifiers::ALT) },
+	{ KEY_F(59),     UI::KeyEvent(UI::Keys::F11,       UI::Modifiers::ALT) },
+	{ KEY_F(60),     UI::KeyEvent(UI::Keys::F12,       UI::Modifiers::ALT) },
+	{ KEY_BTAB,      UI::KeyEvent(UI::Keys::TAB,       UI::Modifiers::SHIFT) },
+	{ KEY_IC,        UI::KeyEvent(UI::Keys::INS,       UI::Modifiers::NO_MOD) },
+	{ 01032,         UI::KeyEvent(UI::Keys::INS,       UI::Modifiers::ALT) },
+	{ KEY_DC,        UI::KeyEvent(UI::Keys::DEL,       UI::Modifiers::NO_MOD) },
+	{ 01005,         UI::KeyEvent(UI::Keys::DEL,       UI::Modifiers::ALT) },
+	{ KEY_SDC,       UI::KeyEvent(UI::Keys::DEL,       UI::Modifiers::SHIFT) },
+	{ 01007,         UI::KeyEvent(UI::Keys::DEL,       UI::Modifiers::CTRL)  },
+	{ 01010,         UI::KeyEvent(UI::Keys::DEL,       UI::Modifiers::CTRL_SHIFT)  },
+	{ KEY_HOME,      UI::KeyEvent(UI::Keys::HOME,      UI::Modifiers::NO_MOD) },
+	{ 01025,         UI::KeyEvent(UI::Keys::HOME,      UI::Modifiers::ALT) },
+	{ KEY_SHOME,     UI::KeyEvent(UI::Keys::HOME,      UI::Modifiers::SHIFT) },
+	{ 01027,         UI::KeyEvent(UI::Keys::HOME,      UI::Modifiers::CTRL)  },
+	{ 01026,         UI::KeyEvent(UI::Keys::HOME,      UI::Modifiers::ALT_SHIFT) },
+	{ 01030,         UI::KeyEvent(UI::Keys::HOME,      UI::Modifiers::CTRL_SHIFT)  },
+	{ KEY_END,       UI::KeyEvent(UI::Keys::END,       UI::Modifiers::NO_MOD) },
+	{ 01020,         UI::KeyEvent(UI::Keys::END,       UI::Modifiers::ALT) },
+	{ KEY_SEND,      UI::KeyEvent(UI::Keys::END,       UI::Modifiers::SHIFT) },
+	{ 01022,         UI::KeyEvent(UI::Keys::END,       UI::Modifiers::CTRL)  },
+	{ 01021,         UI::KeyEvent(UI::Keys::END,       UI::Modifiers::ALT_SHIFT) },
+	{ 01023,         UI::KeyEvent(UI::Keys::END,       UI::Modifiers::CTRL_SHIFT)  },
+	{ KEY_PPAGE,     UI::KeyEvent(UI::Keys::PAGE_UP,   UI::Modifiers::NO_MOD) },
+	{ KEY_NPAGE,     UI::KeyEvent(UI::Keys::PAGE_DOWN, UI::Modifiers::NO_MOD) },
+	{ KEY_SNEXT,     UI::KeyEvent(UI::Keys::PAGE_DOWN, UI::Modifiers::SHIFT) },
+	{ KEY_LEFT,      UI::KeyEvent(UI::Keys::LEFT,      UI::Modifiers::NO_MOD) },
+	{ KEY_SLEFT,     UI::KeyEvent(UI::Keys::LEFT,      UI::Modifiers::SHIFT) },
+	{ KEY_RIGHT,     UI::KeyEvent(UI::Keys::RIGHT,     UI::Modifiers::NO_MOD) },
+	{ KEY_SRIGHT,    UI::KeyEvent(UI::Keys::RIGHT,     UI::Modifiers::SHIFT) },
+	{ KEY_UP,        UI::KeyEvent(UI::Keys::UP,        UI::Modifiers::NO_MOD) },
+	{ KEY_SR,        UI::KeyEvent(UI::Keys::UP,        UI::Modifiers::SHIFT) },
+	{ KEY_DOWN,      UI::KeyEvent(UI::Keys::DOWN,      UI::Modifiers::NO_MOD) },
+	{ KEY_SF,        UI::KeyEvent(UI::Keys::DOWN,      UI::Modifiers::SHIFT) },
+	{ KEY_SPREVIOUS, UI::KeyEvent(UI::Keys::PAGE_UP,   UI::Modifiers::SHIFT) },
+	{ KEY_BACKSPACE, UI::KeyEvent(UI::Keys::BSPACE,    UI::Modifiers::NO_MOD) }
 };
 
-const UI::Event& CursesGraphics::getNextEvent(int xCursor, int yCursor, bool fBlink)
+/**
+ * Map ncurses key code (modulo mouse mask) to a mouse event.
+ */
+static const unordered_map<int, UI::MouseEvent> mouse_event_map = {
+	{ 0x10000001, UI::MouseEvent(UI::Mouse::RELEASED, 1, UI::Modifiers::NO_MOD) },
+	{ 0x12000001, UI::MouseEvent(UI::Mouse::RELEASED, 1, UI::Modifiers::SHIFT) },
+	{ 0x10000002, UI::MouseEvent(UI::Mouse::PRESSED,  1, UI::Modifiers::NO_MOD) },
+	{ 0x12000002, UI::MouseEvent(UI::Mouse::PRESSED,  1, UI::Modifiers::SHIFT) },
+	{ 0x10000004, UI::MouseEvent(UI::Mouse::CLICKED,  1, UI::Modifiers::NO_MOD) },
+	{ 0x12000004, UI::MouseEvent(UI::Mouse::CLICKED,  1, UI::Modifiers::SHIFT) },
+	{ 0x10000008, UI::MouseEvent(UI::Mouse::DOUBLE,   1, UI::Modifiers::NO_MOD) },
+	{ 0x12000008, UI::MouseEvent(UI::Mouse::DOUBLE,   1, UI::Modifiers::SHIFT) },
+	{ 0x18000000, UI::MouseEvent(UI::Mouse::POSITION, 0, UI::Modifiers::NO_MOD) }
+};
+
+/**
+ * Map ncurses keys to a name representing a function to call.
+ */
+static unordered_map<int, string> key_menu_map = {
+	{ UI::Keys::CTRL_Q, "quit" },
+	{ UI::Keys::CTRL_S, "save" },
+	{ UI::Keys::CTRL_Z, "undo" },
+	{ KEY_RESIZE,       "refresh" }
+};
+
+/**
+ * Function to handle ncurses events
+ */ 
+void do_ncurses_loop()
 {
 	constexpr int MOUSE_EVENT_MASK = 0x10000000;
+	MEVENT mouse_event;
+	bool fChanged = false;
 
-	int code = 0;
-	while (event_map.find(code) == event_map.end()) {
-		MEVENT event;
-		code = getChar(yCursor, xCursor - 1, fBlink);
+	while (UI::isRunning()) {
+		CursesGraphics& gcurses = dynamic_cast<CursesGraphics&>(UI::GlobalContext::current->getGraphics());
+
+		int xCursor = 0, yCursor = 0;
+	    UI::GlobalContext::current->getEqn().getCursorOrig(xCursor, yCursor);
+		int code = gcurses.getChar(yCursor, xCursor - 1, UI::GlobalContext::current->getEqn().blink());
 		
 		if (code < 0x80) {
-			m_event = UI::Event((char)code);
-			return m_event;
+			auto key_menu_entry = key_menu_map.find(code);
+			if (key_menu_entry != key_menu_map.end()) {
+				fChanged = UI::doMenu(key_menu_entry->second);
+			}
+			else
+				fChanged = UI::doKey(UI::KeyEvent((char) code));
 		}
-		else if (code == KEY_MOUSE && getmouse(&event) == OK) {
-			code = event.bstate|MOUSE_EVENT_MASK;
-			m_xMouse = event.x; m_yMouse = event.y;
+		else if (code == KEY_MOUSE && getmouse(&mouse_event) == OK) {
+			code = mouse_event.bstate|MOUSE_EVENT_MASK;
+			auto mouse_event_entry = mouse_event_map.find(code);
+
+			if (mouse_event_entry == mouse_event_map.end())
+				continue;
+
+			UI::MouseEvent mouseEvent = mouse_event_entry->second;
+			mouseEvent.setCoords(mouse_event.x, mouse_event.y);
+			fChanged = doMouse(mouseEvent);
+				
 			LOG_TRACE_MSG("mouse event: " + to_hexstring(code) + ", (x,y) = " +
-						  to_string(event.x) + ", " + to_string(event.y));
+						  to_string(mouse_event.x) + ", " + to_string(mouse_event.y));
+		}
+		if (fChanged) {
+			UI::GlobalContext::current->saveEqn();
+			fChanged = false;
 		}
 	}
-
-	return event_map.at(code);
 }
 
 /**
@@ -506,7 +530,14 @@ int main(int argc, char* argv[])
 	LOG_TRACE_CLEAR();
 	LOG_TRACE_MSG("Starting milo_ncurses...");
 
-	CursesGraphics gc = CursesGraphics();
-	UI::doMainLoop(argc, argv, gc);
+	if (argc > 1) {
+		ifstream in(argv[1]);
+		UI::GlobalContext::current = make_shared<UI::GlobalContext>(new CursesGraphics(), in);
+	}
+	else
+		UI::GlobalContext::current = make_shared<UI::GlobalContext>(new CursesGraphics());
+
+	UI::GlobalContext::current->saveEqn();
+	do_ncurses_loop();
 	return 0;
 }

@@ -1,4 +1,4 @@
-/* Copyright (C) 2016 - James Terman
+/* Copyright (C) 2017 - James Terman
  *
  * milo is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,9 +28,9 @@
 #include <limits>
 #include <typeinfo>
 
+#include "util.h"
 #include "milo.h"
-
-namespace UI { class Graphics; }
+#include "ui.h"
 
 using namespace std;
 
@@ -645,7 +645,7 @@ void FactorIterator::swap(FactorIterator& a, FactorIterator& b)
 	b.m_node = tmp;
 }
 
-void EqnUndoList::save(Equation* eqn)
+void EqnUndoList::save(EqnPtr eqn)
 { 
 	string store;
 	eqn->xml_out(store);
@@ -653,18 +653,18 @@ void EqnUndoList::save(Equation* eqn)
 	m_eqns.push_back(store);
 }
 
-Equation* EqnUndoList::undo()
+EqnPtr EqnUndoList::undo()
 {
 	if (m_eqns.size() <= 1) return nullptr;
 	m_eqns.pop_back();
 	return top();
 }
 
-Equation* EqnUndoList::top()
+EqnPtr EqnUndoList::top()
 {
 	if (m_eqns.empty()) return nullptr;
 	istringstream in(m_eqns.back());
-	return new Equation(in);
+	return make_shared<Equation>(in);
 }
 
 namespace Log

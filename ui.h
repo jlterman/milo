@@ -1,7 +1,7 @@
 #ifndef __UI_H
 #define __UI_H
 
-/* Copyright (C) 2016 - James Terman
+/* Copyright (C) 2017 - James Terman
  *
  * milo is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,13 +27,24 @@
 
 #include <unordered_map>
 #include <string>
+#include <memory>
 #include "util.h"
+#include "milo.h"
 
 /**
  * User Interface for milo namespace.
  * This is the user interface for milo for porting to paticular interfaces.
  */
 namespace UI {
+	class Graphics;
+	class GlobalContext;
+
+	/** @name UI namespace Type Declerations  */
+	//@{
+	using GraphicsPtr = std::shared_ptr<Graphics>;           ///< Shared pointer for Graphics
+	using GlobalContextPtr = std::shared_ptr<GlobalContext>; /// Shared pointer for GlobalContext
+	//@}
+	
 	/**
 	 * The values under 0x80 are just the ACCII character set. Above 0x80 are 
 	 * the special keyboard keys.
@@ -67,97 +78,147 @@ namespace UI {
 	};
 
 	/**
-	 * Milo UI Event.
-	 * All milo UI events are uniquely stored in this class. It is designed
-	 * to uniquely designate an event for the unordered map of events to 
+	 * Milo UI Mouse Event.
+	 * All milo UI mouse events are uniquely stored in this class. It is designed
+	 * to uniquely designate an event for the unordered map of mouse events to 
 	 * function calls.
 	 */
-	class Event
+	class MouseEvent
 	{
 	public:
-		/**
-		 * Event type, mouse, key or menu.
-		 */
-		enum Kind { Mouse, Key, Refresh };
-		
 		/** @name Constructors */
 		//@{
 		/**
 		 * Universal event constructor.
+		 * @param t       Mouse press type
+		 * @param b       Button number pressed
+		 * @param m       Modifiers key states.
+		 * @param mouse_x mouse x coordinate.
+		 * @param mouse_y mouse y coordinate.
 		 */
-	    Event(enum Kind knd, enum Keys key = NO_KEY, enum Modifiers md = NO_MOD, enum Mouse m = NO_MOUSE, int b = 0) :
-		    m_kind{knd}, m_key{key}, m_mouse{m}, m_mod{md}, m_button{b} {}
-			
-		/**
-		 * Default key event constructor.
-		 * Construct an event for ascii code with no modifier keys.
-		 * @param key Ascii character.
-		 */
-	    Event(char key) : Event(Key, (Keys) key) {}
-		/**
-		 * Key event constructor.
-		 * Construct key event for all keys and modifiers.
-		 * @param key Key code.
-		 * @param m   Modifiers for key.
-		 */
-	     Event(enum Keys key, enum Modifiers m = NO_MOD) : Event(Key, key, m) {}
-
-		/**
-		 * Mouse event constructor.
-		 * Construct mouse event.
-		 * @param m Mouse event type.
-		 * @param b Mouse button number.
-		 * @param md Modifiers key for mouse event.
-		 */
-	     Event(enum Mouse m, int b, enum Modifiers md = NO_MOD) : Event(Mouse, NO_KEY, md, m, b) {} 
+	    MouseEvent(enum Mouse t, int b, enum Modifiers md = NO_MOD, int mouse_x = -1, int mouse_y = -1) :
+		    m_type{t}, m_button{b}, m_mod{md}, m_x{mouse_x}, m_y{mouse_y} {}
 		//@}
-			
-		Kind getKind() const { return m_kind; }                ///< @return Event kind.
-		enum Keys getKey() const { return m_key; }             ///< @return Key code.
-		enum Mouse getMouse() const { return m_mouse; }        ///< @return Mouse event type.
-		enum Modifiers getModifiers() const { return m_mod; }  ///< @return Modifiers state.
-		int getButton() const { return m_button; }             ///< @return Button number.
 
+		enum Mouse getMouse() const { return m_type; }         ///< @return Mouse click type
+		int getButton() const { return m_button; }             ///< @return button pressed
+		enum Modifiers getModifiers() const { return m_mod; }  ///< @return Modifiers state.
+
+		/**
+		 * Get mouse coordinates
+		 * @param[out] mouse_x x-coordinate of mouse event
+		 * @param[out] mouse_y y-coordinate of mouse event
+		 */
+        void getCoords(int& mouse_x, int& mouse_y) const { mouse_x = m_x; mouse_y = m_y; }
+
+		/**
+		 * Set mouse coordinates
+		 * @param mouse_x x-coordinate of mouse event
+		 * @param mouse_y y-coordinate of mouse event
+		 */
+        void setCoords(int mouse_x, int mouse_y) { m_x = mouse_x; m_y = mouse_y; }
+		
 		/**
 		 * Calculate hash for this class object. Used by unordered map.
 		 * @return Hash value.
 		 */
 		std::size_t hash() const
 		{
-			std::size_t seed = 0;
-			std::hash_combine<int>(seed, ((int) m_kind) * 2654435761);
-			std::hash_combine<int>(seed, ((int) m_key) * 2654435761);
-			std::hash_combine<int>(seed, ((int) m_mouse) * 2654435761);
-			std::hash_combine<int>(seed, ((int) m_mod) * 2654435761);
-			std::hash_combine<int>(seed, m_button * 2654435761);
-			return seed;
+			return hash_calculate<int>({(int) m_type, m_button, (int) m_mod});
+		}		
+
+		/**
+		 * Equal operator override.
+		 * Used by unordered map.
+		 */
+		bool operator==(const MouseEvent& e) const
+		{
+			return e.m_type   == m_type &&
+			       e.m_button == m_button &&
+			       e.m_mod    == m_mod;
+		}
+
+		MouseEvent& operator=(const MouseEvent& e)
+		{
+			m_type   = e.m_type;
+			m_button = e.m_button;
+			m_mod    = e.m_mod;
+			m_x      = e.m_x;
+			m_y      = e.m_y;
+			return *this;
+		}
+		
+		/**
+		 * Create string representing event.
+		 * @return String representing event
+		 */
+		std::string toString() const;
+		
+	private:
+		enum Mouse m_type;     ///< Mouse click type.
+		int m_button;          ///< Number of button pressed
+		enum Modifiers m_mod;  ///< Modifiers state.
+		int m_x;               ///< mouse x-coordinate.
+		int m_y;               ///< mouse y-coordinate.
+	};
+	
+	/**
+	 * Milo UI Key Event.
+	 * All milo UI key events are uniquely stored in this class. It is designed
+	 * to uniquely designate an event for the unordered map of events to 
+	 * function calls.
+	 */
+	class KeyEvent
+	{
+	public:
+		/** @name Constructors */
+		//@{
+		/**
+		 * Universal event constructor.
+		 * @param key Key code.
+		 * @param m   Modifiers for key.
+		 */
+	    KeyEvent(enum Keys key, enum Modifiers md = NO_MOD) : m_key{key}, m_mod{md} {}
+		
+		/**
+		 * Default key event constructor.
+		 * Construct an event for ascii code with no modifier keys.
+		 * @param key Ascii character.
+		 */
+        KeyEvent(char key) : KeyEvent((Keys) key) {}
+		//@}
+		
+		enum Keys getKey() const { return m_key; }             ///< @return Key code.
+		enum Modifiers getModifiers() const { return m_mod; }  ///< @return Modifiers state.
+		
+		/**
+		 * Calculate hash for this class object. Used by unordered map.
+		 * @return Hash value.
+		 */
+		std::size_t hash() const
+		{
+			return hash_calculate<int>({(int) m_key, (int) m_mod});
 		}
 
 		/**
 		 * Equal operator override.
 		 * Used by unordered map.
 		 */
-		bool operator==(const Event e) const
+		bool operator==(const KeyEvent e) const
 		{
-			return  e.m_kind  == m_kind &&
-			        e.m_key   == m_key &&
-			        e.m_mouse == m_mouse &&
-			        e.m_mod   == m_mod &&
-			        e.m_button == m_button;
+			return e.m_key == m_key &&
+			       e.m_mod == m_mod;
 		}
-
+		
 		/**
 		 * Create string representing event.
 		 * @return String representing event
 		 */
 		std::string toString() const;
-
+		
 	private:
-		Kind m_kind;          ///< Type of event.
 		enum Keys  m_key;     ///< Key code.
-		enum Mouse m_mouse;   ///< Mouse type.
 		enum Modifiers m_mod; ///< Modifiers state.
-		int  m_button;        ///< Mouse button number.
 	};
 
 	/**
@@ -193,24 +254,6 @@ namespace UI {
 		
 		/** @name Virtual Public Member Functions */
 		//@{
-		
-		/**
-		 * Get mouse poition from Graphics context
-		 * @param[out] xMouse Horizontal coordinate of mouse
-		 * @param[out] yMouse Vertical coordinate of mouse
-		 */
-		virtual void getMouseCoords(int& xMouse, int& yMouse)=0;
-		
-		/**
-		 * Get next event.
-		 * Blocking function that returns a reference to an base class that defines
-		 * an interface to get event info.
-		 * @param xCursor horiz coord of cursor
-		 * @param yCursor vertical coord of cursor
-		 * @param fBlink  If true, blink cursor
-		 * @return Reference to Event object
-		 */
-		virtual const UI::Event& getNextEvent(int xCursor, int yCursor, bool fBlink)=0;
 		
 		/**
 		 * Draw differential of width x0 and height y0 with char variable name.
@@ -323,6 +366,11 @@ namespace UI {
 		virtual void set(int x, int y, int x0 = 0, int y0 = 0) { 
 			m_xSize = x; m_ySize = y; m_xOrig = x0, m_yOrig = y0;
 		}
+
+		/**
+		 * Refresh screen
+		 */
+		virtual void refresh()=0;
 		//@}
 		
 		/**
@@ -364,7 +412,6 @@ namespace UI {
 		 * @param[in,out] y Vertical coordinate to be shifted.
 		 */
 		void relativeOrig(int& x, int& y) { x -= m_xOrig; y -= m_yOrig; }
-		
 	protected:
 		int m_xSize;   ///< Horizontal size of graphic window.
 		int m_ySize;   ///< Vertical size of graphic window.
@@ -372,22 +419,107 @@ namespace UI {
 		int m_yOrig;   ///< Vertical origin of graphic window.
 		Box m_select;  ///< Currently selected area.
 	};
+
+	/**
+	 * Class that provides a Graphics class object, equation and equation
+	 * undo list. The static member variable GlobalContext::current always
+	 * points to the equation that has focus.
+	 */
+	class GlobalContext
+	{
+	public:
+		/** @name Constructors */
+		//@{
+
+		/**
+		 * Constructor with new equation.
+		 */
+	    GlobalContext(Graphics* gc);
+
+		/**
+		 * Constructor with input equation.
+		 */
+	    GlobalContext(Graphics* gc, std::istream& is);
+		//@}
+
+		/**
+		 * Get graphics context.
+		 * @return Graphics context object.
+		 */
+		Graphics& getGraphics() { return *m_gc; }
+
+		/** 
+		 * Get working equation.
+		 * @return Working equation.
+		 */
+		Equation& getEqn() { return *m_eqn; }
+
+		/**
+		 * Save working equation and create new equation.
+		 */
+		void saveEqn();
+
+		/**
+		 * Undo working equation with last saved eqn in list.
+		 */
+		void undoEqn();
+		
+		static GlobalContextPtr current; ///< Shared pointer to current global context.
+		
+        Node* start_select = nullptr;    ///< If not null, node is selected.
+        int start_mouse_x = -1;          ///< Horiz coord of start of mouse drag.
+        int start_mouse_y = -1;          ///< Vertical coord of start of mouse drag
+ 
+	private:
+		GraphicsPtr m_gc;   ///< Shared pointer to current Graphics.
+		EqnPtr      m_eqn;  ///< Shared pointer to current equation.
+		EqnUndoList m_eqns; ///< Equation undo stack
+	};
+
+	/**
+	 * Query if program should quit.
+	 * @return If true, exit main loop.
+	 */
+	bool isRunning();
 	
 	/**
-	 * Main Event Loop.
-	 * Call to pass control to milo's main event loop from main() function.
+	 * Execute function based on its name. Used for menu handling.
+	 * @return Equation has changed.
 	 */
-	void doMainLoop(int argc, char* argv[], Graphics& gc);
+	bool doMenu(const std::string& menuFunctionName);
+
+	/**
+	 * Handle key event from main loop.
+	 * @return Equation has changed.
+	 */
+	bool doKey(const KeyEvent& key);
+
+	/**
+	 * Handle mouse event from main loop.
+	 * @return Equation has changed.
+	 */
+	bool doMouse(const MouseEvent& mouse);
 }
 
 namespace std
 {
 	/**
-	 * Specialization hash for UI::Event.
+	 * Specialization hash for UI::KeyEvent.
 	 */
-	template<> struct hash<UI::Event>
+	template<> struct hash<UI::KeyEvent>
 	{
-		size_t operator()(UI::Event const& key) const
+		size_t operator()(UI::KeyEvent const& key) const
+		{
+			return key.hash();
+		}
+	};
+
+	/**
+	 * Specialization hash for UI::MouseEvent.
+	 */
+	template<> struct hash<UI::MouseEvent>
+	{
+		size_t operator()(UI::MouseEvent const& key) const
 		{
 			return key.hash();
 		}

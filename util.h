@@ -7,6 +7,28 @@
 #include <complex>
 #include <algorithm>
 
+/* Copyright (C) 2017 - James Terman
+ *
+ * milo is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * milo is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ */
+
+/** 
+ * @file util.h
+ * This file contains miscellaneous functions and declerations.
+ */
+
 /** @name Global Utility Functions */
 //@{
 /**
@@ -312,6 +334,18 @@ namespace std
 }
 
 /**
+ * Calculate final hash from given list of values
+ */
+template <class T> inline std::size_t hash_calculate(std::initializer_list<T> l)
+{
+	std::size_t seed = 0;
+	for (T n : l) {
+		std::hash_combine<T>(seed, n * 0x9e3779b1);
+	}
+	return seed;
+}
+
+/**
  * Logging for milo program.
  */
 namespace Log
@@ -325,4 +359,14 @@ namespace Log
 #define LOG_TRACE_MSG(m) Log::msg(string("") + __FILE__ + ": " + to_string(__LINE__) + ": " + (m))
 #define LOG_TRACE_FILE "/tmp/milo.log"
 #define LOG_TRACE_CLEAR() remove(LOG_TRACE_FILE)
+
+#define QUOTE(arg) #arg
+#define STR(macro) QUOTE(macro)
+
+#ifndef INSTALL_PATH
+#define INSTALL_PATH /usr/local/milo
+#endif
+
+#define INSTALL_PATH_STR STR(INSTALL_PATH)
+
 #endif // __UTIL_H

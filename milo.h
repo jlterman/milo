@@ -1,7 +1,7 @@
 #ifndef __MILO_H
 #define __MILO_H
 
-/* Copyright (C) 2016 - James Terman
+/* Copyright (C) 2017 - James Terman
  *
  * milo is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,8 +37,8 @@
 #include <algorithm>
 #include <typeindex>
 
+#include "util.h"
 #include "xml.h"
-#include "ui.h"
 
 // Forward class declerations
 namespace UI { class Graphics; }
@@ -54,10 +54,11 @@ class EqnXMLParser;
 
 /** @name Global Type Declerations  */
 //@{
-using Complex = std::complex<double>;   ///< @brief Specialized as complex double.
-using NodeVector = std::vector<Node*>;  ///< @brief Storage of node pointers.
-using NodeIter = NodeVector::iterator;  ///< @brief Iterator into vector of node pointers.
-using TermVector = std::vector<Term*>; ///< @brief Specialized vector of terms.
+using Complex = std::complex<double>;     ///< @brief Specialized as complex double.
+using NodeVector = std::vector<Node*>;    ///< @brief Storage of node pointers.
+using NodeIter = NodeVector::iterator;    ///< @brief Iterator into vector of node pointers.
+using TermVector = std::vector<Term*>;    ///< @brief Specialized vector of terms.
+using EqnPtr = std::shared_ptr<Equation>; ///< @brief Shared pointer for equation
 //@}
 
 /**
@@ -1788,19 +1789,19 @@ public:
 	/**
 	 * Add pointer to Equation object to list.
 	 */
-	void save(Equation* eqn);
+	void save(EqnPtr eqn);
 
 	/**
 	 * Pop pointer to last equation object.
 	 * @return Last equation saved.
 	 */
-	Equation* undo();
+	EqnPtr undo();
 
 	/**
 	 * Get pointer to last equation saved.
 	 * @return Last equation saved.
 	 */
-	Equation* top();
+	EqnPtr top();
 
 private:
 	std::vector<std::string> m_eqns; ///< List of pointer to equation objects in undo history.
