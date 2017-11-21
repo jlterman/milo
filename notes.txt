@@ -572,3 +572,81 @@ int main()
 	cout << "2 + 3 = " << vec[0]->value() << endl;
 	cout << "4 x 5 = " << vec.at(1)->value() << endl;
 }
+
+#include <iostream>
+#include <vector>
+#include <memory>
+#include <initializer_list>
+
+template <class T>
+class SmartPtr : public std::shared_ptr<T>
+{
+public:
+	explicit SmartPtr(T* p) : std::shared_ptr<T>(p) {}
+
+	SmartPtr& operator=(T* p) { this->reset(p); return *this; }
+	bool operator==(T* p) const { return this->get() == p; }
+	bool operator!=(T* p) const { return this->get() != p; }
+	operator T*() const { return this->get(); }
+};
+
+template <class T>
+class SmartVector : public std::vector< SmartPtr<T> >
+{
+public:
+	using iterator = typename std::vector< SmartPtr<T> >::iterator;
+	using const_iterator = typename std::vector< SmartPtr<T> >::const_iterator;
+	using size_type = typename std::vector< std::shared_ptr<T> >::size_type;
+	using base = typename std::vector< SmartPtr<T> >;
+
+	explicit SmartVector() : base() {}
+	explicit SmartVector(T* p) : base(1, SmartPtr<T>(p)) {}
+
+	void push_back(T* p) { this->base::push_back(SmartPtr<T>(p)); }
+	void push_back(const SmartPtr<T>&) = delete;
+	void push_back(const SmartPtr<T>&&) = delete;
+
+	iterator insert(const_iterator pos, T* val)
+	{
+		return this->base::insert(pos, SmartPtr<T>(val));
+	}
+	
+	iterator insert(const_iterator pos, size_type n, const T* val)
+	{
+		return this->base::insert(pos, n, SmartPtr<T>(val));
+	}
+	
+	iterator insert(const_iterator pos, const SmartPtr<T> val) = delete;
+	iterator insert(const_iterator pos, size_type n, const  SmartPtr<T> val) = delete;
+	iterator insert(const_iterator pos, std::initializer_list< SmartPtr<T> > il) = delete;
+
+	void swap(SmartVector<T>& v) { this->base::swap(v); }
+	void swap(base&) = delete;
+};
+
+int main()
+{
+	SmartVector<int> v(new int(3));
+
+	int* a1 = v.front();
+
+	std::cout << "three should be " << (*a1) << std::endl;
+
+	v.front() = new int(5);
+	a1 = v.front();
+
+	std::cout << "five should be " << (*a1) << std::endl;
+
+	v.push_back(new int(11));
+	a1 = v.back();
+
+	std::cout << "eleven should be " << (*a1) << std::endl;
+
+	for ( auto n : v ) { std::cout << (*n) << " "; }
+	std::cout << std::endl;
+
+	v.insert(v.begin(), new int(2));
+	for ( auto n : v ) { std::cout << (*n) << " "; }
+	std::cout << std::endl;
+				 
+}
