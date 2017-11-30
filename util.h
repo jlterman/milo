@@ -330,7 +330,7 @@ template <class T> inline std::size_t hash_calculate(std::initializer_list<T> l)
 {
 	std::size_t seed = 0;
 	for (T n : l) {
-		boost::hash_combine<T>(seed, n * 0x9e3779b1);
+		boost::hash_combine<T>(seed, n);
 	}
 	return seed;
 }
