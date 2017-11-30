@@ -6,6 +6,7 @@
 #include <array>
 #include <complex>
 #include <algorithm>
+#include <boost/functional/hash.hpp>
 
 /* Copyright (C) 2017 - James Terman
  *
@@ -322,17 +323,6 @@ private:
 using Box = Rectangle<int>; ///< @brief Specialization of integer rectangle.
 //@}
 
-namespace std
-{
-	/**
-	 * Combine hash keys for multi data member classes,
-	 */
-	template <class T> inline void hash_combine(std::size_t& seed, T v)
-	{
-		seed ^= hash<T>()(v) + 0x9e3779b9 + (seed<<6) + (seed>>2);
-	}
-}
-
 /**
  * Calculate final hash from given list of values
  */
@@ -340,7 +330,7 @@ template <class T> inline std::size_t hash_calculate(std::initializer_list<T> l)
 {
 	std::size_t seed = 0;
 	for (T n : l) {
-		std::hash_combine<T>(seed, n * 0x9e3779b1);
+		boost::hash_combine<T>(seed, n * 0x9e3779b1);
 	}
 	return seed;
 }
