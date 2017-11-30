@@ -230,7 +230,6 @@ Equation& Equation::operator=(const Equation& eqn)
 	// Clear out all equation data.
 	m_inputs.clear();
 	m_input_index = -1;
-	delete m_root;
 
 	// Serialize equation to be copied.
 	string store;
@@ -555,7 +554,7 @@ Function::Function(EqnXMLParser& in, Node* parent) : Node(in, parent)
 
 	in.assertNoAttributes();
 	m_arg  = in.getFactor(this);
-	if (m_arg == nullptr) in.syntaxError("header for factor expected");
+	if (!m_arg) in.syntaxError("header for factor expected");
 
 	in.next(XML::FOOTER);
 }
@@ -566,10 +565,10 @@ Binary::Binary(EqnXMLParser& in, Node* parent) : Node(in, parent)
 	in.assertNoAttributes();
 
 	m_first  = in.getFactor(this);
-	if (m_first == nullptr) in.syntaxError("header for factor expected");
+	if (!m_first) in.syntaxError("header for factor expected");
 
 	m_second = in.getFactor(this);
-	if (m_second == nullptr) in.syntaxError("header for factor expected");
+	if (!m_second) in.syntaxError("header for factor expected");
 
 	in.next(XML::FOOTER);
 }
@@ -685,7 +684,7 @@ Differential::Differential(Parser& p, Node* parent) : Node(parent)
 	if (!isalpha(m_variable)) throw logic_error("expected variable name");
 
 	m_function = Expression::parse(p, this);
-	if (m_function == nullptr) throw logic_error("exected expression");
+	if (!m_function) throw logic_error("exected expression");
 }
 
 Differential::Differential(EqnXMLParser& in, Node* parent) : Node(in, parent)

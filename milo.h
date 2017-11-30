@@ -39,6 +39,7 @@
 
 #include "util.h"
 #include "xml.h"
+#include "smart.h"
 
 // Forward class declerations
 namespace UI { class Graphics; }
@@ -54,11 +55,14 @@ class EqnXMLParser;
 
 /** @name Global Type Declerations  */
 //@{
-using Complex = std::complex<double>;     ///< @brief Specialized as complex double.
-using NodeVector = std::vector<Node*>;    ///< @brief Storage of node pointers.
-using NodeIter = NodeVector::iterator;    ///< @brief Iterator into vector of node pointers.
-using TermVector = std::vector<Term*>;    ///< @brief Specialized vector of terms.
-using EqnPtr = std::shared_ptr<Equation>; ///< @brief Shared pointer for equation
+using Complex = std::complex<double>;     ///< Specialized as complex double.
+using NodePtr = SmartPtr<Node>;           ///< Shared pointer for Node class and derived classes.
+using NodeVector = SmartVector<Node>;     ///< Storage of node pointers.
+using NodeIter = NodeVector::iterator;    ///< Iterator into vector of node pointers.
+using TermPtr = SmartPtr<Term>;           ///< Shared pointer for Term class
+using TermVector = SmartVector<Term>;     ///< Specialized smart vector of terms.
+using ExpressionPtr = SmartPtr<Expression>; ///< Shared pointer for expression class.
+using EqnPtr = std::shared_ptr<Equation>; ///< Shared pointer for equation
 //@}
 
 /**
@@ -182,7 +186,7 @@ public:
 	 * @param b Node to compare.
 	 @ @return True if this node is less than given node. 
 	 */
-	virtual bool less(Node* b) const { return this->toString() < b->toString(); }
+	virtual bool less(NodePtr b) const { return this->toString() < b->toString(); }
 
 	/**
 	 * Get final class name of node class object.
@@ -420,7 +424,7 @@ private:
 	 * @return Return depth of this node.
 	 */
 	int getDepth(int depth) const {
-		return (m_parent == nullptr) ? depth : m_parent->getDepth(++depth);
+		return (!m_parent) ? depth : m_parent->getDepth(++depth);
 	}
 
 	Node* m_parent;    ///< Parent node of this node. Can be null if root.
@@ -469,7 +473,7 @@ public:
 	 * @param fNeg If true, node is negative.
 	 */
      Term(Node* node, Expression* parent = nullptr, bool fNeg = false) : 
-	    Node((Node*) parent, fNeg), factors(1, node) 
+	    Node((Node*) parent, fNeg), factors(node) 
 	{
 		node->setParent(this);
 	}
@@ -477,7 +481,7 @@ public:
 	/**
 	 * Abstract base class needs virtual destructor.
 	 */
-	~Term() { freeVector(factors); }
+	~Term() {}
 	//@}
 	
 	/**
@@ -566,7 +570,7 @@ public:
 	 * @param ref Node in this term where new factors will be inserted.
 	 * @param new_term Term object with factors to be transferred.
 	 */
-	void simplify(Node* ref, Term* new_term);
+	void simplify(NodePtr ref, TermPtr new_term);
 
 	/**
 	 * Compare every term to every other term to see if can combined.
@@ -583,14 +587,7 @@ public:
 	 * @param me Reference node.
 	 * @param node New node.
 	 */
-	static void insertAfterMe(Node* me, Node* node);
-
-	/**
-	 * Get index of factor in Term's internal vector node.
-	 * @param node Factor to be indexed.
-	 * @return Index of node.
-	 */
-	int getFactorIndex(Node* node) { return distance(factors.cbegin(), find(factors, node)); }
+	static void insertAfterMe(Node* me, NodePtr node);
 
 	/**
 	 * Set all factor's parent to this Term.
@@ -632,7 +629,7 @@ public:
 	 * Mulitiply this by term by another term.
 	 * @param old_term Move factors into this Term object.
 	 */
-	void multiply(Term* old_term);
+	void multiply(TermPtr old_term);
 
 	friend class FactorIterator;
 private:
@@ -745,7 +742,7 @@ public:
 	 * @param term Initialize term vector with this term.
 	 * @param parent Parent expresion.
 	 */
-    Expression(Term* term, Node* parent = nullptr) : Node(parent), terms(1, term)
+    Expression(Term* term, Node* parent = nullptr) : Node(parent), terms(term)
 	{ 
 		term->setParent(this); setDrawParenthesis(true);
 	}
@@ -756,7 +753,7 @@ public:
 	 * @param parent Parent expresion.
 	 */
     Expression(Node* factor, Node* parent = nullptr) : 
-	    Node(parent), terms(1, new Term(factor, this))
+	    Node(parent), terms(new Term(factor, this))
 	{ 
 		factor->setParent(terms[0]); setDrawParenthesis(true);
 	}
@@ -764,7 +761,7 @@ public:
 	/**
 	 * Abstract base class needs virtual destructor.
 	 */
-	~Expression() { freeVector(terms); }
+	~Expression() {}
 	//@}
 	
 	/** @name Virtual Public Member Functions */
@@ -841,13 +838,6 @@ public:
 	int numTerms() const { return terms.size(); }
 
 	/**
-	 * Get index of Term object in expression.
-	 * @param term Term to be indexed.
-	 * @return Index of term.
-	 */
-	int getTermIndex(Term* term) { return distance(terms.cbegin(), find(terms, term)); }
-
-	/**
 	 * Set parent of all terms to this expression.
 	 */
 	void setParent() { for ( auto t : terms ) t->setParent(this); }
@@ -900,7 +890,7 @@ public:
 	 * Add terms from Expression object.
 	 * @param old_expr Expression object.
 	 */
-	void add(Expression* old_expr);
+	void add(ExpressionPtr old_expr);
 
 	friend class FactorIterator;
 private:
@@ -1189,18 +1179,16 @@ public:
 	/**
 	 * Erase factor pointed to by iterator. 
 	 * Erase current node leaving iterator pointing to next factor.
-	 * @param free If true, delete erased node.
 	 */
-	void erase(bool free = true);
+	void erase();
 
 	/**
 	 * Erase all nodes to given iterator.
 	 * Starting with this iterators node to node pointed to by given iterator is erased.
 	 * Iterator will be left pointing to next iterator.
 	 * @param end Final node to be erased.
-	 * @param free If true, delete erased node.
 	 */
-	void erase(const FactorIterator& end, bool free = true);
+	void erase(const FactorIterator& end);
 
 	/**
 	 * Merge term pointed to by this iterator with next term if it exists.
@@ -1217,16 +1205,14 @@ public:
 	/**
 	 * Replace the parent term of factor pointed to by iterator with new term.
 	 * @param term Term to replace factor's parent term pointed to by iterator.
-	 * @param free If true, delete erased term.
 	 */
-	void replace(Term* term, bool free = true);
+	void replace(Term* term);
 	
 	/**
 	 * Replace factor pointed to by iterator with node.
 	 * @param node Node to replace factor pointed to by iterator.
-	 * @param free If true, delete erased node.
 	 */
-	void replace(Node* node, bool free = true);
+	void replace(Node* node);
 
 	/**
 	 * Insert node before factor pointed to by this iterator.
@@ -1267,7 +1253,7 @@ public:
 	 * Check if current factor is last in its grandparent expresion.
 	 * @return Return true if factor is last in expression.
 	 */
-	bool isEnd()   { return m_node == nullptr; }
+	bool isEnd()   { return !m_node; }
 
 	/**
 	 * Check if current factor is first in its parent term.
@@ -1335,7 +1321,7 @@ public:
 	/**
 	 * Destructor deletes node tree to clean up after itself.
 	 */
-	~Equation() { delete m_root; }
+	~Equation() {}
 	//@}
 	
 	/** @name Overloaded Equal Operators */
@@ -1419,7 +1405,10 @@ public:
 	 * @return Current input node.
 	 */
 	Input* getCurrentInput() { 
-		return (m_inputs.empty() || m_input_index < 0) ? nullptr : m_inputs[m_input_index];
+		if (m_inputs.empty() || m_input_index < 0)
+			return nullptr;
+		else
+			return m_inputs[m_input_index];
 	}
 
 	/**
@@ -1545,7 +1534,7 @@ public:
 
 	Node* getSelectEnd() { return m_selectEnd; }
 private:
-	Node* m_root = nullptr;        ///< Equation owns this tree.
+	NodePtr m_root;                ///< Equation owns this tree.
 	std::vector<Input*> m_inputs;  ///< List of input nodes in equation.
 	int m_input_index = -1;        ///< Index of current input.
 	Node* m_selectStart = nullptr; ///< Node at start of selection.

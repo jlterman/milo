@@ -38,17 +38,17 @@ using namespace std;
  */
 void Equation::setSelect(UI::Graphics& gc)
 {
-	if (m_selectStart == nullptr && m_selectEnd == nullptr) {
+	if (!m_selectStart && !m_selectEnd) {
 		/* No selection. Clear it.
 		 */
 		gc.setSelect(0, 0, 0, 0);
 	}
-	else if (m_selectStart != nullptr && m_selectStart == m_selectEnd) {
+	else if (m_selectStart && m_selectStart == m_selectEnd) {
 		/* On one node selected.
 		 */
 		gc.setSelect(m_selectStart->getFrame().box);
 	}
-	else if (m_selectStart != nullptr) {
+	else if (m_selectStart) {
 		/* Multiple nodes selected. Figure out bounding box.
 		 */
 		auto it = FactorIterator(m_selectStart);
@@ -110,32 +110,32 @@ Node* Node::first()
 {
 	Node* node = this;
 	Node* down = this->downLeft();
-	while (down != nullptr) {
+	while (down) {
 		node = down;
 		down = node->downLeft();
 	}
-	return (down != nullptr) ? down : node;
+	return (down) ? down : node;
 }
 
 Node* Node::last()
 {
 	Node* node = this;
 	Node* down = this->downRight();
-	while (down != nullptr) {
+	while (down) {
 		node = down;
 		down = node->downRight();
 	}
-	return (down != nullptr) ? down : node;
+	return (down) ? down : node;
 }
 
 // Return node to the left. Go up if necessary
 Node* Node::getNextLeft()
 {
 	Node* left = (m_parent) ? m_parent->getLeftSibling(this) : nullptr;
-	if (left != nullptr) { 
+	if (left) { 
 		return left->last();
 	}
-	else if (m_parent != nullptr) {
+	else if (m_parent) {
 		return m_parent->getNextLeft();
 	}
 	else
@@ -146,10 +146,10 @@ Node* Node::getNextLeft()
 Node* Node::getNextRight()
 {
 	Node* right = (m_parent) ? m_parent->getRightSibling(this) : nullptr;
-	if (right != nullptr) { 
+	if (right) { 
 		return right->first();
 	}
-	else if (m_parent != nullptr) {
+	else if (m_parent) {
 		return m_parent->getNextRight();
 	}
 	else
@@ -233,18 +233,17 @@ void Equation::eraseSelection(Node* node)
 	Node* end = m_selectEnd;
 	clearSelect();
 	if (start == m_root) {
-		delete m_root;
-		if (node == nullptr) node = new Input(*this);
+		if (!node) node = new Input(*this);
 		m_root = new Expression(node);
 	}
 	else if (start == end) {
 		auto it = FactorIterator(start);
-		if (node == nullptr) it.erase();
-		                else it.replace(node);
+		if (!node) it.erase();
+		      else it.replace(node);
 	}
 	else if (start != end) {
 		auto it = FactorIterator(start);
-		if (node != nullptr) {
+		if (node) {
 			it.insert(node); ++it;
 		}
 		auto it_end = FactorIterator(end);
@@ -282,7 +281,7 @@ FactorIterator Equation::disableCurrentInput()
 	}
 
 	FactorIterator pos = in->emptyBuffer();
-	pos.erase(false);
+	pos.erase();
 	if (!pos.isBeginTerm()) --pos;
 	removeInput(in);
 	return pos;
@@ -290,7 +289,7 @@ FactorIterator Equation::disableCurrentInput()
 
 void Equation::removeInput(Input* in)
 {
-	int in_index =  distance(m_inputs.cbegin(), find(m_inputs, in));
+	int in_index =  distance(m_inputs.cbegin(),find(m_inputs, in));
 	eraseElement(m_inputs, in_index);
 	
 	if (m_inputs.size() > 0 && in_index == m_input_index) {
@@ -299,12 +298,11 @@ void Equation::removeInput(Input* in)
 	}
 	else
 		m_input_index = -1;
-	delete in;
 }
 
 void Equation::getCursorOrig(int& x, int& y) 
 { 
-	if (getCurrentInput() == nullptr) return;
+	if (!getCurrentInput()) return;
 
 	x = getCurrentInput()->getFrame().box.x0() + getCurrentInput()->getFrame().box.width(); 
 	y = getCurrentInput()->getFrame().box.y0();
@@ -312,16 +310,16 @@ void Equation::getCursorOrig(int& x, int& y)
 
 void Equation::clearSelect()
 {
-	if (m_selectStart != nullptr) m_selectStart->setSelect(Node::Select::NONE);
-	if (m_selectEnd != nullptr) m_selectEnd->setSelect(Node::Select::NONE);
+	if (m_selectStart) m_selectStart->setSelect(Node::Select::NONE);
+	if (m_selectEnd) m_selectEnd->setSelect(Node::Select::NONE);
 }
 
 void Equation::setSelect(Node* start, Node* end)
 {
-	if (start == nullptr) return;
+	if (!start) return;
 	clearSelect();
 
-	if (end == nullptr || end == start) {
+	if (!end || end == start) {
 		m_selectStart = m_selectEnd = start;
 		start->setSelect(Node::Select::ALL);
 	}
@@ -335,7 +333,7 @@ void Equation::setSelect(Node* start, Node* end)
 
 void Equation::selectNodeOrInput(Node* node)
 {
-	if (getCurrentInput() != nullptr) disableCurrentInput();
+	if (getCurrentInput()) disableCurrentInput();
 
 	if (node->getType() == Input::type) {
 		Input* in = dynamic_cast<Input*>(node);
@@ -374,7 +372,7 @@ Node* Equation::findNode(UI::Graphics& gc, Box b)
 void Equation::selectBox(UI::Graphics& gc, Node* start, Box b)
 {
 	gc.relativeOrig(b.x0(), b.y0());
-	if (start->getParent() == nullptr || start->getParent()->getType() != Term::type) {
+	if (!start->getParent() || start->getParent()->getType() != Term::type) {
 		setSelect(start);
 		return;
 	}
@@ -405,7 +403,7 @@ Node* Node::findNode(const Box& b)
 
 void NodeIterator::next()
 {
-	if (m_node == nullptr) throw range_error("out of range");
+	if (!m_node) throw range_error("out of range");
 
 	m_node = m_node->getNextRight();
 }
@@ -413,19 +411,19 @@ void NodeIterator::next()
 void NodeIterator::prev()
 {
 	Node* prev_node = m_node->getNextLeft();
-	if (prev_node == nullptr) throw range_error("out of range");
+	if (!prev_node) throw range_error("out of range");
 
 	m_node = prev_node;
 }
 
 FactorIterator::FactorIterator(Node* node) : m_node(node)
 {
-	if (m_node == nullptr) return;
+	if (!m_node) return;
 
 	m_pTerm = dynamic_cast<Term*>(m_node->getParent());
 	m_gpExpr = dynamic_cast<Expression*>(m_pTerm->getParent());
-	m_factor_index = m_pTerm->getFactorIndex(m_node);
-	m_term_index = m_gpExpr->getTermIndex(m_pTerm);
+	m_factor_index = m_pTerm->factors.get_index(m_node);
+	m_term_index = m_gpExpr->terms.get_index(m_pTerm);
 }
 
 FactorIterator::FactorIterator(Expression* exp) : FactorIterator(exp->terms[0]->factors[0]) {}
@@ -442,7 +440,7 @@ void FactorIterator::setNode(int factor, int term)
 
 void FactorIterator::next()
 {
-	if (m_gpExpr == nullptr) throw logic_error("null iterator");
+	if (!m_gpExpr) throw logic_error("null iterator");
 
 	++m_factor_index;
 	if (m_factor_index == m_pTerm->factors.size()) {
@@ -464,9 +462,9 @@ void FactorIterator::next()
 
 void FactorIterator::prev()
 {
-	if (m_gpExpr == nullptr) throw logic_error("null iterator");
+	if (!m_gpExpr) throw logic_error("null iterator");
 
-	if (m_node == nullptr) {
+	if (!m_node) {
 		m_term_index = m_gpExpr->terms.size() - 1;
 		m_factor_index = m_pTerm->factors.size() - 1;
 	}
@@ -518,27 +516,25 @@ bool FactorIterator::operator<=(const FactorIterator& rhs)
 
 bool FactorIterator::isEndTerm()
 { 
-	if (m_gpExpr == nullptr) throw logic_error("null iterator");
+	if (!m_gpExpr) throw logic_error("null iterator");
 
 	return m_factor_index == m_pTerm->factors.size() - 1;
 }
 
-void FactorIterator::erase(bool free)
+void FactorIterator::erase()
 {
-	if (free) delete m_pTerm->factors.at(m_factor_index);
-	eraseElement(m_pTerm->factors, m_factor_index);
+	m_pTerm->factors.erase_index(m_factor_index);
 
 	if (m_pTerm->factors.size() == 0) {
 		if (m_gpExpr->terms.size() == 1) throw logic_error("Empty expression");
 
-		delete m_pTerm;
-		eraseElement(m_gpExpr->terms, m_term_index);
+		m_gpExpr->terms.erase_index(m_term_index);
 	}
 	--m_factor_index;
 	next(); // recaculate current position
 }
 
-void FactorIterator::erase(const FactorIterator& end, bool free)
+void FactorIterator::erase(const FactorIterator& end)
 {
 	if (m_gpExpr != end.m_gpExpr) logic_error("Bad factor iterator with wrong expression");
 	if (*this<=end) logic_error("Passed iterator needs to be greater or equal to this iterator");
@@ -547,48 +543,46 @@ void FactorIterator::erase(const FactorIterator& end, bool free)
 	if (m_term_index != end.m_term_index) {
 		for (auto t = m_term_index; t < end.m_term_index; ++t) mergeNextTerm();
 	}
-	while (m_node != end.m_node) { erase(free); }
-	erase(free);
+	while (m_node != end.m_node) { erase(); }
+	erase();
 }
 
 void FactorIterator::mergeNextTerm()
 {
 	if (m_term_index >= m_gpExpr->terms.size() - 1) return;
 
-	mergeVectors(m_gpExpr->terms[m_term_index]->factors,
-				 m_gpExpr->terms[m_term_index + 1]->factors);
-	delete m_gpExpr->terms[m_term_index + 1];
-	eraseElement(m_gpExpr->terms, m_term_index + 1);
+	m_gpExpr->terms[m_term_index]->factors.merge(m_gpExpr->terms[m_term_index + 1]->factors);
+	m_gpExpr->terms.erase_index(m_term_index + 1);
 }
 
 Term* FactorIterator::splitTerm(bool fNeg)
 {
 	Term* oldTerm = m_pTerm;
 	Term* newTerm = new Term(m_node, m_gpExpr, fNeg);
-	erase(false);
-	while (m_node != nullptr && m_pTerm == oldTerm) {
+	erase();
+	while (m_node && m_pTerm == oldTerm) {
 		newTerm->factors.push_back(m_node);
-		erase(false);
+		erase();
 	}
 	return newTerm;
 }
 
 void FactorIterator::insert(Node* node)
 {
-	if (m_node == nullptr)
+	if (!m_node)
 		m_pTerm->factors.push_back(node);
 	else
-		insertElement(m_pTerm->factors, m_factor_index, node);
+		m_pTerm->factors.insert_index(m_factor_index, node);
 	node->setParent(m_pTerm);
 	m_node = node;
 }
 
 void FactorIterator::insert(Term* term, bool sign)
 {
-	if (m_node == nullptr)
+	if (!m_node)
 		m_gpExpr->terms.push_back(term);
 	else
-		insertElement(m_gpExpr->terms, m_term_index, term);
+		m_gpExpr->terms.insert_index(m_term_index, term);
 	if (!sign) term->negative();
 	term->setParent(m_gpExpr);
 	m_factor_index = 0;
@@ -598,10 +592,10 @@ void FactorIterator::insert(Term* term, bool sign)
 
 void FactorIterator::insertAfter(Term* term, bool sign)
 {
-	if (m_node == nullptr) throw logic_error("Out of range");
+	if (!m_node) throw logic_error("Out of range");
 
 	++m_term_index;
-	insertElement(m_gpExpr->terms, m_term_index, term);
+	m_gpExpr->terms.insert_index(m_term_index, term);
 	if (!sign) term->negative();
 	term->setParent(m_gpExpr);
 	m_factor_index = 0;
@@ -611,26 +605,24 @@ void FactorIterator::insertAfter(Term* term, bool sign)
 
 void FactorIterator::insertAfter(Node* node)
 {
-	if (m_node == nullptr) throw logic_error("Out of range");
+	if (!m_node) throw logic_error("Out of range");
 
 	++m_factor_index;
-	insertElement(m_pTerm->factors, m_factor_index, node);
+	m_pTerm->factors.insert_index(m_factor_index, node);
 	node->setParent(m_pTerm);
 	m_node = node;
 }
 
-void FactorIterator::replace(Node* node, bool free)
+void FactorIterator::replace(Node* node)
 {
-	if (node == nullptr) logic_error("Node cannot be null");
-	if (free) delete m_pTerm->factors[m_factor_index];
+	if (!node) logic_error("Node cannot be null");
 	m_pTerm->factors[m_factor_index] = node;
 	node->setParent(m_pTerm);
 }
 
-void FactorIterator::replace(Term* term, bool free)
+void FactorIterator::replace(Term* term)
 {
-	if (term == nullptr) logic_error("Term cannot be null");
-	if (free) delete m_gpExpr->terms[m_term_index];
+	if (!term) logic_error("Term cannot be null");
 	m_gpExpr->terms[m_term_index] = term;
 	term->setParent(m_gpExpr);
 }

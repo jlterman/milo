@@ -65,7 +65,7 @@ public:
 	 * Virtual desctructor.
 	 * Abstract base class needs virtual desctructor.
 	 */
-	virtual ~Binary() { delete m_first; delete m_second; }
+	virtual ~Binary() {}
 	//@}
 	
 	/** @name Virtual Public Member Functions */
@@ -110,13 +110,13 @@ public:
 	 * Get first expression of this node.
 	 * @return First expression.
 	 */
-	Expression* getFirstExpression();
+	ExpressionPtr getFirstExpression();
 
 	/**
 	 * Get second expression of this node.
 	 * @return Second expression.
 	 */
-	Expression* getSecondExpression();
+	ExpressionPtr getSecondExpression();
 
 	/**
 	 * Static helper function to parse Binary class.
@@ -128,10 +128,10 @@ public:
 	static Node* parse(Parser& p, Node* one, Node* parent);
 
 protected:
-	char m_op;      ///< Character repesentation of operator.
-	Node* m_first;  ///< First expression owned by this object.
-	Node* m_second; ///< Second expression owned by this object.
-	Box m_internal; ///< Bounding box of this node.
+	char m_op;        ///< Character repesentation of operator.
+	NodePtr m_first;  ///< First expression owned by this object.
+	NodePtr m_second; ///< Second expression owned by this object.
+	Box m_internal;   ///< Bounding box of this node.
 
 private:
 	/** @name Virtual Private Member Functions */
@@ -283,6 +283,13 @@ public:
 	 */
 	Complex getNodeValue() const;
 	//@}
+
+	/**
+	 * Static Helper function for Divide::normalize()
+	 * @param n Node* containing a/b
+	 * @return  Return expressoin ab^-1
+	 */
+	static Node* normalize(Node* n);
 };
 
 /**
@@ -884,7 +891,7 @@ public:
 	 * @param b Reference node.
 	 * @return True, if b is less than this node.
 	 */
-	bool less(Node* b) const;
+	bool less(NodePtr b) const;
 
 	/**
 	 * Get name of this class.
@@ -928,12 +935,12 @@ public:
 	/**
 	 * Abstract base class needs virtual destructor.
 	 */
-	~Function() { delete m_arg; }
+	~Function() {}
 	//@}
 private:
 	std::string m_name; ///< Name of function.
 	func_ptr m_func;    ///< Function pointer to evaluate function.
-	Node* m_arg;        ///< Function own this tree.
+	NodePtr m_arg;      ///< Function own this tree.
 	Box m_internal;     ///< Bounding box of this node.
 
 	/** @name Virtual Private Member Functions */
@@ -1098,9 +1105,9 @@ public:
 	static Differential* parse(Parser& p, Node* parent);
 
 private:
-	Box m_internal;          ///< Bounding box of this node.
-	char m_variable;         ///< Variable of Differential.
-	Expression* m_function;  ///< Function to be differentiated.
+	Box m_internal;                   ///< Bounding box of this node.
+	char m_variable;                  ///< Variable of Differential.
+	SmartPtr<Expression> m_function;  ///< Function to be differentiated.
 
 	/** @name Virtual Private Member Functions */
 	//@{

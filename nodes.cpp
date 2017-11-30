@@ -364,7 +364,7 @@ Complex Term::getNodeValue() const
 
 NodeIter Term::pos(Node* me)
 {
-	if (me->getParent() == nullptr || me->getParent()->getType() != Term::type) throw logic_error("bad parent");
+	if (!me->getParent() || me->getParent()->getType() != Term::type) throw logic_error("bad parent");
 	Term* term = dynamic_cast<Term*>(me->getParent());
 	return find(term->factors.begin(), term->factors.end(), me);
 }
@@ -373,7 +373,7 @@ Node::Frame Expression::calcSize(UI::Graphics& gc)
 {
 	int x = 0, b = 0, y = 0;
 	for ( auto n : terms ) { 
-		if (n != terms[0] || !n->getSign()) x += gc.getCharLength('-');
+		if (n != terms.begin() || !n->getSign()) x += gc.getCharLength('-');
 		n->calculateSize(gc); 
 		x += n->getFrame().box.width();
 		y = max(y, n->getFrame().box.height() - n->getFrame().base);
@@ -388,7 +388,7 @@ void Expression::calcOrig(UI::Graphics& gc, int x, int y)
 {
 	m_internal.setOrigin(x, y);
 	for ( auto n : terms ) {
-		if (n != terms[0] || !n->getSign()) x += gc.getCharLength('-');
+		if (n != terms.begin() || !n->getSign()) x += gc.getCharLength('-');
 		n->calculateOrigin(gc, x, y + getFrame().base - n->getFrame().base);
 		x += n->getFrame().box.width();
 	}
@@ -397,7 +397,7 @@ void Expression::calcOrig(UI::Graphics& gc, int x, int y)
 void Expression::drawNode(UI::Graphics& gc) const
 {
 	for ( auto n : terms ) {
-		if (n != terms[0] || !n->getSign()) {
+		if (n != terms.begin()->get() || !n->getSign()) {
 			gc.at(n->getFrame().box.x0() - 1, 
 				  n->getFrame().box.y0() + n->getFrame().base,
 				  n->getSign() ? '+' : '-', UI::Graphics::Attributes::NONE);
@@ -519,7 +519,7 @@ bool Node::createNodeByName(string name, Equation& eqn)
 bool Divide::create(Equation& eqn)
 {
 	Input* in = eqn.getCurrentInput();
-	if (in == nullptr) return false;
+	if (!in) return false;
 	
 	FactorIterator in_pos(in);
 	auto pos = in_pos;
@@ -539,14 +539,14 @@ bool Divide::create(Equation& eqn)
 	
 	Divide* d = new Divide(upper, lower, nullptr);
 	Term* divide_term = new Term(d, nullptr, fNeg);
-	pos.replace(divide_term, false);
+	pos.replace(divide_term);
 	return true;
 }
 
 bool Power::create(Equation& eqn)
 {
 	Input* in = eqn.getCurrentInput();
-	if (in == nullptr) return false;
+	if (!in) return false;
 	
 	FactorIterator in_pos(in);
 	Node* a_factor = nullptr;
@@ -562,7 +562,7 @@ bool Power::create(Equation& eqn)
 	
 	Expression* b = new Expression(new Input(eqn));
 	Power* p = new Power(a, b, in->getParent());
-	in_pos.replace(p, false);
+	in_pos.replace(p);
 	return true;
 }
 
@@ -582,7 +582,7 @@ Node* Function::findNode(const Box& b)
 Node* Binary::findNode(int x, int y)
 {
 	Node* node = m_first->findNode(x, y);
-	if (node == nullptr) return m_second->findNode(x, y);
+	if (!node) return m_second->findNode(x, y);
 	return node;
 }
 
@@ -601,7 +601,7 @@ Node* Term::findNode(int x, int y)
 	Node* node = nullptr;
 	for ( auto n : factors ) {
 		node = n->findNode(x, y);
-		if (node != nullptr) break;
+		if (node) break;
 	}
 	return node;
 }
@@ -611,7 +611,7 @@ Node* Term::findNode(const Box& b)
 	Node* node = nullptr;
 	for ( auto n : factors ) {
 		node = n->findNode(b);
-		if (node != nullptr) break;
+		if (node) break;
 	}
 	return node;
 }
@@ -628,7 +628,7 @@ Node* Expression::findNode(int x, int y)
 	Node* node = nullptr;
 	for ( auto n : terms ) {
 		node = n->findNode(x, y);
-		if (node != nullptr) break;
+		if (node) break;
 	}
 	return node;
 }
@@ -640,7 +640,7 @@ Node* Expression::findNode(const Box& b)
 	Node* node = nullptr;
 	for ( auto n : terms ) {
 		node = n->findNode(b);
-		if (node != nullptr) break;
+		if (node) break;
 	}
 	return node;
 }

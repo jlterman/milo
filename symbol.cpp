@@ -60,7 +60,7 @@ static const vector<type_index> factor_precedence = {
 	Function::type, Divide::type, Power::type, Differential::type, Input::type
 };
 
-static bool sort_terms(Term* a, Term* b)
+static bool sort_terms(TermPtr a, TermPtr b)
 {
 	if ( !isNumber(a->toString()) && !isNumber(b->toString()) ) {
 		string a_str = skip_digits(a->toString());
@@ -76,10 +76,10 @@ static bool sort_terms(Term* a, Term* b)
 	}
 }
 
-bool Function::less(Node* b) const
+bool Function::less(NodePtr b) const
 { 
-	auto bf = dynamic_cast<Function*>(b);
-	if (bf == nullptr) throw logic_error("Illegal call of less()");
+	auto bf = dynamic_pointer_cast<Function>(b);
+	if (!bf) throw logic_error("Illegal call of less()");
 	if ( m_name == bf->m_name ) return toString() < bf->toString(); 
 	return m_name > bf-> m_name;
 }
@@ -130,10 +130,9 @@ void Expression::add(double n)
 	terms.push_back(term);
 }
 
-void Expression::add(Expression* old_expr)
+void Expression::add(ExpressionPtr old_expr)
 {
-	for ( auto term : old_expr->terms ) terms.push_back(term);
-	old_expr->terms.clear();
+	terms.merge(old_expr->terms);
 }
 
 void Term::multiply(double n)
@@ -143,23 +142,21 @@ void Term::multiply(double n)
 	factors.insert(factors.begin(), num);
 }
 
-void Term::multiply(Term* old_term)
+void Term::multiply(TermPtr old_term)
 {
-	factors.insert(factors.begin(), old_term->factors.begin(), old_term->factors.end());
-	old_term->factors.clear();
+	factors.merge(old_term->factors, factors.begin());
 }
 
-void Term::simplify(Node* ref, Term* new_term)
+void Term::simplify(NodePtr ref, TermPtr new_term)
 {
-	auto pos = find(factors, ref);
+	auto pos = factors.find(ref);
 	pos = factors.erase(pos);
 	
 	for ( auto factor : new_term->factors ) pos = factors.insert(pos, factor);
 	new_term->factors.clear();
-	delete ref;
 }
 
-static bool factor_cmp(Node* a, Node* b)
+static bool factor_cmp(NodePtr a, NodePtr b)
 {
 	if (a->getType() == b->getType()) return a->less(b);
 
@@ -185,9 +182,9 @@ void Term::normalize()
 		}
 		if ( (*pos)->getType() != Expression::type ) { ++pos; continue; }
 
-		auto expr = dynamic_cast<Expression*>(*pos);
+		auto expr = dynamic_pointer_cast<Expression>(*pos);
 		if (expr->numTerms() == 1) {
-			Term* term = *(expr->begin());
+			TermPtr term = *(expr->begin());
 			for ( auto t : term->factors ) {
 				t->multNth(expr->getNth());
 				pos = factors.insert(pos, t) + 1;
@@ -195,7 +192,6 @@ void Term::normalize()
 			term->factors.clear();
 			pos = factors.erase(pos);
 			if ( term->getSign() != expr->getSign() ) negative();
-			delete expr;
 		}
 		else
 			++pos;
@@ -213,7 +209,6 @@ void Term::normalize()
 		}
 	}
 	if (zero) {
-		for ( auto factor : factors ) delete factor;
 		factors.clear();
 		factors.push_back(new Number(0, this));
 	} else if (!sign) {
@@ -237,7 +232,6 @@ bool Term::simplify()
 			Node* factor = factors.front();
 			v *= factor->getValue().real();
 			factors.erase(factors.begin());
-			delete factor;
 		}
 		multiply(v);
 	}
@@ -250,8 +244,7 @@ bool Term::simplify()
 			Node* b = factors.at(b_pos);
 			if (a->toString() == b->toString()) {
 				a->addNth(b->getNth());
-				delete b;
-				factors.erase(factors.begin() + b_pos);
+				factors.erase_index(b_pos);
 				result = true;
 			}
 			else {
@@ -279,16 +272,14 @@ bool Term::simplify(TermVector& terms, TermVector::iterator a, TermVector::itera
 	int n = get_digits(a_str)*((*a)->getSign() ? 1 : -1) + 
 		    get_digits(b_str)*((*b)->getSign() ? 1 : -1);
 	if ((*a)->factors.front()->getType() == Number::type) {
-		delete (*a)->factors.front();
 		(*a)->factors.erase((*a)->factors.begin());
 	}
 	(*a)->factors.insert((*a)->factors.begin(), new Number(n, (*a)->getParent()));
-	delete (*b);
 	terms.erase(b);
 	return true;
 }
 
-void Term::insertAfterMe(Node* me, Node* node)
+void Term::insertAfterMe(Node* me, NodePtr node)
 { 
 	if (me->getParent()->getType() != Term::type) return;
 
@@ -315,8 +306,6 @@ void Power::normalize()
 		{
 			m_first->multNth(n);
 			*( Term::pos(this) ) = m_first;
-			m_first = nullptr;
-			delete this;
 		}
 	}
 }
@@ -331,7 +320,6 @@ bool Power::simplify(NodeVector& factors)
 	for ( auto a = factors.begin(); a != factors.end(); ++a ) {
 		for ( auto b = factors.begin(); b != factors.end(); ++b) {
 			if (Power::simplify(a, b)) {
-				delete (*b);
 				factors.erase(b);
 				return true;
 			}
@@ -344,11 +332,11 @@ bool Power::simplify(NodeVector::iterator a, NodeVector::iterator b)
 {
 	if ((*a)->getType() != Power::type || a == b) return false;
 
-	Power* p_a = dynamic_cast<Power*>(*a);
+	auto p_a = dynamic_pointer_cast<Power>(*a);
 	string base_a = p_a->m_first->toString();
 
 	if ((*b)->getType() == Power::type) {
-		Power* p_b = dynamic_cast<Power*>(*b);
+		auto p_b = dynamic_pointer_cast<Power>(*b);
 		if (p_b->m_first->toString() == base_a) {
 			p_a->getSecondExpression()->add(p_b->getSecondExpression());
 			return true;
@@ -361,40 +349,48 @@ bool Power::simplify(NodeVector::iterator a, NodeVector::iterator b)
 	return false;
 }
 
-Expression* Binary::getFirstExpression()
+ExpressionPtr Binary::getFirstExpression()
 {
 	if (m_first->getType() != Expression::type) throw logic_error("expression expected");
-	return dynamic_cast<Expression*>(m_first);
+	return ExpressionPtr(dynamic_pointer_cast<Expression>(m_first));
 }
 
-Expression* Binary::getSecondExpression()
+ExpressionPtr Binary::getSecondExpression()
 {
 	if (m_second->getType() != Expression::type) throw logic_error("expression expected");
-	return dynamic_cast<Expression*>(m_second);
+	return ExpressionPtr(dynamic_pointer_cast<Expression>(m_second));
+}
+
+Node* Divide::normalize(Node* n)
+{
+	Divide* d = dynamic_cast<Divide*>(n);
+	NodeVector factors = { d->m_first, d->m_second };
+	d->m_second->multNth(-1);
+	return new Expression(new Term(factors, nullptr), n->getParent());
 }
 
 void Divide::normalize()
 {
-	m_first->normalize(); m_second->normalize();
+	m_first->normalize();
+	if (m_first->getType() == Divide::type) {
+		m_first = normalize(m_first);
+	}
 
-	m_second->multNth(-1);
+	m_second->normalize();
+	if (m_second->getType() == Divide::type) {
+		m_second = normalize(m_second);
+	}
 
 	if (getParent()->getType() == Term::type) {
+		m_second->multNth(-1);
 		Term::insertAfterMe(this, m_second);
 		*( Term::pos(this) ) = m_first;
 	}
 	else if (getParent()->getType() == Divide::type) {
-		Divide* p = dynamic_cast<Divide*>(getParent());
-		NodeVector factors = { m_first, m_second };
-		Node* n = new Expression(new Term(factors, nullptr), p);
-		(this == p->m_first) ? p->m_first : p->m_second = n;
+		return; // Normalize happens from parent
 	}
 	else
 		throw logic_error("can't handle " + getParent()->getName() + " as parent");
-
-	m_first = nullptr;
-	m_second = nullptr;
-	delete this;
 }
 
 bool Divide::simplify()

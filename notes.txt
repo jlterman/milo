@@ -577,6 +577,59 @@ int main()
 #include <vector>
 #include <memory>
 #include <initializer_list>
+#include <algorithm>
+
+/**
+ * Find an iterator to a value in a vector.
+ * Template function will look for a value whose type is stored in the given vector.
+ * Returns an iterator to the found value or the end iterator if not found.
+ * @param v Vector containing type T.
+ * @param val Value of type T.
+ * @return Return iterator to found value or end iterator.
+ */
+template <class T>
+inline auto find(const std::vector<T>& v, const T& val) -> decltype( v.cbegin() )
+{
+	return std::find(v.cbegin(), v.cend(), val);
+}
+
+/**
+ * Merge vector two vectors.
+ * @param a Vector ending up items of both vectors.
+ * @param b Vector whose items are merged and cleared.
+ */
+template <class T>
+inline void mergeVectors(std::vector<T>& a, std::vector<T>& b)
+{
+	a.reserve(a.size() + b.size());
+	for ( auto e : b ) { a.insert(a.end(), e); }
+	b.clear();
+}
+
+/**
+ * Erase an element in a vector by index.
+ * Helper function to convert index to iterator to erase element.
+ * @param v Vector storing type T.
+ * @param index Index of element to be erased.
+ */
+template <class T>
+inline void eraseElement(std::vector<T>& v, int index)
+{
+	v.erase((index < 0 ? v.end() - 1 : v.begin()) + index);
+}
+
+/**
+ * Insert an element after the element pointed to by index in vector.
+ * Use vector.insert() with iterator created from index.
+ * @param v Vector storing type T.
+ * @param index Index of element where new element will be inserted.
+ * @param e Element of type T.
+ */
+template <class T>
+inline void insertElement(std::vector<T>& v, int index, T e)
+{
+	v.insert((index < 0 ? v.end() : v.begin()) + index, e);
+}
 
 template <class T>
 class SmartPtr : public std::shared_ptr<T>
@@ -585,8 +638,8 @@ public:
 	explicit SmartPtr(T* p) : std::shared_ptr<T>(p) {}
 
 	SmartPtr& operator=(T* p) { this->reset(p); return *this; }
-	bool operator==(T* p) const { return this->get() == p; }
-	bool operator!=(T* p) const { return this->get() != p; }
+	bool operator==(const T* p) const { return this->get() == p; }
+	bool operator!=(const T* p) const { return this->get() != p; }
 	operator T*() const { return this->get(); }
 };
 
@@ -599,7 +652,7 @@ public:
 	using size_type = typename std::vector< std::shared_ptr<T> >::size_type;
 	using base = typename std::vector< SmartPtr<T> >;
 
-	explicit SmartVector() : base() {}
+	SmartVector() {}
 	explicit SmartVector(T* p) : base(1, SmartPtr<T>(p)) {}
 
 	void push_back(T* p) { this->base::push_back(SmartPtr<T>(p)); }
@@ -615,14 +668,75 @@ public:
 	{
 		return this->base::insert(pos, n, SmartPtr<T>(val));
 	}
+
+	iterator insert (const_iterator position, iterator first, iterator last)
+	{
+		return this->base::insert(position, first, last);
+	}
 	
 	iterator insert(const_iterator pos, const SmartPtr<T> val) = delete;
 	iterator insert(const_iterator pos, size_type n, const  SmartPtr<T> val) = delete;
 	iterator insert(const_iterator pos, std::initializer_list< SmartPtr<T> > il) = delete;
-
+	
 	void swap(SmartVector<T>& v) { this->base::swap(v); }
 	void swap(base&) = delete;
+
+	/**
+	 * Insert element at index
+	 */
+	void insert_index(int index, T* e)
+	{
+		insert((index < 0 ? base::end() : base::begin()) + index, e);
+	}
+
+	/**
+	 * Erase element at index.
+	 */
+	void erase_index(int index)
+	{
+		erase((index < 0 ? base::end() - 1 : base::begin()) + index);
+	}
+
+	/**
+	 * Get index of element in vector
+	 */
+	int get_index(T* e) const
+	{
+		const base* base_this = this;
+		int index = 0;
+		for ( auto n : *base_this ) {
+			if (n.get() == e) return index;
+			++index;
+		}
+		return -1;
+	}
 };
+
+template<class T>
+bool operator==(const SmartPtr<T>& p, const typename SmartVector<T>::iterator& it)
+{
+	return p.get() == it->get();
+}
+
+template<class T>
+bool operator!=(const SmartPtr<T>& p, const typename SmartVector<T>::iterator& it)
+{
+	return p.get() != it->get();
+}
+
+template<class T>
+bool operator==(const typename SmartVector<T>::iterator& it, const SmartPtr<T>& p)
+{
+	return p.get() == it->get();
+}
+
+template<class T>
+bool operator!=(const typename SmartVector<T>::iterator& it, const SmartPtr<T>& p)
+{
+	return p.get() != it->get();
+}
+
+static SmartVector<int> a(new int(17));
 
 int main()
 {
@@ -642,11 +756,44 @@ int main()
 
 	std::cout << "eleven should be " << (*a1) << std::endl;
 
-	for ( auto n : v ) { std::cout << (*n) << " "; }
+	for ( auto n : v ) {
+		if (n != v.begin()) std::cout << ", ";
+		std::cout << (*n);
+	}
 	std::cout << std::endl;
 
 	v.insert(v.begin(), new int(2));
 	for ( auto n : v ) { std::cout << (*n) << " "; }
 	std::cout << std::endl;
-				 
+
+	a1 = v[1];
+	std::cout << "second element is " << (*a1) << std::endl;
+
+	a1 = v[0];
+	std::cout << "first element is 2: " << ((a1 == v.front()) ? "yes" : "no") << std::endl;
+
+	v.insert_index(0, new int(0));
+	for ( auto n : v ) {
+		if (n != v.begin()) std::cout << ", ";
+		std::cout << (*n);
+	}
+	std::cout << std::endl;
+
+	a1 = v.back();
+	std::cout << "11 is " << v.get_index(a1) << "th element" << std::endl;
+
+	SmartVector<int> w(new int(1));
+	w.push_back(new int (6));
+	w.push_back(new int (7));
+	w.push_back(new int (8));
+
+	auto it = v.begin() + 1;
+	v.insert(it, w.begin(), w.end());
+	for ( auto n : v ) {
+		if (n != v.begin()) std::cout << ", ";
+		std::cout << (*n);
+	}
+	std::cout << std::endl;
+
+	
 }
