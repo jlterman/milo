@@ -96,7 +96,7 @@ public:
 	 * @param in XML input stream.
 	 * @param eqn Equation object containing node tree.
 	 */
-    EqnXMLParser(std::istream& in, Equation& eqn) : XML::Parser(in), m_eqn(eqn) {}
+    EqnXMLParser(std::istream& in, Equation& eqn) : XML::Parser(in, "document"), m_eqn(eqn) {}
 	~EqnXMLParser() {} ///< Virtual destructor.
 
 	/**
@@ -335,7 +335,7 @@ void Equation::xml_out(XML::Stream& xml) const
 
 void Equation::xml_out(std::ostream& os) const 
 {
-	XML::Stream xml(os);
+	XML::Stream xml(os, "document");
 	xml_out(xml);
 }
 
