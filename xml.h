@@ -141,12 +141,12 @@ namespace XML {
 	/**
 	 * Output stream for XML. 
 	 * Overloaded << operator is used to output XML states and tags.
-	 * The constructor and destructor automagically adds a <document>...</document>
+	 * The constructor and destructor adds the root tag supplied ("document" in this example)
 	 * level to the output. Destructor will also closes all open header tags.
 	 * Example code:
 	 * <PRE>
 	 * {
-	 *   Stream xml(std::cout);  
+	 *   Stream xml(std::cout, "document");  
 	 *   xml << HEADER << "foo";
 	 *   xml << HEADER << "bar" << NAME_VALUE << "flag" << "true" << ATOM_END;
 	 *   xml << HEADER << "text" << HEADER_END << ELEMENT << "Example text & element" << FOOTER;
@@ -167,12 +167,13 @@ namespace XML {
 	public:
 		/**
 		 * Constructor for class Stream.
-		 * Initialize private data members and add "<documentation>" header.
+		 * Initialize private data members and add root header.
 		 * @param os   Output character stream to write XML
+		 * @param root Root tag of xml output
 		 * @param step Number of spaces to add to indention
 		 * @param sep  Character to add before each indention
 		 */
-		Stream(std::ostream& os, int step = 2, std::string sep = "\n");
+		Stream(std::ostream& os, const std::string& root, int step = 2, std::string sep = "\n");
 
 		/**
 		 * Destructor for class stream.
@@ -237,9 +238,11 @@ namespace XML {
 		/**
 		 * Constructor for class Parser.
 		 * Initialize character input stream and read in 
-		 * "<document>" header tag.
+		 * root header tag.
+		 * @param in Input containing xml content
+		 * @param root Root xml tag
 		 */
-		Parser(std::istream& in);
+		Parser(std::istream& in, const std::string& root);
 
 		/**
 		 * Virtual desctructor for class Parser.

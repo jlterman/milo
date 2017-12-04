@@ -199,12 +199,12 @@ namespace XML
 		return xml;
 	}
 
-	/* Constructor for class Stream. Root tag is "document"
+	/* Constructor for class Stream. Add root tag.
 	 */
-	Stream::Stream(ostream& os, int step, string sep) : 
+	Stream::Stream(ostream& os, const string& root, int step, string sep) : 
 		m_sep(sep), m_os(os), m_indent_step(step)
 	{
-		*this << HEADER << "document" << HEADER_END;
+		*this << HEADER << root << HEADER_END;
 	}
 
 	/* Destructor for class Stream. Close all open headers.
@@ -257,12 +257,12 @@ namespace XML
 	}
 
 	/* Constructor for Parser class reads in XML from input stream.
-	 * Expects root tag to be "document"
+	 * Checks for expected root tag.
 	 */
-	Parser::Parser(std::istream& in) : m_pos(0)
+	Parser::Parser(std::istream& in, const string& root) : m_pos(0)
 	{ 
 		tokenize(in);
-		next(HEADER, "document").next(HEADER_END);
+		next(HEADER, root).next(HEADER_END);
 	}
 
 	// Helper function for tokenize(istream)

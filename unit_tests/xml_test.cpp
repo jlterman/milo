@@ -100,7 +100,7 @@ int main()
 	bool noThrow = true;
 	ostringstream store1;
 	try {
-		XML::Stream xml(store1);
+		XML::Stream xml(store1, "document");
 		xml << XML::HEADER << "equation" << XML::HEADER_END;
 		xml << XML::HEADER << "variable" << XML::ATOM_END;
 		xml << XML::FOOTER;
@@ -115,7 +115,7 @@ int main()
 	noThrow = true;
 	istringstream in1(store1.str());	
 	try {
-		XML::Parser p(in1);
+		XML::Parser p(in1, "document");
 		p.next(XML::HEADER, "equation").next(XML::HEADER_END);
 		p.next(XML::HEADER, "variable").next(XML::ATOM_END);
 		p.finish();
@@ -129,7 +129,7 @@ int main()
 	noThrow = true;
 	ostringstream store2;
 	try {
-		XML::Stream xml(store2);
+		XML::Stream xml(store2, "document");
 		xml << XML::HEADER << "equation" << XML::HEADER_END;
 		xml << XML::HEADER << "variable" << XML::NAME_VALUE << "name" << "a";
 		xml << XML::NAME_VALUE << "negative" << "true" << XML::ATOM_END;
@@ -145,7 +145,7 @@ int main()
 	noThrow = true;
 	istringstream in2(store2.str());
 	try {
-		XML::Parser p(in2);
+		XML::Parser p(in2, "document");
 		p.next(XML::HEADER, "equation").next(XML::HEADER_END);
 		p.next(XML::HEADER, "variable");
 		if (p.check(XML::NAME_VALUE)) p.next(XML::NAME_VALUE);
@@ -164,7 +164,7 @@ int main()
 	noThrow = true;
 	ostringstream store3;
 	try {
-		XML::Stream xml(store3);
+		XML::Stream xml(store3, "document");
 		xml << XML::HEADER << "plans" << XML::HEADER_END;
 		xml << XML::HEADER << "test" << XML::NAME_VALUE << "plan" << "foo<bar>" << XML::HEADER_END;
 		xml << XML::ELEMENT << "frick &\n frack";
@@ -179,7 +179,7 @@ int main()
 	noThrow = true;
 	istringstream in3(store3.str());
 	try {
-		XML::Parser p(in3);
+		XML::Parser p(in3, "document");
 		p.next(XML::HEADER, "plans").next(XML::HEADER_END);
 		p.next(XML::HEADER, "test").next(XML::NAME_VALUE).next(XML::HEADER_END);
 		p.next(XML::ELEMENT).finish();
@@ -195,7 +195,7 @@ int main()
 	bool passed = false;
 	ostringstream store4;
 	try {
-		XML::Stream xml(store4);
+		XML::Stream xml(store4, "document");
 		xml << XML::HEADER << "equation" << XML::HEADER_END;
 		xml << XML::HEADER << "variable" << XML::ATOM_END;
 		xml << XML::FOOTER << XML::FOOTER << XML::FOOTER;
@@ -210,7 +210,7 @@ int main()
 	passed = false;
 	istringstream in5(test5);
 	try {
-		XML::Parser p(in5);
+		XML::Parser p(in5, "document");
 		p.next(XML::HEADER, "equation").next(XML::HEADER_END);
 		p.next(XML::HEADER, "variable").next(XML::ATOM_END);
 		p.finish();
@@ -225,7 +225,7 @@ int main()
 	passed = false;
 	istringstream in6(test6);
 	try {
-		XML::Parser p(in6);
+		XML::Parser p(in6, "document");
 		p.next(XML::HEADER, "equation").next(XML::HEADER_END);
 		p.next(XML::HEADER, "variable");
 		if (p.check(XML::NAME_VALUE)) p.next(XML::NAME_VALUE);
