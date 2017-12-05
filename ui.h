@@ -25,6 +25,7 @@
  * be ported.
  */
 
+#include <iostream>
 #include <unordered_map>
 #include <string>
 #include <memory>
@@ -41,8 +42,8 @@ namespace UI {
 
 	/** @name UI namespace Type Declerations  */
 	//@{
-	using GraphicsPtr = std::shared_ptr<Graphics>;           ///< Shared pointer for Graphics
-	using GlobalContextPtr = std::shared_ptr<GlobalContext>; /// Shared pointer for GlobalContext
+	using GraphicsPtr = std::shared_ptr<Graphics>;                  ///< Shared pointer for Graphics
+	using GlobalContextPtr = std::shared_ptr<GlobalContext>;        ///< Shared pointer for GlobalContext
 	//@}
 	
 	/**
@@ -185,7 +186,9 @@ namespace UI {
 		 * Construct an event for ascii code with no modifier keys.
 		 * @param key Ascii character.
 		 */
-        KeyEvent(char key) : KeyEvent((Keys) key) {}
+	    KeyEvent(char key, enum Modifiers md = NO_MOD) : KeyEvent((Keys) key, md) {}
+
+	    constexpr KeyEvent(const KeyEvent& e) : m_key(e.m_key), m_mod(e.m_mod) {}
 		//@}
 		
 		enum Keys getKey() const { return m_key; }             ///< @return Key code.
@@ -412,6 +415,7 @@ namespace UI {
 		 * @param[in,out] y Vertical coordinate to be shifted.
 		 */
 		void relativeOrig(int& x, int& y) { x -= m_xOrig; y -= m_yOrig; }
+
 	protected:
 		int m_xSize;   ///< Horizontal size of graphic window.
 		int m_ySize;   ///< Vertical size of graphic window.
@@ -428,7 +432,7 @@ namespace UI {
 	class GlobalContext
 	{
 	public:
-		/** @name Constructors */
+		/** @name Constructors and Virtual Destructor */
 		//@{
 
 		/**
@@ -440,7 +444,51 @@ namespace UI {
 		 * Constructor with input equation.
 		 */
 	    GlobalContext(Graphics* gc, std::istream& is);
+
+		/**
+		 * Abstract base class needs vertical destructor.
+		 */
+		virtual ~GlobalContext() {}
 		//@}
+
+		/** @name Virtual Public Member Functions */
+		//@{
+		/**
+		 * Start of menu with attributes
+		 * @param attributes All menu settings in map.
+		 */
+		virtual void define_menu(const StringMap& attributes)=0;
+
+		/**
+		 * No more menu items for current menu
+		 * @param name Name of menu coming to end
+		 */
+		virtual void define_menu_end(const std::string& name)=0;
+
+		/**
+		 * Menu item for current menu
+		 * @param attributes All menu item settings in map.
+		 */
+		virtual void define_menu_item(const StringMap& attributes)=0;
+
+		/**
+		 * Menu line for current menu
+		 */
+		virtual void define_menu_line()=0;
+		//@}
+
+		/**
+		 * Parse menu tag in XML calling the virtual menu member functions
+		 * define_menu, define_menu_end, define_menu_item and define_menu_line.
+		 * @param in XML::Parser already initialized with xml file
+		 */
+		void parse_menu(XML::Parser& in);
+
+		/**
+		 * Parse entire menubar tag defined in XML.
+		 * @param is Input stream that reads XML defining menubar
+		 */
+		void parse_menubar(std::istream& is);
 
 		/**
 		 * Get graphics context.

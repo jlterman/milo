@@ -906,3 +906,61 @@ bool UI::doMouse(const UI::MouseEvent& mouse)
 	return false;
 								  
 }
+
+void UI::GlobalContext::parse_menu(XML::Parser& in)
+{
+	in.next(XML::HEADER, "menu").next(XML::NAME_VALUE);
+
+	string type;
+	if (!in.getAttribute("type", type)) throw logic_error("type not found");
+	if (type == "line") {
+		define_menu_line();
+		in.next(XML::ATOM_END);
+		return;
+	}
+
+	string value;
+	string name;
+	if (!in.getAttribute("name", name)) throw logic_error("name not found");
+	if (type == "menu") {
+	    StringMap attributes;
+		attributes.emplace("name", name);
+		if (!in.getAttribute("active", value)) throw logic_error(s + " not found");
+		if (value != "true" && value != "false") throw logic_error("bad boolean value");
+		attributes.emplace("active", value);
+		if (in.getAttribute("title", value))
+			attributes.emplace("title", value);
+		else
+			attributes.emplace("title", name);
+
+		define_menu(attributes);
+		in.next(XML::HEADER_END);
+		while (in.check(XML::HEADER, "menu")) parse_menu(in);
+		in.next(XML::FOOTER);
+		define_menu_end(name);
+	}
+	else if (type == "item") {
+		StringMap attributes;
+		attributes.emplace("name", name);
+		for ( const string& s : { "active", "action", "key" } ) {
+			if (!in.getAttribute(s, value)) throw logic_error(s + " not found");
+			attributes.emplace(s, value);
+		}
+		if (in.getAttribute("title", value))
+			attributes.emplace("title", value);
+		else
+			attributes.emplace("title", name);
+
+		define_menu_item(attributes);
+		in.next(XML::ATOM_END);
+	}
+	else
+		throw logic_error("unknown type: " + value);
+}
+
+void UI::GlobalContext::parse_menubar(istream& is)
+{
+	XML::Parser in(is, "menubar");
+	while (in.check(XML::HEADER, "menu")) parse_menu(in);
+	in.next(XML::FOOTER);
+}

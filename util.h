@@ -6,6 +6,7 @@
 #include <array>
 #include <complex>
 #include <algorithm>
+#include <unordered_map>
 #include <boost/functional/hash.hpp>
 
 /* Copyright (C) 2017 - James Terman
@@ -133,6 +134,23 @@ template <class T>
 inline void insertElement(std::vector<T>& v, int index, T e)
 {
 	v.insert((index < 0 ? v.end() : v.begin()) + index, e);
+}
+
+/**
+ * Search for a value in map.
+ * @param kv_map Map to be searched.
+ * @param value  Value to look for
+ * return Key associated with value.
+ */
+template <typename K, typename V>
+const K searchMapValue(const std::unordered_map<K, V>&kv_map,  V value) 
+{
+	for ( auto& kv : kv_map ) {
+		if ( kv.second == value ) {
+			return kv.first;
+		}
+	}
+	return 0;
 }
 //@}
 
@@ -320,7 +338,8 @@ private:
 
 /** @name Global Type Declerations  */
 //@{
-using Box = Rectangle<int>; ///< @brief Specialization of integer rectangle.
+using Box = Rectangle<int>;                                     ///< Specialization of integer rectangle.
+using StringMap = std::unordered_map<std::string, std::string>; ///< hash map for string => string
 //@}
 
 /**
