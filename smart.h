@@ -55,7 +55,7 @@ public:
 	/**
 	 * Assign raw pointer as managed pointer.
 	 */
-	SmartPtr& operator=(T* p) { this->reset(p); return *this; }
+	SmartPtr& operator=(T* p) { SmartPtr a(p->getSharedPtr()); *this = a; return *this; }
 
 	/**
 	 * Compare raw pointer to managed pointer.
@@ -105,8 +105,7 @@ public:
 	/**
 	 * Constructor for SmartVector initialized with a single object
 	 */
-	explicit SmartVector(T* p) : base(1, SmartPtr<T>(p)) {}
-
+	explicit SmartVector(T* p) { SmartPtr<T> a; a = p; this->base::push_back(a); } 
 
 	/**
 	 * Construct vector from initializer list of smart pointers
@@ -116,7 +115,7 @@ public:
 	/**
 	 * Push back object into vector managed by share pointer
 	 */
-	void push_back(T* p) { this->base::push_back(SmartPtr<T>(p)); }
+	void push_back(T* p) { SmartPtr<T> a; a = p; this->base::push_back(a);  }
 
 	/**
 	 * Don't allow push back with shared pointer

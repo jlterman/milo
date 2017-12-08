@@ -319,7 +319,7 @@ bool Expression::add(Parser& p)
 		return true;
 }
 
-Expression* Expression::parse(Parser& p, Node* parent) {
+Node* Expression::parse(Parser& p, Node* parent) {
 	if (p.peek() != '(') return nullptr;
 	
 	p.next();

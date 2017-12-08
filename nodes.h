@@ -1105,9 +1105,9 @@ public:
 	static Differential* parse(Parser& p, Node* parent);
 
 private:
-	Box m_internal;                   ///< Bounding box of this node.
-	char m_variable;                  ///< Variable of Differential.
-	SmartPtr<Expression> m_function;  ///< Function to be differentiated.
+	Box m_internal;      ///< Bounding box of this node.
+	char m_variable;     ///< Variable of Differential.
+	NodePtr m_function;  ///< Function to be differentiated.
 
 	/** @name Virtual Private Member Functions */
 	//@{

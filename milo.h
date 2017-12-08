@@ -69,7 +69,7 @@ using EqnPtr = std::shared_ptr<Equation>; ///< Shared pointer for equation
  * Abstract base class for symbolic classes that make up an equation.
  * Any class that will be part of the equation tree structor derives from this class.
  */
-class Node 
+class Node : public std::enable_shared_from_this<Node>
 {
 public:
 	/**
@@ -352,6 +352,24 @@ public:
 	 * @return True, if node was created
 	 */
 	static bool createNodeByName(std::string name, Equation& eqn);
+
+	/**
+	 * Return shared_ptr for this Node object.
+	 * If none exists, create one.
+	 * @return Shared pointer for this Node object
+	 */
+	std::shared_ptr<Node> getSharedPtr()
+	{
+		std::shared_ptr<Node> sp;
+		try {
+			sp = this->shared_from_this();
+		}
+		catch (std::exception& ex) {
+			sp = std::shared_ptr<Node>(this);
+		}
+		return sp;
+	}
+	
 private:
 	/** @name Virtual Private Member Functions */
 	//@{
@@ -631,6 +649,16 @@ public:
 	 */
 	void multiply(TermPtr old_term);
 
+	/**
+	 * Return shared_ptr for this Term object.
+	 * Downcast it from base Node shared pointer.
+	 * @return Shared pointer for this Term object
+	 */
+	std::shared_ptr<Term> getSharedPtr()
+	{
+		return std::dynamic_pointer_cast<Term>(this->Node::getSharedPtr());
+	}
+
 	friend class FactorIterator;
 private:
 	NodeVector factors; ///< Term owns this tree
@@ -877,7 +905,7 @@ public:
 	 * @param parent Parent expression.
 	 * @return Created Expression object.
 	 */
-	static Expression* parse(Parser& p, Node* parent);
+	static Node* parse(Parser& p, Node* parent);
 
 	/**
 	 * Add a Number to expression.
