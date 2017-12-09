@@ -548,10 +548,23 @@ static bool do_enter(const KeyEvent& event)
 	else if (in != nullptr) {
 		if (GlobalContext::current->getEqn().getCurrentInput()->unremovable()) return false;
 		GlobalContext::current->getEqn().disableCurrentInput();
-		GlobalContext::current->getEqn().nextInput();
+		GlobalContext::current->getEqn().nextInput(false);
 	}
 	else
 		return false;
+	return true;
+}
+
+/**
+ * Handle tab key event.
+ * Move to next input. If shift down move to previous input.
+ * @param event Key event.
+ * @return Always true
+ */
+static bool do_tab(const KeyEvent& event)
+{
+	LOG_TRACE_MSG(event.toString());
+	GlobalContext::current->getEqn().nextInput(event.shiftMod());
 	return true;
 }
 
@@ -692,7 +705,7 @@ static bool do_refresh()
  * Function pointer to handle a menu item.
  * Return true, if event changed equation.
  */
-typedef bool (*menu_handler)(void);
+using menu_handler = bool (*)(void);
 
 /**
  * Map of names to functions that handle menu items.
@@ -708,7 +721,7 @@ static const unordered_map<string, menu_handler> menu_map = {
  * Function pointer to handle a mouse even
  * Return true, if event changed equation.
  */
-typedef bool (*mouse_handler)(const MouseEvent&);
+using mouse_handler = bool (*)(const MouseEvent&);
 
 /**
  * Map of events to functions that handle mouse events.
@@ -725,7 +738,8 @@ static const unordered_map<UI::MouseEvent, mouse_handler> mouse_event_map = {
  * Function pointer to handle an event. Pointer to event passed as argument.
  * Return true, if event changed equation.
  */
-typedef bool (*key_event_handler)(const KeyEvent&);
+
+using key_event_handler = bool (*)(const KeyEvent&);
 
 /**
  * Map of events to functions that handle key events.
@@ -735,6 +749,7 @@ static const unordered_map<KeyEvent, key_event_handler> key_event_map = {
 	{ KeyEvent(Keys::RIGHT, Modifiers::SHIFT), do_shift_right },
 	{ KeyEvent(Keys::UP,    Modifiers::SHIFT), do_shift_up },
 	{ KeyEvent(Keys::DOWN,  Modifiers::SHIFT), do_shift_down },
+	{ KeyEvent(Keys::TAB,   Modifiers::SHIFT), do_tab },
 	
 	{ KeyEvent(Keys::PLUS),   do_plus_minus },
 	{ KeyEvent(Keys::MINUS),  do_plus_minus },
@@ -746,6 +761,7 @@ static const unordered_map<KeyEvent, key_event_handler> key_event_map = {
 	{ KeyEvent(Keys::RIGHT),  do_right },
 	{ KeyEvent(Keys::UP),     do_up },
 	{ KeyEvent(Keys::DOWN),   do_down },
+	{ KeyEvent(Keys::TAB),    do_tab },
 	{ KeyEvent(Keys::ENTER),  do_enter },
 	{ KeyEvent(Keys::BSPACE), do_backspace },
 	{ KeyEvent(Keys::DOT),    do_key },
@@ -853,6 +869,51 @@ static const unordered_map<enum Keys, string> key_string = {
 	{ PAGE_DOWN, "PAGE_DOWN" }, { UP, "UP" }, { DOWN, "DOWN" }, { LEFT, "LEFT" },
 	{ RIGHT, "RIGHT" }, { BSPACE, "BACKSPACE" }, { SPACE, "SPACE" }
 };
+
+static const unordered_map<string, enum Modifiers> stringToMod = {
+	{ "ALT", ALT }, { "SHIFT", SHIFT }, { "ALT_SHIFT", ALT_SHIFT }, { "CTRL", CTRL },
+	{ "CTRL_SHIFT", CTRL_SHIFT }, { "CTRL_ALT_SHIFT", CTRL_ALT_SHIFT }, { string(), NO_MOD }
+};
+
+static const unordered_map<string, enum Keys> stringToKey = {
+	{ "F1", F1 }, { "F2", F2 }, { "F3", F3 }, { "F4", F4 }, { "F5", F5 }, { "F6", F6 }, 
+	{ "F7", F7 }, { "F8", F8 }, { "F9", F9 }, { "F10", F10 }, { "F11", F11 }, { "F12", F12 },
+	{ "INS", INS }, { "DEL", DEL }, { "\u2302", HOME }, { "END", END }, { "PAGE\u25b2", PAGE_UP },
+	{ "PAGE\u25bc", PAGE_DOWN }, { "\u25b2", UP }, { "\u25bc", DOWN }, { "\u25c0", LEFT },
+	{ "\u25b6", RIGHT }, { "BSP", BSPACE }, { "SP", SPACE }, { "TAB", TAB }, { "ENTER", ENTER},
+	{ "ESC", ESC },	{ "HOME", HOME }, { "PAGE_UP", PAGE_UP }, { "PAGE_DOWN", PAGE_DOWN },
+	{ "UP", UP }, { "DOWN", DOWN },	{ "LEFT", LEFT }, { "RIGHT", RIGHT }
+};
+
+UI::KeyEvent::KeyEvent(const string& key)
+{
+	auto dash = key.find("-");
+	m_mod = NO_MOD;
+	m_key = NO_KEY;
+	if (dash != string::npos) {
+		auto it = stringToMod.find(key.substr(0, dash));
+		if (it == stringToMod.end()) {
+			return;
+		}
+		m_mod = it->second;
+	}
+	string letter = key.substr(dash+1);	 
+	if (letter.length() == 1 && m_mod == NO_MOD) {
+		m_key = Keys(letter[0]);
+	}
+	else if (letter.length() == 1 && isalpha(letter[0]) && m_mod == CTRL) {
+		m_key = Keys(char(letter[0]) - '@');
+		m_mod = NO_MOD;
+	}
+	else {
+		auto it = stringToKey.find(letter);
+		if (it == stringToKey.end()) {
+			m_mod = NO_MOD;
+			return;
+		}
+		m_key = it->second;
+	}
+}
 
 string UI::MouseEvent::toString() const
 {

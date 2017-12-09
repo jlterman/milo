@@ -54,9 +54,9 @@ namespace UI {
 		NO_KEY, CTRL_A, CTRL_B, CTRL_C, CTRL_D, CTRL_E, CTRL_F, CTRL_G, CTRL_H,
 		TAB, ENTER, CTRL_K, CTRL_L, CTRL_M, CTRL_N, CTRL_O, CTRL_P, CTRL_Q,
 		CTRL_R, CTRL_S, CTRL_T, CTRL_U,	CTRL_V, CTRL_W, CTRL_X, CTRL_Y, CTRL_Z, ESC,
-		SPACE = 32, BANG, DBL_QUOTE, HASH, DOLLAR, PRCT, AMP, QUOTE, L_PAR, R_PAR,
+		SPACE = 32, BANG, DBL_QUOTE, HASH, DOLLAR, PERCENT, AMP, QUOTE, L_PAR, R_PAR,
 		STAR, PLUS, COMMA, MINUS, DOT, DIVIDE, K0, K1, K2, K3, K4, K5, K6, K7, K8, K9,
-		COLON, SEMI, LESS, EQUAL, GREATER, QUEST, AT, A, B, C, D, E, F, G, H, I, J, K,
+		COLON, SEMI, LESS, EQUAL, GREATER, QUESTION, AT, A, B, C, D, E, F, G, H, I, J, K,
 		L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, L_BRACKET, B_SLASH, R_BRACKET,
 		POWER, U_SCORE, ACCENT, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r,
 		s, t, u, v, w, x, y, z, L_BRACE, PIPE, R_BRACE, TILDE,
@@ -118,6 +118,29 @@ namespace UI {
 		 * @param mouse_y y-coordinate of mouse event
 		 */
         void setCoords(int mouse_x, int mouse_y) { m_x = mouse_x; m_y = mouse_y; }
+
+		/**
+		 * Check mouse event for no mouse modifiers.
+		 * @return True if there are no mouse modifiers.
+		 */
+		bool noMod() const { return (m_mod == 0) ? true : false; }
+
+		/**
+		 * Check mouse event for shift mouse modifier.
+		 * @return True if there is shift mouse modifier.
+		 */
+		bool shiftMod() const { return (m_mod && Modifiers::SHIFT != 0) ? true : false; }
+
+		/**
+		 * Check mouse event for alt mouse modifier.
+		 * @return True if there is alt mouse modifier.
+		 */
+		bool altMod() const { return (m_mod && Modifiers::ALT != 0) ? true : false; }
+		
+		/**
+		 * Return true if valid mouse
+		 */
+		operator bool() const { return m_type !=NO_MOUSE; }
 		
 		/**
 		 * Calculate hash for this class object. Used by unordered map.
@@ -188,12 +211,21 @@ namespace UI {
 		 */
 	    KeyEvent(char key, enum Modifiers md = NO_MOD) : KeyEvent((Keys) key, md) {}
 
+		/**
+		 * Key event constructor that reads key event from string of format
+		 * [[[CTRL]_ALT]_SHIFT]-letter.
+		 */
+		KeyEvent(const std::string& key);
+
+		/**
+		 * Copy constructor that can be a constexpr
+		 */
 	    constexpr KeyEvent(const KeyEvent& e) : m_key(e.m_key), m_mod(e.m_mod) {}
 		//@}
 		
 		enum Keys getKey() const { return m_key; }             ///< @return Key code.
 		enum Modifiers getModifiers() const { return m_mod; }  ///< @return Modifiers state.
-		
+
 		/**
 		 * Calculate hash for this class object. Used by unordered map.
 		 * @return Hash value.
@@ -202,6 +234,29 @@ namespace UI {
 		{
 			return hash_calculate<int>({(int) m_key, (int) m_mod});
 		}
+
+		/**
+		 * Check key event for no key modifiers.
+		 * @return True if there are no key modifiers.
+		 */
+		bool noMod() const { return (m_mod == 0) ? true : false; }
+
+		/**
+		 * Check key event for shift key modifier.
+		 * @return True if there is shift key modifier.
+		 */
+		bool shiftMod() const { return (m_mod && Modifiers::SHIFT != 0) ? true : false; }
+
+		/**
+		 * Check key event for alt key modifier.
+		 * @return True if there is alt key modifier.
+		 */
+		bool altMod() const { return (m_mod && Modifiers::ALT != 0) ? true : false; }
+		
+		/**
+		 * Return true if valid key
+		 */
+		operator bool() const { return m_key != NO_KEY; }
 
 		/**
 		 * Equal operator override.

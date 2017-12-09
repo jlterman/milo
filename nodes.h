@@ -827,7 +827,7 @@ public:
 	/**
 	 * Function pointer that takes a single complex argument and returns a complex value.
 	 */
-	typedef Complex (*func_ptr)(Complex);
+	using func_ptr = Complex (*)(Complex);
 
 	/**
 	 * @brief Map that associates function name with its function call.

@@ -251,16 +251,22 @@ void Equation::eraseSelection(Node* node)
 	}
 }
 
-void Equation::nextInput() 
+void Equation::nextInput(bool fShift) 
 {
 	if (m_input_index >= 0 && m_inputs.size() == 1) return;
 
-	if (m_input_index < 0) {
+	if (!fShift && m_input_index < 0) {
 		m_input_index = 0;
+	}
+	else if (fShift && m_input_index < 0) {
+		m_input_index = m_inputs.size() - 1;
 	}
 	else if (m_inputs[m_input_index]->unremovable()) {
 		m_inputs[m_input_index]->setCurrent(false);
-		m_input_index = (m_input_index + 1)%m_inputs.size();
+		if (fShift)
+			m_input_index = (m_inputs.size() + m_input_index - 1)%m_inputs.size();
+		else
+			m_input_index = (m_input_index + 1)%m_inputs.size();			
 	}
 	else {
 		disableCurrentInput();
@@ -629,7 +635,7 @@ void FactorIterator::replace(Term* term)
 
 void FactorIterator::swap(FactorIterator& a, FactorIterator& b)
 {
-	Node* tmp = a.m_node;
+	NodePtr tmp; tmp = a.m_node;
 	a.m_pTerm->factors[a.m_factor_index] = b.m_pTerm->factors[b.m_factor_index];
 	a.m_node = b.m_node;
 

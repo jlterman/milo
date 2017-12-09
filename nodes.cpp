@@ -497,7 +497,7 @@ FactorIterator Input::emptyBuffer()
 
 /** Function pointer that takes equation and creates a node at Equation's current input.
  */
-typedef bool (*create_ptr)(Equation&);
+using create_ptr = bool (*)(Equation&);
 
 /** @brief Map that associates a name with a static function that creates node.
  */

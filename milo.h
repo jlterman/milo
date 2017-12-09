@@ -1442,7 +1442,7 @@ public:
 	/**
 	 * Get next input in list after current input node.
 	 */
-	void nextInput();
+	void nextInput(bool fShift);
 
 	/**
 	 * Remove current input node.

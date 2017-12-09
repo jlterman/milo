@@ -313,7 +313,7 @@ static void help(const string&);
 
 /** Pointer to function from command line argument.
  */
-typedef void (*func_ptr)(const string& s);
+using func_ptr = void (*)(const string& s);
 
 /** Associate command with an internal function. ':' means it takes argument.
  */

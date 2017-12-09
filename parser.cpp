@@ -89,7 +89,7 @@ public:
 	 * Function pointer that takes XML and a parent node and 
 	 * returns new node object.
 	 */
-	typedef Node* (*createPtr)(EqnXMLParser&, Node*);
+	using createPtr = Node* (*)(EqnXMLParser&, Node*);
 
 	/**
 	 * Constructor for EqnXMLParser.

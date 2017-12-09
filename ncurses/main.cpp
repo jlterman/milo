@@ -394,6 +394,129 @@ void CursesGraphics::differential(int x0, int y0, char variable)
  * Map ncurses key code to a key event.
  */
 static const unordered_map<int, KeyEvent> key_map = {
+	{ 0,             KeyEvent(Keys::NO_KEY,    Modifiers::NO_MOD) },
+	{ 1,             KeyEvent(Keys::CTRL_A,    Modifiers::NO_MOD) },
+	{ 2,             KeyEvent(Keys::CTRL_B,    Modifiers::NO_MOD) },
+	{ 3,             KeyEvent(Keys::CTRL_C,    Modifiers::NO_MOD) },
+	{ 4,             KeyEvent(Keys::CTRL_D,    Modifiers::NO_MOD) },
+	{ 5,             KeyEvent(Keys::CTRL_E,    Modifiers::NO_MOD) },
+	{ 6,             KeyEvent(Keys::CTRL_F,    Modifiers::NO_MOD) },
+	{ 7,             KeyEvent(Keys::CTRL_G,    Modifiers::NO_MOD) },
+	{ 8,             KeyEvent(Keys::CTRL_H,    Modifiers::NO_MOD) },
+	{ 9,             KeyEvent(Keys::TAB,       Modifiers::NO_MOD) },
+	{ 10,            KeyEvent(Keys::ENTER,     Modifiers::NO_MOD) },
+	{ 11,            KeyEvent(Keys::CTRL_K,    Modifiers::NO_MOD) },
+	{ 12,            KeyEvent(Keys::CTRL_L,    Modifiers::NO_MOD) },
+	{ 13,            KeyEvent(Keys::CTRL_M,    Modifiers::NO_MOD) },
+	{ 14,            KeyEvent(Keys::CTRL_N,    Modifiers::NO_MOD) },
+	{ 15,            KeyEvent(Keys::CTRL_O,    Modifiers::NO_MOD) },
+	{ 16,            KeyEvent(Keys::CTRL_P,    Modifiers::NO_MOD) },
+	{ 17,            KeyEvent(Keys::CTRL_Q,    Modifiers::NO_MOD) },
+	{ 18,            KeyEvent(Keys::CTRL_R,    Modifiers::NO_MOD) },
+	{ 19,            KeyEvent(Keys::CTRL_S,    Modifiers::NO_MOD) },
+	{ 20,            KeyEvent(Keys::CTRL_T,    Modifiers::NO_MOD) },
+	{ 21,            KeyEvent(Keys::CTRL_U,    Modifiers::NO_MOD) },
+	{ 22,            KeyEvent(Keys::CTRL_V,    Modifiers::NO_MOD) },
+	{ 23,            KeyEvent(Keys::CTRL_W,    Modifiers::NO_MOD) },
+	{ 24,            KeyEvent(Keys::CTRL_X,    Modifiers::NO_MOD) },
+	{ 25,            KeyEvent(Keys::CTRL_Y,    Modifiers::NO_MOD) },
+	{ 26,            KeyEvent(Keys::CTRL_Z,    Modifiers::NO_MOD) },
+	{ 27,            KeyEvent(Keys::ESC,       Modifiers::NO_MOD) },
+	{ 32,            KeyEvent(Keys::SPACE,     Modifiers::NO_MOD) },
+	{ 33,            KeyEvent(Keys::BANG,      Modifiers::NO_MOD) },
+	{ 34,            KeyEvent(Keys::DBL_QUOTE, Modifiers::NO_MOD) },
+	{ 35,            KeyEvent(Keys::HASH,      Modifiers::NO_MOD) },
+	{ 36,            KeyEvent(Keys::DOLLAR,    Modifiers::NO_MOD) },
+	{ 37,            KeyEvent(Keys::PERCENT,   Modifiers::NO_MOD) },
+	{ 38,            KeyEvent(Keys::AMP,       Modifiers::NO_MOD) },
+	{ 39,            KeyEvent(Keys::QUOTE,     Modifiers::NO_MOD) },
+	{ 40,            KeyEvent(Keys::L_PAR,     Modifiers::NO_MOD) },
+	{ 41,            KeyEvent(Keys::R_PAR,     Modifiers::NO_MOD) },
+	{ 42,            KeyEvent(Keys::STAR,      Modifiers::NO_MOD) },
+	{ 43,            KeyEvent(Keys::PLUS,      Modifiers::NO_MOD) },
+	{ 44,            KeyEvent(Keys::COMMA,     Modifiers::NO_MOD) },
+	{ 45,            KeyEvent(Keys::MINUS,     Modifiers::NO_MOD) },
+	{ 46,            KeyEvent(Keys::DOT,       Modifiers::NO_MOD) },
+	{ 47,            KeyEvent(Keys::DIVIDE,    Modifiers::NO_MOD) },
+	{ 48,            KeyEvent(Keys::K0,        Modifiers::NO_MOD) },
+	{ 49,            KeyEvent(Keys::K1,        Modifiers::NO_MOD) },
+	{ 50,            KeyEvent(Keys::K2,        Modifiers::NO_MOD) },
+	{ 51,            KeyEvent(Keys::K3,        Modifiers::NO_MOD) },
+	{ 52,            KeyEvent(Keys::K4,        Modifiers::NO_MOD) },
+	{ 53,            KeyEvent(Keys::K5,        Modifiers::NO_MOD) },
+	{ 54,            KeyEvent(Keys::K6,        Modifiers::NO_MOD) },
+	{ 55,            KeyEvent(Keys::K7,        Modifiers::NO_MOD) },
+	{ 56,            KeyEvent(Keys::K8,        Modifiers::NO_MOD) },
+	{ 57,            KeyEvent(Keys::K9,        Modifiers::NO_MOD) },
+	{ 58,            KeyEvent(Keys::COLON,     Modifiers::NO_MOD) },
+	{ 59,            KeyEvent(Keys::SEMI,      Modifiers::NO_MOD) },
+	{ 60,            KeyEvent(Keys::LESS,      Modifiers::NO_MOD) },
+	{ 61,            KeyEvent(Keys::EQUAL,     Modifiers::NO_MOD) },
+	{ 62,            KeyEvent(Keys::GREATER,   Modifiers::NO_MOD) },
+	{ 63,            KeyEvent(Keys::QUESTION,  Modifiers::NO_MOD) },
+	{ 64,            KeyEvent(Keys::AT,        Modifiers::NO_MOD) },
+	{ 65,            KeyEvent(Keys::A,         Modifiers::NO_MOD) },
+	{ 66,            KeyEvent(Keys::B,         Modifiers::NO_MOD) },
+	{ 67,            KeyEvent(Keys::C,         Modifiers::NO_MOD) },
+	{ 68,            KeyEvent(Keys::D,         Modifiers::NO_MOD) },
+	{ 60,            KeyEvent(Keys::E,         Modifiers::NO_MOD) },
+	{ 70,            KeyEvent(Keys::F,         Modifiers::NO_MOD) },
+	{ 71,            KeyEvent(Keys::G,         Modifiers::NO_MOD) },
+	{ 72,            KeyEvent(Keys::H,         Modifiers::NO_MOD) },
+	{ 73,            KeyEvent(Keys::I,         Modifiers::NO_MOD) },
+	{ 74,            KeyEvent(Keys::J,         Modifiers::NO_MOD) },
+	{ 75,            KeyEvent(Keys::K,         Modifiers::NO_MOD) },
+	{ 76,            KeyEvent(Keys::L,         Modifiers::NO_MOD) },
+	{ 77,            KeyEvent(Keys::M,         Modifiers::NO_MOD) },
+	{ 78,            KeyEvent(Keys::N,         Modifiers::NO_MOD) },
+	{ 79,            KeyEvent(Keys::O,         Modifiers::NO_MOD) },
+	{ 80,            KeyEvent(Keys::P,         Modifiers::NO_MOD) },
+	{ 81,            KeyEvent(Keys::Q,         Modifiers::NO_MOD) },
+	{ 82,            KeyEvent(Keys::R,         Modifiers::NO_MOD) },
+	{ 83,            KeyEvent(Keys::S,         Modifiers::NO_MOD) },
+	{ 84,            KeyEvent(Keys::T,         Modifiers::NO_MOD) },
+	{ 85,            KeyEvent(Keys::U,         Modifiers::NO_MOD) },
+	{ 86,            KeyEvent(Keys::V,         Modifiers::NO_MOD) },
+	{ 87,            KeyEvent(Keys::W,         Modifiers::NO_MOD) },
+	{ 88,            KeyEvent(Keys::X,         Modifiers::NO_MOD) },
+	{ 89,            KeyEvent(Keys::Y,         Modifiers::NO_MOD) },
+	{ 90,            KeyEvent(Keys::Z,         Modifiers::NO_MOD) },
+	{ 91,            KeyEvent(Keys::L_BRACKET, Modifiers::NO_MOD) },
+	{ 92,            KeyEvent(Keys::B_SLASH,   Modifiers::NO_MOD) },
+	{ 93,            KeyEvent(Keys::R_BRACKET, Modifiers::NO_MOD) },
+	{ 94,            KeyEvent(Keys::POWER,     Modifiers::NO_MOD) },
+	{ 95,            KeyEvent(Keys::U_SCORE,   Modifiers::NO_MOD) },
+	{ 96,            KeyEvent(Keys::ACCENT,    Modifiers::NO_MOD) },
+	{ 97,            KeyEvent(Keys::a,         Modifiers::NO_MOD) },
+	{ 98,            KeyEvent(Keys::b,         Modifiers::NO_MOD) },
+	{ 99,            KeyEvent(Keys::c,         Modifiers::NO_MOD) },
+	{ 100,           KeyEvent(Keys::d,         Modifiers::NO_MOD) },
+	{ 101,           KeyEvent(Keys::e,         Modifiers::NO_MOD) },
+	{ 102,           KeyEvent(Keys::f,         Modifiers::NO_MOD) },
+	{ 103,           KeyEvent(Keys::g,         Modifiers::NO_MOD) },
+	{ 104,           KeyEvent(Keys::h,         Modifiers::NO_MOD) },
+	{ 105,           KeyEvent(Keys::i,         Modifiers::NO_MOD) },
+	{ 106,           KeyEvent(Keys::j,         Modifiers::NO_MOD) },
+	{ 107,           KeyEvent(Keys::k,         Modifiers::NO_MOD) },
+	{ 108,           KeyEvent(Keys::l,         Modifiers::NO_MOD) },
+	{ 109,           KeyEvent(Keys::m,         Modifiers::NO_MOD) },
+	{ 110,           KeyEvent(Keys::n,         Modifiers::NO_MOD) },
+	{ 111,           KeyEvent(Keys::o,         Modifiers::NO_MOD) },
+	{ 112,           KeyEvent(Keys::p,         Modifiers::NO_MOD) },
+	{ 113,           KeyEvent(Keys::q,         Modifiers::NO_MOD) },
+	{ 114,           KeyEvent(Keys::r,         Modifiers::NO_MOD) },
+	{ 115,           KeyEvent(Keys::s,         Modifiers::NO_MOD) },
+	{ 116,           KeyEvent(Keys::t,         Modifiers::NO_MOD) },
+	{ 117,           KeyEvent(Keys::u,         Modifiers::NO_MOD) },
+	{ 118,           KeyEvent(Keys::v,         Modifiers::NO_MOD) },
+	{ 119,           KeyEvent(Keys::w,         Modifiers::NO_MOD) },
+	{ 120,           KeyEvent(Keys::x,         Modifiers::NO_MOD) },
+	{ 121,           KeyEvent(Keys::y,         Modifiers::NO_MOD) },
+	{ 122,           KeyEvent(Keys::z,         Modifiers::NO_MOD) },
+	{ 123,           KeyEvent(Keys::L_BRACE,   Modifiers::NO_MOD) },
+	{ 124,           KeyEvent(Keys::PIPE,      Modifiers::NO_MOD) },
+	{ 125,           KeyEvent(Keys::R_BRACE,   Modifiers::NO_MOD) },
+	{ 126,           KeyEvent(Keys::TILDE,     Modifiers::NO_MOD) },
 	{ KEY_F(1),      KeyEvent(Keys::F1,        Modifiers::NO_MOD) },
 	{ KEY_F(2),      KeyEvent(Keys::F2,        Modifiers::NO_MOD) },
 	{ KEY_F(3),      KeyEvent(Keys::F3,        Modifiers::NO_MOD) },
@@ -509,19 +632,6 @@ static const unordered_map<int, MouseEvent> mouse_event_map = {
  */
 static unordered_map<KeyEvent, string> key_menu_map;
 
-static const unordered_map<string, enum Modifiers> stringToMod = {
-	{ "ALT", ALT }, { "SHIFT", SHIFT }, { "ALT_SHIFT", ALT_SHIFT }, { "CTRL", CTRL },
-	{ "CTRL_SHIFT", CTRL_SHIFT }, { "CTRL_ALT_SHIFT", CTRL_ALT_SHIFT }, { string(), NO_MOD }
-};
-
-static const unordered_map<string, enum Keys> stringToKey = {
-	{ "F1", F1 }, { "F2", F2 }, { "F3", F3 }, { "F4", F4 }, { "F5", F5 }, { "F6", F6 }, 
-	{ "F7", F7 }, { "F8", F8 }, { "F9", F9 }, { "F10", F10 }, { "F11", F11 }, { "F12", F12 },
-	{ "INS", INS }, { "DEL", DEL }, { "\u2302", HOME }, { "END", END }, { "PAGE\u25b2", PAGE_UP },
-	{ "PAGE\u25bc", PAGE_DOWN }, { "\u25b2", UP }, { "\u25bc", DOWN }, { "\u25c0", LEFT },
-	{ "\u25b6", RIGHT }, { "BSP", BSPACE }, { "SP", SPACE }, { "TAB", TAB }, { "ENTER", ENTER}, { "ESC", ESC }
-};
-
 void CursesContext::define_menu(const StringMap& /*attributes*/)
 {
 }
@@ -544,27 +654,11 @@ void CursesContext::define_menu_item(const StringMap& attributes)
 	if ( menu_action == attributes.end()) {
 		throw logic_error("No action attribute in menu item");
 	}
-	string key = menu_key->second;
-	auto dash = key.find("-");
-	string letter = key;
-	enum Modifiers mod = NO_MOD;
-	if (dash != string::npos) {
-		auto mod_key = stringToMod.find(key.substr(0, dash));
-		if (mod_key == stringToMod.end()) {
-			throw logic_error("Unknown key modification in menu item:" + key);
-		}
-		letter = key.substr(dash+1);
-		mod = mod_key->second;
+	KeyEvent key(menu_key->second);
+	if (!key) {
+		return;
 	}
-	if (letter.length() == 1) {
-		key_menu_map.emplace(KeyEvent(letter[0], mod), menu_action->second);
-	} else {
-		auto key_iter = stringToKey.find(letter);
-		if (key_iter == stringToKey.end()) {
-			throw  logic_error("Unknown key letter in menu item" + letter);
-		}
-		key_menu_map.emplace(KeyEvent(key_iter->second, mod), menu_action->second);
-	}
+	key_menu_map.emplace(key, menu_action->second);
 }
 
 /**
@@ -602,29 +696,18 @@ void do_ncurses_loop()
 				doMenu("refresh");
 				continue;
 			}
-			string action;
-			shared_ptr<KeyEvent> key;
-			if (code < Keys::ESC) {
-				key = make_shared<KeyEvent>(Keys::A + code - 1, Modifiers::CTRL);
+
+			auto key_map_entry = key_map.find(code);
+			if (key_map_entry == key_map.end()) {
+				continue;
 			}
-			else if (code < Keys::F1) {
-				key = make_shared<KeyEvent>(code);
-			} else {
-				auto key_map_entry = key_map.find(code);
-				if (key_map_entry != key_map.end()) {
-					key = make_shared<KeyEvent>(key_map_entry->second);
-				}
+			
+			auto key_menu_entry = key_menu_map.find(key_map_entry->second);
+			if (key_menu_entry != key_menu_map.end()) {
+				fChanged = doMenu(key_menu_entry->second);
 			}
-			if (key) {
-				auto key_menu_entry = key_menu_map.find(*key);
-				if (key_menu_entry != key_menu_map.end()) {
-					action = key_menu_entry->second;
-				}
-				if (action.length() > 0) {
-					fChanged = doMenu(action);
-				}
-				else
-					fChanged = doKey(*key);
+			else {
+				fChanged = doKey(key_map_entry->second);
 			}
 		}
 		if (fChanged) {
