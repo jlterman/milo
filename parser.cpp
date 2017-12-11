@@ -620,9 +620,11 @@ Input::Input(EqnXMLParser& in, Node* parent) : Node(in, parent), m_sn(++input_sn
 	string value;
 	if (in.getAttribute("current", value)) {
 		if (value != "true" && value != "false") in.syntaxError("bad boolean value");
-		m_current = (value == "true");
-		if (m_current) m_eqn.setCurrentInput(m_sn);
+	} else {
+		value = "false";
 	}
+	m_current = (value == "true");
+	if (m_current) m_eqn.setCurrentInput(m_sn);
 	if (in.getAttribute("text", value)) {
 		m_typed = value;
 	}

@@ -631,7 +631,7 @@ static bool do_left_parenthesis(const KeyEvent& event)
 {
 	LOG_TRACE_MSG(event.toString());
 	Input* in = GlobalContext::current->getEqn().getCurrentInput();
-	if (in == nullptr) return false;
+	if (!in) return false;
 
 	in->add("(#)");
 	GlobalContext::current->getEqn().disableCurrentInput();
@@ -882,7 +882,7 @@ static const unordered_map<string, enum Keys> stringToKey = {
 	{ "PAGE\u25bc", PAGE_DOWN }, { "\u25b2", UP }, { "\u25bc", DOWN }, { "\u25c0", LEFT },
 	{ "\u25b6", RIGHT }, { "BSP", BSPACE }, { "SP", SPACE }, { "TAB", TAB }, { "ENTER", ENTER},
 	{ "ESC", ESC },	{ "HOME", HOME }, { "PAGE_UP", PAGE_UP }, { "PAGE_DOWN", PAGE_DOWN },
-	{ "UP", UP }, { "DOWN", DOWN },	{ "LEFT", LEFT }, { "RIGHT", RIGHT }
+	{ "UP", UP }, { "DOWN", DOWN },	{ "LEFT", LEFT }, { "RIGHT", RIGHT }, { "PLUS", PLUS }, { "MINUS", MINUS }
 };
 
 UI::KeyEvent::KeyEvent(const string& key)

@@ -27,11 +27,52 @@
 #include "ui.h"
 
 using namespace std;
+using namespace UI;
+
+/**
+ * Global context class for testing.
+ */
+class TextContext : public GlobalContext
+{
+public:
+	/** @name Constructors and Destructor */
+	//@{
+	TextContext(Graphics* gc) : GlobalContext(gc) {}
+
+	~TextContext() {}
+	//@}
+	
+	/** @name Overridden Public Member Functions */
+	//@{
+	/**
+	 * Start of menu with attributes
+	 * @param attributes All menu settings in map.
+	 */
+	void define_menu(const StringMap&) {}
+	
+	/**
+	 * No more menu items for current menu
+	 * @param name Name of menu coming to end
+	 */
+	void define_menu_end(const std::string&) {}
+	
+	/**
+	 * Menu item for current menu
+	 * @param attributes All menu item settings in map.
+	 */
+	void define_menu_item(const StringMap& attributes);
+	
+	/**
+	 * Menu line for current menu
+	 */
+	void define_menu_line() {}
+	//@}
+};
 
 /**
  * Class derived from ABC graphics so Equation can draw to a 2D character array.
  */
-class AsciiGraphics : public UI::Graphics
+class AsciiGraphics : public Graphics
 {
 public:
 	/** @name Constructor and Virtual Destructor */
@@ -163,7 +204,7 @@ private:
 	vector<string> m_field;           ///< 2D text array.
 	vector< vector<Color> > m_colors; ///< 2D color array.
 	ostream& m_os;                    ///< Stream to ouput text array.
-	UI::KeyEvent m_keyEvent = 0;      ///< dummy storage
+	KeyEvent m_keyEvent = 0;      ///< dummy storage
 
 	/**
 	 * Draw a string at x,y with a color.
@@ -212,6 +253,27 @@ void AsciiGraphics::parenthesis(int x_size, int y_size, int x0, int y0)
 	}
 }
 
+/** Map ncurses keys to a name representing a function to call.
+ */
+static unordered_map<KeyEvent, string> key_menu_map;
+
+void TextContext::define_menu_item(const StringMap& attributes)
+{
+	auto menu_key = attributes.find("key");
+	if ( menu_key == attributes.end()) {
+		throw logic_error("No key attribute in menu item");
+	}
+	auto menu_action = attributes.find("action");
+	if ( menu_action == attributes.end()) {
+		throw logic_error("No action attribute in menu item");
+	}
+	KeyEvent key(menu_key->second);
+	if (!key) {
+		return;
+	}
+	key_menu_map.emplace(key, menu_action->second);
+}
+
 void AsciiGraphics::differential(int x0, int y0, char variable)
 {
 	m_field[y0][x0+1] = 'd';
@@ -220,10 +282,6 @@ void AsciiGraphics::differential(int x0, int y0, char variable)
 	m_field[y0+2][x0+ 1] = variable;
 }
 
-/** Global Equation object.
- */
-static Equation eqn("?");
-
 /**
  * Load parsed equation string into global equation object.
  * @param eqn_str String with text version of equation.
@@ -231,7 +289,7 @@ static Equation eqn("?");
 static void parse(const string& eqn_str)
 {
 	Equation new_eqn(eqn_str);
-	eqn = new_eqn;
+	GlobalContext::current->getEqn() = new_eqn;
 }
 
 /**
@@ -242,7 +300,7 @@ static void xml_in(const string& fname)
 {
 	ifstream in(fname);
 	Equation new_eqn(in);
-	eqn = new_eqn;
+	GlobalContext::current->getEqn() = new_eqn;
 }
 
 /** Output current equation in xml to standard output.
@@ -250,7 +308,7 @@ static void xml_in(const string& fname)
 static void xml_out(const string&)
 {
 	string xml;
-	eqn.xml_out(xml);
+	GlobalContext::current->getEqn().xml_out(xml);
 	cout << xml << endl;
 }
 
@@ -258,7 +316,9 @@ static void xml_out(const string&)
  */
 static void test(const string&)
 {
-	AsciiGraphics gc(cout);
+	Equation& eqn = GlobalContext::current->getEqn();
+	Graphics& gc = GlobalContext::current->getGraphics();
+	
 	cout << "---------" << endl;
 	cout << eqn.toString() << endl;
 	cout << "---------" << endl;
@@ -281,14 +341,16 @@ static void test(const string&)
  */
 static void eqn_out(const string&)
 {
-	cout << eqn.toString() << endl;
+	cout << GlobalContext::current->getEqn().toString() << endl;
 }
 
 /** Output current equation as ascii art to standard output.
  */
 static void art(const string&)
 {
-	AsciiGraphics gc(cout);
+	Equation& eqn = GlobalContext::current->getEqn();
+	Graphics& gc = GlobalContext::current->getGraphics();
+
 	eqn.draw(gc);
 	gc.out();
 }
@@ -297,14 +359,30 @@ static void art(const string&)
  */
 static void normalize(const string&)
 {
-	eqn.normalize();
+	GlobalContext::current->getEqn().normalize();
 }
 
 /** Simplify current equation.
  */
 static void simplify(const string&)
 {
-	eqn.simplify();
+	GlobalContext::current->getEqn().simplify();
+}
+
+/** Add keys as input to equation.
+ */
+static void keys(const string& keys)
+{
+	string input = keys;
+	string::size_type sep;
+	do {
+		sep = input.find(",");
+		doKey(KeyEvent(input.substr(0, sep)));
+		if (sep != string::npos) {
+			input.erase(0, sep+1);
+		}
+	}
+	while (sep != string::npos);
 }
 
 /** Output help to standard output.
@@ -326,6 +404,7 @@ const unordered_map<string, func_ptr> test_funcs = {
 	{ "xml-out",   xml_out   },
 	{ "normalize", normalize },
 	{ "simplify",  simplify  },
+	{ "keys:",     keys      },
 	{ "help",      help      }
 };
 
@@ -355,6 +434,7 @@ static void help(const string&)
  */
 int main(int argc, char* argv[])
 {
+	GlobalContext::current = GlobalContextPtr(new TextContext(new AsciiGraphics(cout)));
 	int i = 1;
 	while (i < argc && argv[i][0] == '-' && argv[i][1] == '-') {
 		string option(argv[i]+2);

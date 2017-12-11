@@ -72,16 +72,13 @@ void Equation::setSelect(UI::Graphics& gc)
  */
 void Equation::setCurrentInput(int in_sn)
 {
-	if (m_input_index >= 0) m_inputs[m_input_index]->setCurrent(false);
-	if (in_sn < 0) {
-		m_input_index = -1;
-		return;
-	}
 	for (unsigned int i = 0; i < m_inputs.size(); ++i) {
 		if (m_inputs[i]->checkSN(in_sn)) {
 			m_input_index = i;
 			m_inputs[m_input_index]->setCurrent(true);
-			break;
+		}
+		else {
+			m_inputs[i]->setCurrent(false);
 		}
 	}
 }
@@ -261,18 +258,19 @@ void Equation::nextInput(bool fShift)
 	else if (fShift && m_input_index < 0) {
 		m_input_index = m_inputs.size() - 1;
 	}
-	else if (m_inputs[m_input_index]->unremovable()) {
-		m_inputs[m_input_index]->setCurrent(false);
+	else {
+		if (m_inputs[m_input_index]->unremovable()) {
+			m_inputs[m_input_index]->setCurrent(false);
+		}
+		else {
+			disableCurrentInput();
+		}
 		if (fShift)
 			m_input_index = (m_inputs.size() + m_input_index - 1)%m_inputs.size();
 		else
 			m_input_index = (m_input_index + 1)%m_inputs.size();			
 	}
-	else {
-		disableCurrentInput();
-	}
-	
-	m_inputs[m_input_index]->setCurrent(true);
+	m_inputs[m_input_index]->makeCurrent();
 }
 
 FactorIterator Equation::disableCurrentInput()
@@ -302,8 +300,9 @@ void Equation::removeInput(Input* in)
 		m_input_index = (m_input_index + 1)%m_inputs.size();
 		m_inputs[m_input_index]->setCurrent(true);
 	}
-	else
+	else if (m_inputs.size() == 0) {
 		m_input_index = -1;
+	}
 }
 
 void Equation::getCursorOrig(int& x, int& y) 
