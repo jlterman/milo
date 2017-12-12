@@ -1,0 +1,7 @@
+<map id="Power" name="Power">
+<area shape="rect" id="node2" href="$classBinary.html" title="Binary" alt="" coords="185,303,244,329"/>
+<area shape="rect" id="node3" href="$classNode.html" title="Node" alt="" coords="188,199,241,225"/>
+<area shape="rect" id="node5" href="$structNode_1_1Frame.html" title="Node::Frame" alt="" coords="22,102,121,129"/>
+<area shape="rect" id="node6" href="$classRectangle.html" title="Rectangle\&lt; int \&gt;" alt="" coords="12,5,131,32"/>
+<area shape="rect" id="node7" href="$classSmartPtr.html" title="SmartPtr\&lt; Node \&gt;" alt="" coords="406,199,535,225"/>
+</map>
