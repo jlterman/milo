@@ -833,7 +833,7 @@ void UI::GlobalContext::saveEqn()
 {
 	m_eqns.save(m_eqn);
 	m_eqn = EqnPtr(m_eqns.top());
-	m_eqn->draw(GlobalContext::current->getGraphics(), true);
+	m_eqn->draw(*m_gc, true);
 }
 
 void UI::GlobalContext::undoEqn()
@@ -842,7 +842,7 @@ void UI::GlobalContext::undoEqn()
 	if (undo_eqn) {
 		m_eqn = undo_eqn;
 		LOG_TRACE_MSG("undo to " + m_eqn->toString());
-		m_eqn->draw(GlobalContext::current->getGraphics(), true);
+		m_eqn->draw(*m_gc, true);
 	}
 }
 
