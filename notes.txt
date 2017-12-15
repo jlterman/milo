@@ -797,3 +797,12 @@ int main()
 
 	
 }
+
+unicode box characters
+
+┌─┐
+│ │
+└─┘
+\U250C \U2500 \U2510
+\U2502        \U2502
+\U2514 \U2500 \U2518

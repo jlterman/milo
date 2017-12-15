@@ -6,5 +6,12 @@ A debug build:
 
      make debug
 
-This makefile assumes gcc 4.9.x
+This makefile assumes gcc 5.7
+
+Dependencies beyond standared libc and libc++:
+
+boost
+ncurses
+utfcpp
+gtk+3.0
 
