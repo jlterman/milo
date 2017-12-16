@@ -25,10 +25,62 @@
 #include <locale.h>
 #include <unordered_map>
 #include <memory>
+#include <utf8.h>
 #include "ui.h"
 
 using namespace std;
 using namespace UI;
+
+/** Simple class to hold ncurses window
+ */
+class NcursesWindow
+{
+public:
+	/** @name Constructors and Destructor */
+	//@{
+
+	/**
+	 * NcursesWindow constructor
+	 */
+	NcursesWindow(int height, int width, int starty, int startx) :
+		m_win(newwin(height, width, starty, startx)),
+		m_starty(starty),
+		m_startx(startx)
+	{
+		box(m_win, 0 , 0);
+		wrefresh(m_win);
+	}
+
+	/**
+	 * NcursesWindow deconstructor. Delete window.
+	 */
+	~NcursesWindow() { delwin(m_win); }
+	//@}
+
+	/**
+	 * Get local coords
+	 * @param[in|out] global y -> local y
+	 * @param[in|out] global x -> local x
+	 */
+	void get_local(int& y, int& x) { y -= m_starty; x -= m_startx; }
+
+	/**
+	 * Get global coords
+	 * @param[in|out] local y -> global y
+	 * @param[in|out] local x -> global x
+	 */
+	void get_global(int& y, int& x) { y += m_starty; x += m_startx; }
+	
+	/**
+	 * Get window pointer
+	 * @return Window pointer
+	 */
+	operator WINDOW*() const { return m_win; }
+private:
+	WINDOW* m_win; ///< ncurses window pointer
+	int m_starty;  ///< y origin
+	int m_startx;  ///< x origin
+};
 
 /**
  * Class derived from ABC Graphics to allow milo to draw to a ncurses ascii screen.
@@ -302,12 +354,253 @@ private:
 	}
 };
 
+/**
+ * Abstract base menu class that all menu classes inherit from.
+ */
+class MenuBaseItem
+{
+public:
+	/** @name Constructor and Virtual Destructor */
+	//@{
+	MenuBaseItem(const StringMap& tags) :
+		m_x0(-1), m_y0(-1), m_w(-1),
+		m_name(tags.at("name")),
+		m_type(tags.at("type")),
+		m_width(-1) {}
+	virtual ~MenuBaseItem() {}
+	//@}
+
+	/** 
+	 * Get name of the menu item
+	 * @return Menu item name
+	 */
+	const string& getName() { return m_name; }
+
+	/** 
+	 * Get type of the menu item
+	 * @return Menu item type
+	 */
+	const string& getType() { return m_type; }
+
+	/** 
+	 * Get width of menu item
+	 * @return Menu item width
+	 */
+	int getWidth() { if (m_width == -1) m_width = calc_width(); return m_width; }	
+
+	
+	/** @name Pure Virtual Public Member Functions */
+	//@{
+	/** 
+	 * Draw menu on window at given coordinates
+	 */
+	virtual void draw(WINDOW* win, bool fHighlight, int y, int x)=0;
+
+	/**
+	 * Select this menu item
+	 */
+	virtual void select()=0;
+	
+	/**
+	 * Get title of menu
+	 * @return Return title
+	 */
+	virtual const string& getTitle()=0;
+
+	/**
+	 * Get active state of menu
+	 * @return Return active state
+	 */
+	virtual bool getActive()=0;
+	//@}
+
+protected:
+	int m_x0; ///< Horiz coord of where menu item is drawn
+	int m_y0; ///< Vertical coord of where menu item is drawn
+	int m_w;  ///< Width of where menu item is drawn
+
+private:
+	/** Private pure virtual member function to calc width of menu
+	 */
+	virtual int calc_width()=0;
+
+	const string m_name; ///< menu name
+	const string m_type; ///< menu type
+	int m_width;         ///< menu width
+};
+
+using MenuBasePtr = shared_ptr<MenuBaseItem>; ///< Shared menu pointer for all menu classes
+
+/**
+ * Submenu class also for top menu.
+ */
+class Menu : public MenuBaseItem
+{
+public:
+	/** @name Constructor and Virtual Destructor */
+	//@{
+	Menu(const StringMap& tags) :
+		MenuBaseItem(tags),
+		m_active(tags.at("active") == "true"),
+		m_title(tags.at("title")) {}
+	~Menu() {}
+	//@}
+
+	/** @name Overriden Pure Virtual Member Functions */
+	//@{
+	/** 
+	 * Draw menu on window at given coordinates
+	 */
+	void draw(WINDOW* win, bool fHighlight, int y, int x);
+
+	/**
+	 * Select this menu item
+	 */
+	void select() {}
+
+	/**
+	 * Get title of menu
+	 * @return Return title
+	 */
+	const string& getTitle() { return m_title; }
+
+	/**
+	 * Get active state of menu
+	 * @return Return active state
+	 */
+	bool getActive() { return m_active; }
+
+	/** Calc width of menu
+	 */
+	int calc_width();
+	//@}
+
+	/** 
+	 * Add menu item to menu
+	 * @param m Menu item to add menu
+	 */
+	void addItem(MenuBaseItem* m) { m_items.push_back(MenuBasePtr(m)); }
+
+	/**
+	 * Handle mouse event in menu bar
+	 * @param Mouse event in menu bar
+	 */
+	void selectMenuBar(MEVENT& /*mouse_event*/) {}
+
+private:
+	bool m_active;               ///< True if active
+	const string m_title;        ///< Title of menu
+	vector<MenuBasePtr> m_items; ///< List of menu items
+};
+
+using MenuPtr = shared_ptr<Menu>; ///< shared pointer for class Menu
+
+/**
+ * Menu item class
+ */
+class MenuItem : public MenuBaseItem
+{
+public:
+	/** @name Constructor and Virtual Destructor */
+	//@{
+	MenuItem(const StringMap& tags) :
+		MenuBaseItem(tags),
+		m_active(tags.at("active") == "true"),
+		m_title(tags.at("title")),
+		m_action(tags.at("action")),
+		m_key(tags.at("key")) {}
+	~MenuItem() {}
+	//@}
+
+	/** @name Overriden Pure Virtual Member Functions */
+	//@{
+	/** 
+	 * Draw menu on window at given coordinates
+	 */
+	void draw(WINDOW* win, bool fHighlight, int y, int x);
+
+	/**
+	 * Select this menu item
+	 */
+	void select() { UI::doMenu(m_action); }
+
+	/**
+	 * Get title of menu
+	 * @return Return title
+	 */
+	const string& getTitle() { return m_title; }
+
+	/**
+	 * Get active state of menu
+	 * @return Return active state
+	 */
+	bool getActive() { return m_active; }
+
+	/** Calc width of menu
+	 */
+	int calc_width();
+	//@}
+
+private:
+	bool m_active;         ///< True if active
+	const string m_title;  ///< Title of menu item
+	const string m_action; ///< name of action of menu item
+	const string m_key;    ///< Key binding of menu item
+};
+
+/**
+ * Menu line item class
+ */
+class MenuLine : public MenuBaseItem
+{
+public:
+	/** @name Constructor and Virtual Destructor */
+	//@{
+	MenuLine() : MenuBaseItem({ {"type", "line"}, {"name", "line"} }) {}
+	~MenuLine() {}
+	//@}
+
+	/** @name Overriden Pure Virtual Member Functions */
+	//@{
+	/** 
+	 * Draw menu on window at given coordinates
+	 */
+	void draw(WINDOW* win, bool fHighlight, int y, int x);
+
+	/**
+	 * Select this menu item. Shouldn't be called.
+	 */
+	void select() {}
+
+	/**
+	 * Get title of menu
+	 * @return Return title
+	 */
+	const string& getTitle() { return m_line_title; }
+
+	/**
+	 * Get active state of menu
+	 * @return Return active state
+	 */
+	bool getActive() { return false; }
+
+	/** Calc width of menu
+	 */
+	int calc_width() { return -1; }
+	//@}
+private:
+	static const string m_line_title;
+};
+
+/**
+ * GlobalContext for ncurses interface.
+ */
 class CursesContext : public GlobalContext
 {
 public:
 	/** @name Constructors and Destructor */
 	//@{
-	CursesContext(Graphics* gc) : GlobalContext(gc) {}
+	CursesContext(Graphics* gc) : GlobalContext(gc), m_level(0) {}
 
 	/**
 	 * Constructor with input equation.
@@ -342,6 +635,25 @@ public:
 	 */
 	void define_menu_line();
 	//@}
+
+	/**
+	 * Initialize menu bar
+	 */
+	void initMenuBar();
+
+	/** Draw m_current as menubar
+	 */
+	void drawMenuBar();
+
+	/**
+	 * Run main event loop
+	 */
+	void do_loop();
+
+private:
+	vector<MenuPtr> m_current;
+	int m_level;
+	stack<NcursesWindow> m_windows;
 };
 
 bool CursesGraphics::init = false;
@@ -632,16 +944,22 @@ static const unordered_map<int, MouseEvent> mouse_event_map = {
  */
 static unordered_map<KeyEvent, string> key_menu_map;
 
-void CursesContext::define_menu(const StringMap& /*attributes*/)
+void CursesContext::define_menu(const StringMap& attributes)
 {
+	++m_level;
+	m_current.emplace_back(new Menu(attributes));
 }
 
-void CursesContext::define_menu_end(const std::string& /*name*/)
+void CursesContext::define_menu_end(const std::string& name)
 {
+	--m_level;
+	if (m_current.back()->getName() != name) throw logic_error("Unexpected menu name: " + name);
+	if (m_level > 1) m_current.pop_back();
 }
 
 void CursesContext::define_menu_line()
 {
+	m_current.back()->addItem(new MenuLine());
 }
 
 void CursesContext::define_menu_item(const StringMap& attributes)
@@ -655,27 +973,99 @@ void CursesContext::define_menu_item(const StringMap& attributes)
 		throw logic_error("No action attribute in menu item");
 	}
 	KeyEvent key(menu_key->second);
-	if (!key) {
-		return;
-	}
-	key_menu_map.emplace(key, menu_action->second);
+	if (key) {
+		key_menu_map.emplace(key, menu_action->second);	}
+	m_current.back()->addItem(new MenuItem(attributes));
 }
 
-/**
- * Function to handle ncurses events
- */ 
-void do_ncurses_loop()
+void CursesContext::initMenuBar()
+{
+	ifstream in_file("/usr/local/milo/data/menu/menu.xml");
+	parse_menubar(in_file);
+	m_current.back()->getWidth();
+	drawMenuBar();
+}
+
+void Menu::draw(WINDOW* win, bool fHighlight, int y, int x)
+{
+	m_x0 = x;
+	m_y0 = y;
+	if (fHighlight) attron(A_REVERSE);
+	int x_width = -1;
+	getmaxyx(win, x, x_width);
+	m_w = x_width;
+	mvwaddstr(win, y, 1, m_title.c_str());
+	x = utf8::distance(m_title.begin(), m_title.end()) + 1;
+	while (x < x_width - 2) { mvwaddch(win, y, x++, ' '); }
+	mvwaddstr(win, y, x, "\u25b6");
+	if (fHighlight) attroff(A_REVERSE);
+}
+
+void MenuItem::draw(WINDOW* win, bool fHighlight, int y, int x)
+{
+	m_x0 = x;
+	m_y0 = y;
+	if (fHighlight) attron(A_REVERSE);
+	int x_width = -1;
+	getmaxyx(win, x, x_width);
+	m_w = x_width;
+	mvwaddstr(win, y, 1, m_title.c_str());
+	x = utf8::distance(m_title.begin(), m_title.end()) + 1;
+	int x1 = x_width - 1 - utf8::distance(m_key.begin(), m_key.end());
+	while (x < x1) { mvwaddch(win, y, x++, ' '); }
+	mvwaddstr(win, y, x, m_key.c_str());
+	if (fHighlight) attroff(A_REVERSE);
+}
+
+void MenuLine::draw(WINDOW* win, bool, int y, int x)
+{
+	m_x0 = x;
+	m_y0 = y;
+	int x_width = -1;
+	getmaxyx(win, x, x_width);
+	m_w = x_width;
+	for (x = 1; x < x_width - 1; ++x) mvaddch(y, x, ACS_HLINE);
+}
+
+void CursesContext::drawMenuBar()
+{
+	int x_width = -1;
+	getmaxyx(stdscr, x_width, x_width);
+	int x = -1;
+	for ( auto m : m_current ) {
+		mvaddch(0, x++, ' ');
+		mvaddch(0, x++, ' ');
+		mvaddstr(0, x, m->getTitle().c_str());
+		x += utf8::distance(m->getTitle().begin(), m->getTitle().end());
+	}
+	while (x < x_width) { mvaddch(0, x++, ' '); }
+}
+
+int Menu::calc_width()
+{
+	return utf8::distance(m_title.begin(), m_title.end()) + 2;
+}
+
+int MenuItem::calc_width()
+{
+	return utf8::distance(m_title.begin(), m_title.end()) +
+		   utf8::distance(m_key.begin(), m_key.end()) + 1;
+}
+
+const string MenuLine::m_line_title = "_line_";
+
+void CursesContext::do_loop()
 {
 	constexpr int MOUSE_EVENT_MASK = 0x10000000;
 	MEVENT mouse_event;
 	bool fChanged = false;
 
 	while (isRunning()) {
-		CursesGraphics& gcurses = dynamic_cast<CursesGraphics&>(GlobalContext::current->getGraphics());
+		CursesGraphics& gcurses = dynamic_cast<CursesGraphics&>(getGraphics());
 
 		int xCursor = 0, yCursor = 0;
-	    GlobalContext::current->getEqn().getCursorOrig(xCursor, yCursor);
-		int code = gcurses.getChar(yCursor, xCursor - 1, GlobalContext::current->getEqn().blink());
+		getEqn().getCursorOrig(xCursor, yCursor);
+		int code = gcurses.getChar(yCursor, xCursor - 1, getEqn().blink());
 		
 		if (code == KEY_MOUSE && getmouse(&mouse_event) == OK) {
 			code = mouse_event.bstate|MOUSE_EVENT_MASK;
@@ -711,9 +1101,10 @@ void do_ncurses_loop()
 			}
 		}
 		if (fChanged) {
-			GlobalContext::current->saveEqn();
+			saveEqn();
 			fChanged = false;
 		}
+		drawMenuBar();
 	}
 }
 
@@ -728,16 +1119,17 @@ int main(int argc, char* argv[])
 	LOG_TRACE_CLEAR();
 	LOG_TRACE_MSG("Starting milo_ncurses...");
 
+	CursesContext* cc;
 	if (argc > 1) {
 		ifstream in(argv[1]);
-		GlobalContext::current = GlobalContextPtr(new CursesContext(new CursesGraphics(), in));
+		cc = new CursesContext(new CursesGraphics(), in);
 	}
 	else {
-		GlobalContext::current = GlobalContextPtr(new CursesContext(new CursesGraphics()));
+		cc = new CursesContext(new CursesGraphics());
     }
-	GlobalContext::current->saveEqn();
-	ifstream in_file("/usr/local/milo/menu.xml");
-	GlobalContext::current->parse_menubar(in_file);
-	do_ncurses_loop();
+	GlobalContext::current = GlobalContextPtr(cc);
+	cc->saveEqn();
+	cc->initMenuBar();
+	cc->do_loop();
 	return 0;
 }

@@ -1,0 +1,20 @@
+<menubar>
+  <menu type="menu" name="File" active="true">
+	<menu type="item" name="Save" active="true" action="save" key="CTRL-S"/>
+	<menu type="line"/>
+	<menu type="item" name="Quit" active="true" action="quit" key="CTRL-Q"/>
+  </menu>
+  <menu type="menu" name="Edit" active="true">
+	<menu type="item" name="Undo" active="true" action="undo" key="CTRL-Z"/>
+	<menu type="line"/>
+	<menu type="item" name="Cut" active="true" action="cut" key="CTRL-X"/>
+	<menu type="item" name="Copy" active="true" action="copy" key="CTRL-C"/>
+	<menu type="item" name="Paste" active="true" action="paste" key="CTRL-V"/>
+	<menu type="line"/>
+	<menu type="item" name="Select All" active="true" action="select_all" key="CTRL-A"/>
+  </menu>
+  <menu type="menu" name="Milo" active="true">
+	<menu type="item" name="Simplify" active="true" action="simplify" key="NONE"/>
+	<menu type="item" name="Normailize" active="true" action="normalize" key="NONE"/>
+  </menu>
+</menubar>

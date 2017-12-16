@@ -985,6 +985,7 @@ void UI::GlobalContext::parse_menu(XML::Parser& in)
 	if (!in.getAttribute("name", name)) throw logic_error("name not found");
 	if (type == "menu") {
 	    StringMap attributes;
+		attributes.emplace("type", "menu");
 		attributes.emplace("name", name);
 		if (!in.getAttribute("active", value)) throw logic_error(s + " not found");
 		if (value != "true" && value != "false") throw logic_error("bad boolean value");
@@ -1002,6 +1003,7 @@ void UI::GlobalContext::parse_menu(XML::Parser& in)
 	}
 	else if (type == "item") {
 		StringMap attributes;
+		attributes.emplace("type", "item");
 		attributes.emplace("name", name);
 		for ( const string& s : { "active", "action", "key" } ) {
 			if (!in.getAttribute(s, value)) throw logic_error(s + " not found");
