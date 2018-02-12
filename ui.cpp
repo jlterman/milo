@@ -691,13 +691,13 @@ static bool do_space(const KeyEvent& event)
 }
 
 /**
- * Refresh screen.
+ * Redraw screen.
  * Returning true will cause UI to redraw screen.
  * @return Always false;
  */
-static bool do_refresh()
+static bool do_redraw()
 {
-	GlobalContext::current->getGraphics().refresh();
+	GlobalContext::current->redraw_screen();
 	return false;
 }
 
@@ -711,7 +711,7 @@ using menu_handler = bool (*)(void);
  * Map of names to functions that handle menu items.
  */
 static const unordered_map<string, menu_handler> menu_map = {
-	{ "refresh", do_refresh },
+	{ "redraw", do_redraw },
 	{ "quit", do_quit },
 	{ "save", do_save },
 	{ "undo", do_undo }
@@ -862,12 +862,13 @@ static const unordered_map<enum Modifiers, string> mod_string = {
 	{ CTRL_SHIFT, "CTRL-SHIFT-" }, { CTRL_ALT_SHIFT, "CTRL-ALT-SHIFT-" }, { NO_MOD, string() }
 };
 
-static const unordered_map<enum Keys, string> key_string = {
-	{ F1, "F1" }, { F2, "F2" }, { F3, "F3" }, { F4, "F4" }, { F5, "F5" }, { F6, "F6" }, 
-	{ F7, "F7" }, { F8, "F8" }, { F9, "F9" }, { F10, "F10" }, { F11, "F11" }, { F12, "F12" },
-	{ INS, "INS" }, { DEL, "DEL" }, { HOME, "HOME" }, { END, "END" }, { PAGE_UP, "PAGE_UP" },
-	{ PAGE_DOWN, "PAGE_DOWN" }, { UP, "UP" }, { DOWN, "DOWN" }, { LEFT, "LEFT" },
-	{ RIGHT, "RIGHT" }, { BSPACE, "BACKSPACE" }, { SPACE, "SPACE" }
+static const unordered_map<Keyboard, string> key_string = {
+	{ Keys::F1, "F1" }, { Keys::F2, "F2" }, { Keys::F3, "F3" }, { Keys::F4, "F4" }, { Keys::F5, "F5" },
+	{ Keys::F6, "F6" }, { Keys::F7, "F7" }, { Keys::F8, "F8" }, { Keys::F9, "F9" }, { Keys::F10, "F10" },
+	{ Keys::F11, "F11" }, { Keys::F12, "F12" },	{ Keys::INS, "INS" }, { Keys::DEL, "DEL" }, { Keys::HOME, "HOME" },
+	{ Keys::END, "END" }, { Keys::PAGE_UP, "PAGE_UP" },	{ Keys::PAGE_DOWN, "PAGE_DOWN" }, { Keys::UP, "UP" },
+	{ Keys::DOWN, "DOWN" }, { Keys::LEFT, "LEFT" },	{ Keys::RIGHT, "RIGHT" }, { Keys::BSPACE, "BACKSPACE" },
+	{ Keys::SPACE, "SPACE" }
 };
 
 static const unordered_map<string, enum Modifiers> stringToMod = {
@@ -875,21 +876,22 @@ static const unordered_map<string, enum Modifiers> stringToMod = {
 	{ "CTRL_SHIFT", CTRL_SHIFT }, { "CTRL_ALT_SHIFT", CTRL_ALT_SHIFT }, { string(), NO_MOD }
 };
 
-static const unordered_map<string, enum Keys> stringToKey = {
-	{ "F1", F1 }, { "F2", F2 }, { "F3", F3 }, { "F4", F4 }, { "F5", F5 }, { "F6", F6 }, 
-	{ "F7", F7 }, { "F8", F8 }, { "F9", F9 }, { "F10", F10 }, { "F11", F11 }, { "F12", F12 },
-	{ "INS", INS }, { "DEL", DEL }, { "\u2302", HOME }, { "END", END }, { "PAGE\u25b2", PAGE_UP },
-	{ "PAGE\u25bc", PAGE_DOWN }, { "\u25b2", UP }, { "\u25bc", DOWN }, { "\u25c0", LEFT },
-	{ "\u25b6", RIGHT }, { "BSP", BSPACE }, { "SP", SPACE }, { "TAB", TAB }, { "ENTER", ENTER},
-	{ "ESC", ESC },	{ "HOME", HOME }, { "PAGE_UP", PAGE_UP }, { "PAGE_DOWN", PAGE_DOWN },
-	{ "UP", UP }, { "DOWN", DOWN },	{ "LEFT", LEFT }, { "RIGHT", RIGHT }, { "PLUS", PLUS }, { "MINUS", MINUS }
+static const unordered_map<string, Keyboard> stringToKey = {
+	{ "F1", Keys::F1 }, { "F2", Keys::F2 }, { "F3", Keys::F3 }, { "F4", Keys::F4 }, { "F5", Keys::F5 },
+	{ "F6", Keys::F6 }, { "F7", Keys::F7 }, { "F8", Keys::F8 }, { "F9", Keys::F9 }, { "F10", Keys::F10 },
+	{ "F11", Keys::F11 }, { "F12", Keys::F12 },	{ "INS", Keys::INS }, { "DEL", Keys::DEL }, { "\u2302", Keys::HOME },
+	{ "END", Keys::END }, { "PAGE\u25b2",Keys:: PAGE_UP }, { "PAGE\u25bc", Keys::PAGE_DOWN }, { "\u25b2", Keys::UP },
+	{ "\u25bc", Keys::DOWN }, { "\u25c0", Keys::LEFT },	{ "\u25b6", Keys::RIGHT }, { "BSP", Keys::BSPACE },
+	{ "SP", Keys::SPACE }, { "TAB", Keys::TAB }, { "ENTER", Keys::ENTER }, { "ESC", Keys::ESC }, { "HOME", Keys::HOME },
+	{ "PAGE_UP", Keys::PAGE_UP }, { "PAGE_DOWN", Keys::PAGE_DOWN }, { "UP", Keys::UP }, { "DOWN", Keys::DOWN },
+	{ "LEFT", Keys::LEFT }, { "RIGHT", Keys::RIGHT }, { "PLUS", Keys::PLUS }, { "MINUS", Keys::MINUS }
 };
 
 UI::KeyEvent::KeyEvent(const string& key)
 {
 	auto dash = key.find("-");
 	m_mod = NO_MOD;
-	m_key = NO_KEY;
+	m_key = Keys::NONE;
 	if (dash != string::npos) {
 		auto it = stringToMod.find(key.substr(0, dash));
 		if (it == stringToMod.end()) {
@@ -899,10 +901,10 @@ UI::KeyEvent::KeyEvent(const string& key)
 	}
 	string letter = key.substr(dash+1);	 
 	if (letter.length() == 1 && m_mod == NO_MOD) {
-		m_key = Keys(letter[0]);
+		m_key = Keyboard(letter[0]);
 	}
 	else if (letter.length() == 1 && isalpha(letter[0]) && m_mod == CTRL) {
-		m_key = Keys(char(letter[0]) - '@');
+		m_key = Keyboard(char(letter[0]) - '@');
 		m_mod = NO_MOD;
 	}
 	else {
@@ -926,9 +928,9 @@ string UI::MouseEvent::toString() const
 string UI::KeyEvent::toString() const
 {
 
-	if ( m_key < ESC )
+	if ( m_key < Keys::ESC )
 		return string("Key event: " + mod_string.at(CTRL) + string(1, (char) '@' + m_key));
-	else if ( m_key > SPACE && m_key < F1)
+	else if ( m_key > Keys::SPACE && m_key < Keys::F1)
 		return string("key event: " + mod_string.at(m_mod) +  string(1, (char) m_key));
 	else
 		return string("Key event: ") + mod_string.at(m_mod) + key_string.at(m_key);
@@ -968,7 +970,7 @@ bool UI::doMouse(const UI::MouseEvent& mouse)
 								  
 }
 
-void UI::GlobalContext::parse_menu(XML::Parser& in)
+void UI::MenuXML::parse_menu(XML::Parser& in)
 {
 	in.next(XML::HEADER, "menu").next(XML::NAME_VALUE);
 
@@ -987,7 +989,7 @@ void UI::GlobalContext::parse_menu(XML::Parser& in)
 	    StringMap attributes;
 		attributes.emplace("type", "menu");
 		attributes.emplace("name", name);
-		if (!in.getAttribute("active", value)) throw logic_error(s + " not found");
+		if (!in.getAttribute("active", value)) throw logic_error("active tag not found");
 		if (value != "true" && value != "false") throw logic_error("bad boolean value");
 		attributes.emplace("active", value);
 		if (in.getAttribute("title", value))
@@ -1019,11 +1021,4 @@ void UI::GlobalContext::parse_menu(XML::Parser& in)
 	}
 	else
 		throw logic_error("unknown type: " + value);
-}
-
-void UI::GlobalContext::parse_menubar(istream& is)
-{
-	XML::Parser in(is, "menubar");
-	while (in.check(XML::HEADER, "menu")) parse_menu(in);
-	in.next(XML::FOOTER);
 }

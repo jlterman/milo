@@ -42,28 +42,32 @@ namespace UI {
 
 	/** @name UI namespace Type Declerations  */
 	//@{
-	using GraphicsPtr = std::shared_ptr<Graphics>;                  ///< Shared pointer for Graphics
-	using GlobalContextPtr = std::shared_ptr<GlobalContext>;        ///< Shared pointer for GlobalContext
+	using GraphicsPtr = std::shared_ptr<Graphics>;            ///< Shared pointer for Graphics
+	using GlobalContextPtr = std::shared_ptr<GlobalContext>;  ///< Shared pointer for GlobalContext
 	//@}
-	
-	/**
-	 * The values under 0x80 are just the ACCII character set. Above 0x80 are 
-	 * the special keyboard keys.
-	 */
-	enum Keys {
-		NO_KEY, CTRL_A, CTRL_B, CTRL_C, CTRL_D, CTRL_E, CTRL_F, CTRL_G, CTRL_H,
-		TAB, ENTER, CTRL_K, CTRL_L, CTRL_M, CTRL_N, CTRL_O, CTRL_P, CTRL_Q,
-		CTRL_R, CTRL_S, CTRL_T, CTRL_U,	CTRL_V, CTRL_W, CTRL_X, CTRL_Y, CTRL_Z, ESC,
-		SPACE = 32, BANG, DBL_QUOTE, HASH, DOLLAR, PERCENT, AMP, QUOTE, L_PAR, R_PAR,
-		STAR, PLUS, COMMA, MINUS, DOT, DIVIDE, K0, K1, K2, K3, K4, K5, K6, K7, K8, K9,
-		COLON, SEMI, LESS, EQUAL, GREATER, QUESTION, AT, A, B, C, D, E, F, G, H, I, J, K,
-		L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, L_BRACKET, B_SLASH, R_BRACKET,
-		POWER, U_SCORE, ACCENT, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r,
-		s, t, u, v, w, x, y, z, L_BRACE, PIPE, R_BRACE, TILDE,
-		F1 = 0x80, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12,
-		INS, DEL, HOME, END, PAGE_UP, PAGE_DOWN, UP, DOWN, LEFT, RIGHT, BSPACE
-	};
 
+	namespace Keys {
+		/**
+		 * The values under 0x80 are just the ACCII character set. Above 0x80 are 
+		 * the special keyboard keys.
+		 */
+		enum Key_Values {
+			NONE, CTRL_A, CTRL_B, CTRL_C, CTRL_D, CTRL_E, CTRL_F, CTRL_G, CTRL_H,
+			TAB, ENTER, CTRL_K, CTRL_L, CTRL_M, CTRL_N, CTRL_O, CTRL_P, CTRL_Q,
+			CTRL_R, CTRL_S, CTRL_T, CTRL_U,	CTRL_V, CTRL_W, CTRL_X, CTRL_Y, CTRL_Z, ESC,
+			SPACE = 32, BANG, DBL_QUOTE, HASH, DOLLAR, PERCENT, AMP, QUOTE, L_PAR, R_PAR,
+			STAR, PLUS, COMMA, MINUS, DOT, DIVIDE, K0, K1, K2, K3, K4, K5, K6, K7, K8, K9,
+			COLON, SEMI, LESS, EQUAL, GREATER, QUESTION, AT, A, B, C, D, E, F, G, H, I, J, K,
+			L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, L_BRACKET, B_SLASH, R_BRACKET,
+			POWER, U_SCORE, ACCENT, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r,
+			s, t, u, v, w, x, y, z, L_BRACE, PIPE, R_BRACE, TILDE,
+		    F1 = 0x80, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12,
+			INS, DEL, HOME, END, PAGE_UP, PAGE_DOWN, UP, DOWN, LEFT, RIGHT, BSPACE
+		};
+	}
+
+    using Keyboard = Keys::Key_Values;
+	
 	/**
 	 * All possible mouse events.
 	 */
@@ -202,14 +206,14 @@ namespace UI {
 		 * @param key Key code.
 		 * @param m   Modifiers for key.
 		 */
-	    KeyEvent(enum Keys key, enum Modifiers md = NO_MOD) : m_key{key}, m_mod{md} {}
+	    KeyEvent(Keyboard key, enum Modifiers md = NO_MOD) : m_key{key}, m_mod{md} {}
 		
 		/**
 		 * Default key event constructor.
 		 * Construct an event for ascii code with no modifier keys.
 		 * @param key Ascii character.
 		 */
-	    KeyEvent(char key, enum Modifiers md = NO_MOD) : KeyEvent((Keys) key, md) {}
+	    KeyEvent(char key, enum Modifiers md = NO_MOD) : KeyEvent((Keyboard) key, md) {}
 
 		/**
 		 * Key event constructor that reads key event from string of format
@@ -223,7 +227,7 @@ namespace UI {
 	    constexpr KeyEvent(const KeyEvent& e) : m_key(e.m_key), m_mod(e.m_mod) {}
 		//@}
 		
-		enum Keys getKey() const { return m_key; }             ///< @return Key code.
+		Keyboard getKey() const { return m_key; }             ///< @return Key code.
 		enum Modifiers getModifiers() const { return m_mod; }  ///< @return Modifiers state.
 
 		/**
@@ -256,7 +260,7 @@ namespace UI {
 		/**
 		 * Return true if valid key
 		 */
-		operator bool() const { return m_key != NO_KEY; }
+		operator bool() const { return m_key != Keys::NONE; }
 
 		/**
 		 * Equal operator override.
@@ -275,7 +279,7 @@ namespace UI {
 		std::string toString() const;
 		
 	private:
-		enum Keys  m_key;     ///< Key code.
+		Keyboard m_key;       ///< Key code.
 		enum Modifiers m_mod; ///< Modifiers state.
 	};
 
@@ -357,6 +361,11 @@ namespace UI {
 		 * @param color Color of line.
 		 */
 		virtual void at(int x0, int y0, const std::string& s, Attributes chrAttr, Color color = BLACK)=0;
+
+		/**
+		 * Clear screen.
+		 */
+		virtual void clear_screen()=0;
 		
 		/**
 		 * Flush all drawing so far to graphic interface.
@@ -424,11 +433,6 @@ namespace UI {
 		virtual void set(int x, int y, int x0 = 0, int y0 = 0) { 
 			m_xSize = x; m_ySize = y; m_xOrig = x0, m_yOrig = y0;
 		}
-
-		/**
-		 * Refresh screen
-		 */
-		virtual void refresh()=0;
 		//@}
 		
 		/**
@@ -506,6 +510,51 @@ namespace UI {
 		virtual ~GlobalContext() {}
 		//@}
 
+		/**
+		 * Get graphics context.
+		 * @return Graphics context object.
+		 */
+		Graphics& getGraphics() { return *m_gc; }
+
+		/** 
+		 * Get working equation.
+		 * @return Working equation.
+		 */
+		Equation& getEqn() { return *m_eqn; }
+
+		/**
+		 * Save working equation and create new equation.
+		 */
+		void saveEqn();
+
+		/**
+		 * Undo working equation with last saved eqn in list.
+		 */
+		void undoEqn();
+
+		/**
+		 * Redraw entire screen.
+		 */
+		virtual void redraw_screen()=0;
+		
+		static GlobalContextPtr current; ///< Shared pointer to current global context.
+		
+        Node* start_select = nullptr;    ///< If not null, node is selected.
+        int start_mouse_x = -1;          ///< Horiz coord of start of mouse drag.
+        int start_mouse_y = -1;          ///< Vertical coord of start of mouse drag
+ 
+	private:
+		GraphicsPtr m_gc;   ///< Shared pointer to current Graphics.
+		EqnPtr      m_eqn;  ///< Shared pointer to current equation.
+		EqnUndoList m_eqns; ///< Equation undo stack
+	};
+
+	/**
+	 * Abstract Base Class to parse menu xml file
+	 */
+	class MenuXML
+	{
+	public:
 		/** @name Virtual Public Member Functions */
 		//@{
 		/**
@@ -538,47 +587,8 @@ namespace UI {
 		 * @param in XML::Parser already initialized with xml file
 		 */
 		void parse_menu(XML::Parser& in);
-
-		/**
-		 * Parse entire menubar tag defined in XML.
-		 * @param is Input stream that reads XML defining menubar
-		 */
-		void parse_menubar(std::istream& is);
-
-		/**
-		 * Get graphics context.
-		 * @return Graphics context object.
-		 */
-		Graphics& getGraphics() { return *m_gc; }
-
-		/** 
-		 * Get working equation.
-		 * @return Working equation.
-		 */
-		Equation& getEqn() { return *m_eqn; }
-
-		/**
-		 * Save working equation and create new equation.
-		 */
-		void saveEqn();
-
-		/**
-		 * Undo working equation with last saved eqn in list.
-		 */
-		void undoEqn();
-		
-		static GlobalContextPtr current; ///< Shared pointer to current global context.
-		
-        Node* start_select = nullptr;    ///< If not null, node is selected.
-        int start_mouse_x = -1;          ///< Horiz coord of start of mouse drag.
-        int start_mouse_y = -1;          ///< Vertical coord of start of mouse drag
- 
-	private:
-		GraphicsPtr m_gc;   ///< Shared pointer to current Graphics.
-		EqnPtr      m_eqn;  ///< Shared pointer to current equation.
-		EqnUndoList m_eqns; ///< Equation undo stack
 	};
-
+	
 	/**
 	 * Query if program should quit.
 	 * @return If true, exit main loop.

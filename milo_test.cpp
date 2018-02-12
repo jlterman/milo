@@ -66,6 +66,11 @@ public:
 	 * Menu line for current menu
 	 */
 	void define_menu_line() {}
+
+	/**
+	 * Dummy redraw screen function
+	 */
+	void redraw_screen() {}
 	//@}
 };
 
@@ -176,11 +181,15 @@ public:
 	 */
 	void at(int x, int y, const string& s, Attributes, Color color = BLACK);
 
-
 	/**
 	 * Flush all characters to the text array.
 	 */
 	void out();
+
+	/**
+	 * Clear characters in text array.
+	 */
+	void clear_screen();
 
 	/**
 	 * Set size of the text array (origin is always 0,0).
@@ -194,11 +203,6 @@ public:
 			m_colors.emplace_back(x, Color::BLACK);
 		}
 	}
-
-	/**
-	 * Empty function for Refresh screen
-	 */
-	virtual void refresh() {}
 	//@}
 private:
 	vector<string> m_field;           ///< 2D text array.
@@ -219,6 +223,15 @@ void AsciiGraphics::at(int x, int y, const string& s, Attributes, Color color)
 {
 	for (unsigned int n = 0; n < s.length(); ++n) { 
 		m_field[y][x + n] = s[n]; m_colors[y][x + n] = color;
+	}
+}
+
+void AsciiGraphics::clear_screen()
+{ 
+	for (int i = 0; i < m_ySize; ++i ) {
+		for (int j = 0; j < m_xSize; ++j) {
+			m_field[i][j] = ' ';
+		}
 	}
 }
 
