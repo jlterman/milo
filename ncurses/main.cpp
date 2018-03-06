@@ -618,9 +618,40 @@ static const unordered_map<int, KeyEvent> key_map = {
 };
 
 /**
+ * Local function to get key event from ncurses code.
+ * @param code Ncurses key code
+ * @return Referenceto key event
+ */
+static const KeyEvent& getKeyEvent(int code)
+{
+	auto key_map_entry = key_map.find(code);
+	if (key_map_entry == key_map.end()) {
+		return key_map.at(0);
+	}
+	return key_map_entry->second;
+}
+
+/**
+ * Local function to call function that corresponds to menu key
+ * @param key Key event.
+ * @param[out] fChanged True if menu function return true.
+ * @return True if menu function was called.
+ */
+bool doMenuKey(const KeyEvent& key, bool& fChanged)
+{
+	auto key_menu_entry = MenuBar::key_menu_map.find(key);
+	if (key_menu_entry != MenuBar::key_menu_map.end()) {
+		fChanged = doMenu(key_menu_entry->second);
+		return true;
+	}
+	return false;
+}
+
+/**
  * Map ncurses key code (modulo mouse mask) to a mouse event.
  */
 static const unordered_map<int, MouseEvent> mouse_event_map = {
+	{ 0x10000000, MouseEvent(Mouse::NO_MOUSE, 0, Modifiers::NO_MOD) },
 	{ 0x10000001, MouseEvent(Mouse::RELEASED, 1, Modifiers::NO_MOD) },
 	{ 0x12000001, MouseEvent(Mouse::RELEASED, 1, Modifiers::SHIFT) },
 	{ 0x10000002, MouseEvent(Mouse::PRESSED,  1, Modifiers::NO_MOD) },
@@ -632,6 +663,34 @@ static const unordered_map<int, MouseEvent> mouse_event_map = {
 	{ 0x18000000, MouseEvent(Mouse::POSITION, 0, Modifiers::NO_MOD) }
 };
 
+/**
+ * Local function to get mouse event from code
+ * @param code Ncurses code
+ * @param[out] fOk True, if mouse event
+ * @return Mouse event
+ */
+static MouseEvent getMouseEvent(int code, bool& fOk)
+{
+	constexpr int MOUSE_EVENT_MASK = 0x10000000;
+	fOk = false;
+	MEVENT mouse_event;
+	if (code == KEY_MOUSE && getmouse(&mouse_event) == OK) {
+		code = mouse_event.bstate|MOUSE_EVENT_MASK;
+		auto mouse_event_entry = mouse_event_map.find(code);
+		
+		if (mouse_event_entry != mouse_event_map.end()) {
+			MouseEvent mouseEvent = mouse_event_entry->second;
+			mouseEvent.setCoords(mouse_event.x, mouse_event.y);
+			
+			LOG_TRACE_MSG("mouse event: " + to_hexstring(code) + ", (x,y) = " +
+						  to_string(mouse_event.x) + ", " + to_string(mouse_event.y));
+			fOk = true;
+			return mouseEvent;
+		}
+	}
+	return mouse_event_map.at(0x10000000);
+}
+
 void CursesContext::redraw_screen()
 {
 	clear();
@@ -642,10 +701,7 @@ void CursesContext::redraw_screen()
 
 void CursesContext::do_loop()
 {
-	constexpr int MOUSE_EVENT_MASK = 0x10000000;
-	MEVENT mouse_event;
 	bool fChanged = false;
-
 	CursesGraphics& gcurses = dynamic_cast<CursesGraphics&>(getGraphics());
 	
 	while (isRunning()) {
@@ -661,19 +717,10 @@ void CursesContext::do_loop()
 		getEqn().getCursorOrig(xCursor, yCursor);
 		code = gcurses.getChar(yCursor, xCursor - 1, getEqn().blink());
 
-		if (code == KEY_MOUSE && getmouse(&mouse_event) == OK) {
-			code = mouse_event.bstate|MOUSE_EVENT_MASK;
-			auto mouse_event_entry = mouse_event_map.find(code);
-
-			if (mouse_event_entry == mouse_event_map.end())
-				continue;
-
-			MouseEvent mouseEvent = mouse_event_entry->second;
-			mouseEvent.setCoords(mouse_event.x, mouse_event.y);
+		bool fIsMouse;
+		MouseEvent mouseEvent = getMouseEvent(code, fIsMouse);
+		if (fIsMouse) {
 			fChanged = doMouse(mouseEvent);
-				
-			LOG_TRACE_MSG("mouse event: " + to_hexstring(code) + ", (x,y) = " +
-						  to_string(mouse_event.x) + ", " + to_string(mouse_event.y));
 		}
 		else {
 			if (code == KEY_RESIZE) {
@@ -684,17 +731,13 @@ void CursesContext::do_loop()
 				m_menubar.select();
 			}
 
-			auto key_map_entry = key_map.find(code);
-			if (key_map_entry == key_map.end()) {
+			auto key_event = getKeyEvent(code);
+			if (!key_event) {
 				continue;
 			}
 			
-			auto key_menu_entry = MenuBar::key_menu_map.find(key_map_entry->second);
-			if (key_menu_entry != MenuBar::key_menu_map.end()) {
-				fChanged = doMenu(key_menu_entry->second);
-			}
-			else {
-				fChanged = doKey(key_map_entry->second);
+			if (!doMenuKey(key_event, fChanged)) {
+				fChanged = doKey(key_event);
 			}
 		}
 		if (fChanged) {

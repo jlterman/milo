@@ -239,7 +239,8 @@ public:
 		m_active(tags.at("active") == "true"),
 		m_title(tags.at("title")),
 		m_action(tags.at("action")),
-		m_key(tags.at("key")) {}
+		m_key((tags.at("key") == "NONE") ? std::string() : tags.at("key")) {}
+		
 	~MenuItem() {}
 	//@}
 

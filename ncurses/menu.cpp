@@ -131,7 +131,7 @@ bool MenuBar::handleKey(int code)
 		    case KEY_SLEFT: {
 				m_root->handleKey(UI::Keys::ESC);
 				if (m_root == *m_menus.begin()) {
-					m_root = *m_menus.end();
+					m_root = *(m_menus.end() - 1);
 				}
 				else {
 					for ( auto m = m_menus.begin() + 1; m != m_menus.end(); ++m ) {
