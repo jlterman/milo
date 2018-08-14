@@ -1,0 +1,4 @@
+<map id="UI::MiloApp" name="UI::MiloApp">
+<area shape="rect" id="node2" href="$classAsciiApp.html" title="AsciiApp" alt="" coords="5,80,80,107"/>
+<area shape="rect" id="node3" href="$classCursesApp.html" title="CursesApp" alt="" coords="105,80,191,107"/>
+</map>

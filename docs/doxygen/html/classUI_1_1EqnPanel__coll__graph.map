@@ -1,0 +1,7 @@
+<map id="UI::EqnPanel" name="UI::EqnPanel">
+<area shape="rect" id="node2" href="$classUI_1_1MiloPanel.html" title="UI::MiloPanel" alt="" coords="40,199,141,225"/>
+<area shape="rect" id="node3" href="$classNode.html" title="Node" alt="" coords="165,199,219,225"/>
+<area shape="rect" id="node5" href="$structNode_1_1Frame.html" title="Node::Frame" alt="" coords="305,102,404,129"/>
+<area shape="rect" id="node6" href="$classRectangle.html" title="Rectangle\&lt; int \&gt;" alt="" coords="183,5,302,32"/>
+<area shape="rect" id="node7" href="$classEqnUndoList.html" title="EqnUndoList" alt="" coords="326,199,423,225"/>
+</map>

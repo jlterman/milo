@@ -1,0 +1,7 @@
+<map id="AsciiApp" name="AsciiApp">
+<area shape="rect" id="node2" href="$classUI_1_1MiloApp.html" title="UI::MiloApp" alt="" coords="5,184,96,211"/>
+<area shape="rect" id="node3" href="$classAsciiGraphics.html" title="AsciiGraphics" alt="" coords="207,184,310,211"/>
+<area shape="rect" id="node4" href="$classUI_1_1Graphics.html" title="UI::Graphics" alt="" coords="129,95,225,121"/>
+<area shape="rect" id="node5" href="$classRectangle.html" title="Rectangle\&lt; int \&gt;" alt="" coords="118,5,237,32"/>
+<area shape="rect" id="node6" href="$classUI_1_1KeyEvent.html" title="UI::KeyEvent" alt="" coords="249,95,351,121"/>
+</map>

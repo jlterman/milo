@@ -1,0 +1,8 @@
+<map id="CursesApp" name="CursesApp">
+<area shape="rect" id="node2" href="$classUI_1_1MiloApp.html" title="UI::MiloApp" alt="" coords="5,171,96,197"/>
+<area shape="rect" id="node3" href="$classCursesGraphics.html" title="CursesGraphics" alt="" coords="207,171,323,197"/>
+<area shape="rect" id="node4" href="$classUI_1_1Graphics.html" title="UI::Graphics" alt="" coords="215,95,311,121"/>
+<area shape="rect" id="node5" href="$classRectangle.html" title="Rectangle\&lt; int \&gt;" alt="" coords="203,5,322,32"/>
+<area shape="rect" id="node6" href="$classMenuBar.html" title="MenuBar" alt="" coords="349,171,424,197"/>
+<area shape="rect" id="node7" href="$classUI_1_1MenuXML.html" title="UI::MenuXML" alt="" coords="335,95,438,121"/>
+</map>
