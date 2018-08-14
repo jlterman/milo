@@ -86,6 +86,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
 <a href="#namespaces">Namespaces</a> &#124;
+<a href="#typedef-members">Typedefs</a> &#124;
 <a href="#enum-members">Enumerations</a> &#124;
 <a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
@@ -114,11 +115,15 @@ This graph shows which files directly or indirectly include this file:</div>
 <div class="dyncontent">
 <div class="center"><img src="ui_8h__dep__incl.png" border="0" usemap="#ui_8hdep" alt=""/></div>
 <map name="ui_8hdep" id="ui_8hdep">
-<area shape="rect" id="node2" href="milo_8cpp.html" title="milo.cpp" alt="" coords="5,80,76,107"/>
-<area shape="rect" id="node3" href="milo__test_8cpp.html" title="milo_test.cpp" alt="" coords="100,80,200,107"/>
-<area shape="rect" id="node4" href="main_8cpp.html" title="main.cpp" alt="" coords="223,80,298,107"/>
-<area shape="rect" id="node5" href="nodes_8cpp.html" title="nodes.cpp" alt="" coords="322,80,405,107"/>
-<area shape="rect" id="node6" href="ui_8cpp.html" title="ui.cpp" alt="" coords="429,80,487,107"/>
+<area shape="rect" id="node2" href="panel_8h.html" title="panel.h" alt="" coords="131,80,195,107"/>
+<area shape="rect" id="node4" href="milo__test_8cpp.html" title="milo_test.cpp" alt="" coords="5,155,105,181"/>
+<area shape="rect" id="node5" href="ui_8cpp.html" title="ui.cpp" alt="" coords="221,155,279,181"/>
+<area shape="rect" id="node6" href="milo_8cpp.html" title="milo.cpp" alt="" coords="271,80,341,107"/>
+<area shape="rect" id="node7" href="main_8cpp.html" title="main.cpp" alt="" coords="342,155,417,181"/>
+<area shape="rect" id="node8" href="menu_8h.html" title="menu.h" alt="" coords="417,80,483,107"/>
+<area shape="rect" id="node10" href="nodes_8cpp.html" title="nodes.cpp" alt="" coords="507,80,590,107"/>
+<area shape="rect" id="node3" href="eqn_8cpp.html" title="eqn.cpp" alt="" coords="129,155,197,181"/>
+<area shape="rect" id="node9" href="menu_8cpp.html" title="menu.cpp" alt="" coords="441,155,520,181"/>
 </map>
 </div>
 </div>
@@ -132,7 +137,13 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classUI_1_1Graphics.html">UI::Graphics</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classUI_1_1GlobalContext.html">UI::GlobalContext</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classUI_1_1MiloPanel.html">UI::MiloPanel</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classUI_1_1MiloWindow.html">UI::MiloWindow</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classUI_1_1MiloApp.html">UI::MiloApp</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classUI_1_1MenuXML.html">UI::MenuXML</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structstd_1_1hash_3_01UI_1_1KeyEvent_01_4.html">std::hash&lt; UI::KeyEvent &gt;</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -146,20 +157,28 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
 Typedefs</h2></td></tr>
+<tr class="memitem:af239d23ea9ba7d2e56e32ef27ed9709d"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="af239d23ea9ba7d2e56e32ef27ed9709d"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>UI::Keyboard</b> = Keys::Key_Values</td></tr>
+<tr class="separator:af239d23ea9ba7d2e56e32ef27ed9709d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae9efafe6699af517e9ff2543b3699188"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ae9efafe6699af517e9ff2543b3699188"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>UI::panel_factory</b> = MiloPanelPtr(*)(const std::string &amp;)</td></tr>
+<tr class="separator:ae9efafe6699af517e9ff2543b3699188"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr><td colspan="2"><div class="groupHeader">UI namespace Type Declerations</div></td></tr>
-<tr class="memitem:a4adc35d507c4ac7420afd9da41e6c6ea"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a4adc35d507c4ac7420afd9da41e6c6ea"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceUI.html#a4adc35d507c4ac7420afd9da41e6c6ea">UI::GraphicsPtr</a> = std::shared_ptr&lt; Graphics &gt;</td></tr>
-<tr class="memdesc:a4adc35d507c4ac7420afd9da41e6c6ea"><td class="mdescLeft">&#160;</td><td class="mdescRight">Shared pointer for <a class="el" href="classUI_1_1Graphics.html">Graphics</a>. <br /></td></tr>
-<tr class="separator:a4adc35d507c4ac7420afd9da41e6c6ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3f752f3343fc9de4a6bfe055b99021e3"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a3f752f3343fc9de4a6bfe055b99021e3"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceUI.html#a3f752f3343fc9de4a6bfe055b99021e3">UI::GlobalContextPtr</a> = std::shared_ptr&lt; GlobalContext &gt;</td></tr>
-<tr class="memdesc:a3f752f3343fc9de4a6bfe055b99021e3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Shared pointer for <a class="el" href="classUI_1_1GlobalContext.html">GlobalContext</a>. <br /></td></tr>
-<tr class="separator:a3f752f3343fc9de4a6bfe055b99021e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a10e37e8c7a4733a74d625a65ce098c06"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a10e37e8c7a4733a74d625a65ce098c06"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceUI.html#a10e37e8c7a4733a74d625a65ce098c06">UI::MiloWindowPtr</a> = std::shared_ptr&lt; MiloWindow &gt;</td></tr>
+<tr class="memdesc:a10e37e8c7a4733a74d625a65ce098c06"><td class="mdescLeft">&#160;</td><td class="mdescRight">Shared pointer for <a class="el" href="classUI_1_1MiloWindow.html">MiloWindow</a>. <br /></td></tr>
+<tr class="separator:a10e37e8c7a4733a74d625a65ce098c06"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a80609473b616674982fd6068c24272d6"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a80609473b616674982fd6068c24272d6"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceUI.html#a80609473b616674982fd6068c24272d6">UI::MiloPanelPtr</a> = std::shared_ptr&lt; MiloPanel &gt;</td></tr>
+<tr class="memdesc:a80609473b616674982fd6068c24272d6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Shared pointer for <a class="el" href="classUI_1_1MiloPanel.html">MiloPanel</a>. <br /></td></tr>
+<tr class="separator:a80609473b616674982fd6068c24272d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abff9bac61ee427573224f0dd66556764"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceUI.html#abff9bac61ee427573224f0dd66556764">UI::menu_handler</a> = void(*)(void)</td></tr>
+<tr class="separator:abff9bac61ee427573224f0dd66556764"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="enum-members"></a>
 Enumerations</h2></td></tr>
-<tr class="memitem:a656650bb07a24a740a7be3971480e380"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceUI.html#a656650bb07a24a740a7be3971480e380">UI::Keys</a> { <br />
-&#160;&#160;<b>NO_KEY</b>, 
+<tr class="memitem:a1b6e356d8b0b8ee74e1c4719bbe58171"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ui_8h.html#a1b6e356d8b0b8ee74e1c4719bbe58171">UI::Keys::Key_Values</a> { <br />
+&#160;&#160;<b>NONE</b>, 
 <b>CTRL_A</b>, 
 <b>CTRL_B</b>, 
 <b>CTRL_C</b>, 
@@ -343,7 +362,7 @@ Enumerations</h2></td></tr>
 <b>BSPACE</b>
 <br />
  }</td></tr>
-<tr class="separator:a656650bb07a24a740a7be3971480e380"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:a1b6e356d8b0b8ee74e1c4719bbe58171"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2dc8a0902ea92021ffa4c93338884fcf"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceUI.html#a2dc8a0902ea92021ffa4c93338884fcf">UI::Mouse</a> { <br />
 &#160;&#160;<b>NO_MOUSE</b>, 
 <b>POSITION</b>, 
@@ -371,18 +390,31 @@ Enumerations</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a517bcce903c32bee5a74e8febd95e30b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceUI.html#a517bcce903c32bee5a74e8febd95e30b">UI::isRunning</a> ()</td></tr>
-<tr class="separator:a517bcce903c32bee5a74e8febd95e30b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa623a9102f2f1f3945ab22cd79e4eade"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceUI.html#aa623a9102f2f1f3945ab22cd79e4eade">UI::doMenu</a> (const std::string &amp;menuFunctionName)</td></tr>
-<tr class="separator:aa623a9102f2f1f3945ab22cd79e4eade"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9e25aadd17f143892016d24da1ee3945"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceUI.html#a9e25aadd17f143892016d24da1ee3945">UI::doKey</a> (const <a class="el" href="classUI_1_1KeyEvent.html">KeyEvent</a> &amp;key)</td></tr>
-<tr class="separator:a9e25aadd17f143892016d24da1ee3945"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af9bf51edd1140c26f86b3c3c45558673"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceUI.html#af9bf51edd1140c26f86b3c3c45558673">UI::doMouse</a> (const <a class="el" href="classUI_1_1MouseEvent.html">MouseEvent</a> &amp;mouse)</td></tr>
-<tr class="separator:af9bf51edd1140c26f86b3c3c45558673"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a226ad73cd3d9a7778879ccfba1d14429"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceUI.html#a226ad73cd3d9a7778879ccfba1d14429">UI::operator==</a> (const MouseEvent &amp;m1, const MouseEvent &amp;m2)</td></tr>
+<tr class="separator:a226ad73cd3d9a7778879ccfba1d14429"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3f3cb4a23c8eae2c16bcd80051ea06e9"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceUI.html#a3f3cb4a23c8eae2c16bcd80051ea06e9">UI::operator==</a> (const KeyEvent &amp;k1, const KeyEvent &amp;k2)</td></tr>
+<tr class="separator:a3f3cb4a23c8eae2c16bcd80051ea06e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a99490033d8d3695dd277d37ab37008e5"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
+<tr class="memitem:a99490033d8d3695dd277d37ab37008e5"><td class="memTemplItemLeft" align="right" valign="top">MiloPanelPtr&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceUI.html#a99490033d8d3695dd277d37ab37008e5">UI::createPanel</a> (const std::string &amp;init)</td></tr>
+<tr class="separator:a99490033d8d3695dd277d37ab37008e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>This file contains the common declerations for the abstract user interface of milo. Key, menus and mouse events are defined in a neutral way so that it can be ported. </p>
-</div></div><!-- contents -->
+</div><h2 class="groupheader">Enumeration Type Documentation</h2>
+<a class="anchor" id="file_a1b6e356d8b0b8ee74e1c4719bbe58171"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="ui_8h.html#a1b6e356d8b0b8ee74e1c4719bbe58171">UI::Keys::Key_Values</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>The values under 0x80 are just the ACCII character set. Above 0x80 are the special keyboard keys. </p>
+
+</div>
+</div>
+</div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

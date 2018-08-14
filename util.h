@@ -1,14 +1,6 @@
 #ifndef __UTIL_H
 #define __UTIL_H
 
-#include <string>
-#include <vector>
-#include <array>
-#include <complex>
-#include <algorithm>
-#include <unordered_map>
-#include <boost/functional/hash.hpp>
-
 /* Copyright (C) 2017 - James Terman
  *
  * milo is free software; you can redistribute it and/or
@@ -30,6 +22,14 @@
  * @file util.h
  * This file contains miscellaneous functions and declerations.
  */
+
+#include <string>
+#include <vector>
+#include <array>
+#include <complex>
+#include <algorithm>
+#include <unordered_map>
+#include <boost/functional/hash.hpp>
 
 /** @name Global Utility Functions */
 //@{
@@ -124,16 +124,37 @@ inline void eraseElement(std::vector<T>& v, int index)
 }
 
 /**
- * Insert an element after the element pointed to by index in vector.
+ * Insert an element before the element pointed to by index in vector.
  * Use vector.insert() with iterator created from index.
  * @param v Vector storing type T.
  * @param index Index of element where new element will be inserted.
  * @param e Element of type T.
  */
 template <class T>
-inline void insertElement(std::vector<T>& v, int index, T e)
+inline void insertElement(std::vector<T>& v, int index, const T& e)
 {
 	v.insert((index < 0 ? v.end() : v.begin()) + index, e);
+}
+
+/**
+ * Insert an elememnt after the element pointed to by the given iterator.
+ * @param v Vector storing type T.
+ * @param it Iterator pointing to insert position.
+ * @param e Element of type T.
+ * @return Iterator to inserted element.
+ */
+template <class T>
+auto AddAfter(std::vector<T>& v, decltype(v.begin()) it, const T& elem)->decltype(v.begin())
+{
+	if (v.empty()) {
+		v.push_back(elem);
+		return v.begin();
+	}
+	if (it == v.end()) {
+		return v.insert(v.begin(), elem);
+	}
+	++it;
+	return v.insert(it, elem);
 }
 
 /**

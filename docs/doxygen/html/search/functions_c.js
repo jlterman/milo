@@ -1,6 +1,7 @@
 var searchData=
 [
   ['negative',['negative',['../classNode.html#abbbbcbf0364fa1fd88aae75a53142d79',1,'Node']]],
+  ['neweqn',['newEqn',['../classUI_1_1EqnPanel.html#a8af25e5cb96b52b44968d4a658bdf4d2',1,'UI::EqnPanel::newEqn(std::string eq)'],['../classUI_1_1EqnPanel.html#a2f70fdf48c097b392c9399184424bfe9',1,'UI::EqnPanel::newEqn(std::istream &amp;is)']]],
   ['next',['next',['../classNodeIterator.html#aa3f8cdee25e7d329635f05cd7e856764',1,'NodeIterator::next()'],['../classFactorIterator.html#abc9728ae62f7ef80fdf63b61368918d1',1,'FactorIterator::next()'],['../classParser.html#a8281b8af2e7ee16e2dad76b0f34cc0d2',1,'Parser::next()'],['../classXML_1_1FSM.html#a2d3e43b33e0f059158cfdbf0919b2159',1,'XML::FSM::next()'],['../classXML_1_1Parser.html#abf1401970f19fed92834fa8ec61520e6',1,'XML::Parser::next(State state, const std::string &amp;tag=std::string())'],['../classXML_1_1Parser.html#af844db5de537b3ae108b8fab93457654',1,'XML::Parser::next()']]],
   ['nextinput',['nextInput',['../classEquation.html#a7fa2761ba85f585604b9c79e1b7418f3',1,'Equation']]],
   ['node',['Node',['../classNode.html#a101136fcf315114bea3fb8ade1af7f26',1,'Node::Node(Node *parent=nullptr, bool fNeg=false, Select s=NONE)'],['../classNode.html#aa82438e7e237032cef9782d2803ff094',1,'Node::Node(EqnXMLParser &amp;in, Node *parent)']]],

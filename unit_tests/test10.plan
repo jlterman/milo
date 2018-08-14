@@ -1,4 +1,4 @@
---keys PLUS,PLUS,a,b,(,c,d,+,e,f,TAB,c,o,s,(,x,PLUS,2,TAB,/,a,^,b,TAB,a,^,(,/,t,a,n,(,y,TAB,a,b,MINUS,c,d,PLUS,e,f,ENTER --test
+--geom 80,24 --keys PLUS,PLUS,a,b,(,c,d,+,e,f,TAB,c,o,s,(,x,PLUS,2,TAB,/,a,^,b,TAB,a,^,(,/,t,a,n,(,y,TAB,a,b,MINUS,c,d,PLUS,e,f,ENTER --test
 ---------
 (+cos(+x+2)+(+(+a)^(+(+(+ab-cd+ef)/(+tan(+y)))))/(+(+a)^(+b))+ab(+cd+ef))
 ---------

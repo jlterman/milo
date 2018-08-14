@@ -228,6 +228,8 @@ public:
 	}
 	//@}
 
+	/** @name Virtual Public Member Functions */
+	//@{
 	/**
 	 * Return character drawn at screen coordinates.
 	 * @param x Horizontal coordinate.
@@ -274,6 +276,7 @@ public:
 		
 		return draw;
 	}
+	//@}
 
 private:
 	static bool init;       ///< Singleton has been initialized.
@@ -304,45 +307,80 @@ private:
 };
 
 /**
- * GlobalContext for ncurses interface.
+ * Window class for ncurses interface.
  */
-class CursesContext : public GlobalContext
+class CursesWindow : public MiloWindow
+{
+public:
+	CursesWindow() : MiloWindow() {}
+
+	~CursesWindow() {}
+
+	void makeTopWindow() {}
+};
+
+/**
+ * Application class for ncurses interface.
+ */
+class CursesApp : public MiloApp
 {
 public:
 	/** @name Constructors and Destructor */
 	//@{
-	CursesContext(Graphics* gc) :
-		GlobalContext(gc),
-		m_menubar(m_menuXML)
-	{
-		
-		m_menubar.draw();
-	}
-
-	/**
-	 * Constructor with input equation.
-	 */
-	CursesContext(Graphics* gc, std::istream& is) :
-		GlobalContext(gc, is),
-		m_menubar(m_menuXML)
+	CursesApp() : MiloApp(make_shared<CursesWindow>()), m_menubar(m_menuXML)
 	{
 		m_menubar.draw();
 	}
 
-	~CursesContext() {}
+	~CursesApp() {}
 	//@}
 
+	/** @name Virtual Public Member Functions */
+	//@{		
 	/**
 	 * Redraw entire screen.
 	 */
 	void redraw_screen();
+
+	/**
+	 * Get graphics context.
+	 * @return Graphics context object.
+	 */
+	Graphics& getGraphics() { return m_gc; }
+
+	/**
+	 * Get key event from ncurses code.using key_map
+	 * @param code Ncurses key code
+	 * @return Referenceto key event
+	 */
+	const KeyEvent& getKeyEvent(int code);
+
+	/**
+	 * Get mouse event from ncurses code
+	 * @param code Ncurses code
+	 * @param[out] fOk True, if mouse event
+	 * @return Mouse event
+	 */
+	MouseEvent getMouseEvent(int code, bool& fOk);
 	
 	/** Run main event loop
 	 */
 	void do_loop();
+	//@}
 
 private:
-	MenuBar m_menubar;      ///< menu bar
+	MenuBar m_menubar;   ///< menu bar
+	CursesGraphics m_gc; ///< Graphics context
+
+	/**
+	 * Map ncurses key code (modulo mouse mask) to a mouse event.
+	 */
+	static const unordered_map<int, MouseEvent> mouse_event_map;
+
+	/**
+	 * Map ncurses key code to a key event.
+	 */
+	static const unordered_map<int, KeyEvent> key_map;
 
 	/** Menu xml filename
 	 */
@@ -350,6 +388,10 @@ private:
 };
 
 bool CursesGraphics::init = false;
+
+CursesApp app; ///< Instance of application class
+
+MiloApp& MiloApp::m_current = app;
 
 const unordered_map<Graphics::Attributes, int> CursesGraphics::attribute_map = {
 	{ Graphics::Attributes::NONE,   A_NORMAL },
@@ -395,10 +437,7 @@ void CursesGraphics::differential(int x0, int y0, char variable)
 	at(x0+1, y0+2, variable);
 }
 
-/**
- * Map ncurses key code to a key event.
- */
-static const unordered_map<int, KeyEvent> key_map = {
+const unordered_map<int, KeyEvent> CursesApp::key_map = {
 	{ 0,             KeyEvent(Keys::NONE,      Modifiers::NO_MOD) },
 	{ 1,             KeyEvent(Keys::CTRL_A,    Modifiers::NO_MOD) },
 	{ 2,             KeyEvent(Keys::CTRL_B,    Modifiers::NO_MOD) },
@@ -617,12 +656,7 @@ static const unordered_map<int, KeyEvent> key_map = {
 	{ KEY_BACKSPACE, KeyEvent(Keys::BSPACE,    Modifiers::NO_MOD) }
 };
 
-/**
- * Local function to get key event from ncurses code.
- * @param code Ncurses key code
- * @return Referenceto key event
- */
-static const KeyEvent& getKeyEvent(int code)
+const KeyEvent& CursesApp::getKeyEvent(int code)
 {
 	auto key_map_entry = key_map.find(code);
 	if (key_map_entry == key_map.end()) {
@@ -631,26 +665,7 @@ static const KeyEvent& getKeyEvent(int code)
 	return key_map_entry->second;
 }
 
-/**
- * Local function to call function that corresponds to menu key
- * @param key Key event.
- * @param[out] fChanged True if menu function return true.
- * @return True if menu function was called.
- */
-bool doMenuKey(const KeyEvent& key, bool& fChanged)
-{
-	auto key_menu_entry = MenuBar::key_menu_map.find(key);
-	if (key_menu_entry != MenuBar::key_menu_map.end()) {
-		fChanged = doMenu(key_menu_entry->second);
-		return true;
-	}
-	return false;
-}
-
-/**
- * Map ncurses key code (modulo mouse mask) to a mouse event.
- */
-static const unordered_map<int, MouseEvent> mouse_event_map = {
+const unordered_map<int, MouseEvent> CursesApp::mouse_event_map = {
 	{ 0x10000000, MouseEvent(Mouse::NO_MOUSE, 0, Modifiers::NO_MOD) },
 	{ 0x10000001, MouseEvent(Mouse::RELEASED, 1, Modifiers::NO_MOD) },
 	{ 0x12000001, MouseEvent(Mouse::RELEASED, 1, Modifiers::SHIFT) },
@@ -663,13 +678,7 @@ static const unordered_map<int, MouseEvent> mouse_event_map = {
 	{ 0x18000000, MouseEvent(Mouse::POSITION, 0, Modifiers::NO_MOD) }
 };
 
-/**
- * Local function to get mouse event from code
- * @param code Ncurses code
- * @param[out] fOk True, if mouse event
- * @return Mouse event
- */
-static MouseEvent getMouseEvent(int code, bool& fOk)
+MouseEvent CursesApp::getMouseEvent(int code, bool& fOk)
 {
 	constexpr int MOUSE_EVENT_MASK = 0x10000000;
 	fOk = false;
@@ -691,20 +700,19 @@ static MouseEvent getMouseEvent(int code, bool& fOk)
 	return mouse_event_map.at(0x10000000);
 }
 
-void CursesContext::redraw_screen()
+void CursesApp::redraw_screen()
 {
 	clear();
-	getEqn().draw(getGraphics());
+	getWindow().getPanel().doDraw();
 	m_menubar.draw();
 	refresh();
 }
 
-void CursesContext::do_loop()
+void CursesApp::do_loop()
 {
-	bool fChanged = false;
 	CursesGraphics& gcurses = dynamic_cast<CursesGraphics&>(getGraphics());
 	
-	while (isRunning()) {
+	while (UI::MiloApp::isRunning()) {
 		int xCursor = 0, yCursor = 0;
 		int code = 0;
 		redraw_screen();
@@ -714,13 +722,13 @@ void CursesContext::do_loop()
 			continue;
 		}
 		
-		getEqn().getCursorOrig(xCursor, yCursor);
-		code = gcurses.getChar(yCursor, xCursor - 1, getEqn().blink());
+		getWindow().getPanel().getCursorOrig(xCursor, yCursor);
+		code = gcurses.getChar(yCursor, xCursor - 1, getWindow().getPanel().blink());
 
 		bool fIsMouse;
 		MouseEvent mouseEvent = getMouseEvent(code, fIsMouse);
 		if (fIsMouse) {
-			fChanged = doMouse(mouseEvent);
+			getWindow().getPanel().doMouse(mouseEvent);
 		}
 		else {
 			if (code == KEY_RESIZE) {
@@ -736,13 +744,9 @@ void CursesContext::do_loop()
 				continue;
 			}
 			
-			if (!doMenuKey(key_event, fChanged)) {
-				fChanged = doKey(key_event);
+			if (!m_menubar.doMenuKey(key_event)) {
+				getWindow().getPanel().doKey(key_event);
 			}
-		}
-		if (fChanged) {
-			saveEqn();
-			fChanged = false;
 		}
 	}
 }
@@ -758,16 +762,10 @@ int main(int argc, char* argv[])
 	LOG_TRACE_CLEAR();
 	LOG_TRACE_MSG("Starting milo_ncurses...");
 
-	CursesContext* cc;
-	if (argc > 1) {
-		ifstream in(argv[1]);
-		cc = new CursesContext(new CursesGraphics(), in);
+   	if (argc > 1) {
+		app.getWindow().getPanel().loadState(argv[1]);
 	}
-	else {
-		cc = new CursesContext(new CursesGraphics());
-    }
-	GlobalContext::current = GlobalContextPtr(cc);
-	cc->saveEqn();
-	cc->do_loop();
+	app.getWindow().getPanel().pushUndo();
+	app.do_loop();
 	return 0;
 }

@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['a',['A',['../classA.html',1,'']]],
+  ['asciiapp',['AsciiApp',['../classAsciiApp.html',1,'']]],
   ['asciigraphics',['AsciiGraphics',['../classAsciiGraphics.html',1,'']]]
 ];

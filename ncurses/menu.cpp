@@ -24,8 +24,6 @@
 using namespace std;
 using namespace UI;
 
-unordered_map<KeyEvent, string> MenuBar::key_menu_map;
-
 void MenuBar::define_menu(const StringMap& attributes)
 {
 	Menu* new_menu = new Menu(attributes);
@@ -64,7 +62,8 @@ void MenuBar::define_menu_item(const StringMap& attributes)
 	}
 	KeyEvent key(menu_key->second);
 	if (key) {
-		key_menu_map.emplace(key, menu_action->second);	}
+		key_menu_map[key] = menu_action->second;
+	}
 	m_menu_heap.top()->addItem(new MenuItem(attributes));
 }
 
@@ -209,6 +208,15 @@ bool Menu::handleKey(int code)
 	return false;
 }
 
+bool MenuBar::doMenuKey(const KeyEvent& key)
+{
+	auto key_menu_entry = key_menu_map.find(key);
+	if (key_menu_entry != key_menu_map.end()) {
+		MiloApp::getGlobal().doMenu(key_menu_entry->second);
+		return true;
+	}
+	return false;
+}
 
 Menu* Menu::m_current = 0;
 

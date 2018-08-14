@@ -1,7 +1,8 @@
 var searchData=
 [
   ['rectangle',['Rectangle',['../classRectangle.html#a9d9da3fc8bcb125516cbf2d711d325eb',1,'Rectangle::Rectangle()'],['../classRectangle.html#a927a1a38a8ba23672480ebe6774f1f33',1,'Rectangle::Rectangle(T x, T y, T x0, T y0)']]],
-  ['refresh',['refresh',['../classAsciiGraphics.html#a342aeee72a7f7efa3ca6e9397ebf23e7',1,'AsciiGraphics::refresh()'],['../classCursesGraphics.html#a514934178004b626bce7e367ab0bcfae',1,'CursesGraphics::refresh()'],['../classUI_1_1Graphics.html#acac12e5fde08eacf75a983d32c1d51f2',1,'UI::Graphics::refresh()']]],
+  ['redraw_5fscreen',['redraw_screen',['../classAsciiApp.html#a933317b5f85fde6b8d9511f270f93cd4',1,'AsciiApp::redraw_screen()'],['../classCursesApp.html#ab90185e471d1fb92d91c44ae101cb8c1',1,'CursesApp::redraw_screen()'],['../classUI_1_1MiloApp.html#a7a11cd92a3ce9b1001292fe2f58e8a8d',1,'UI::MiloApp::redraw_screen()']]],
+  ['refresh_5fwindow',['refresh_window',['../classMenu.html#a64f74f33006e534e9683a1ba054fa918',1,'Menu']]],
   ['relativeorig',['relativeOrig',['../classUI_1_1Graphics.html#adf5cc8777f437b2e57c949fc305ebfee',1,'UI::Graphics']]],
   ['remove',['remove',['../classInput.html#a30dee80bdb7a1aa505908e7ad04022eb',1,'Input']]],
   ['removeinput',['removeInput',['../classEquation.html#a5011633254fb985faddbdbac02af4014',1,'Equation']]],

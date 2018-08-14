@@ -1,4 +1,4 @@
-OBJECTS := parser.o nodes.o milo.o ui.o symbol.o xml.o
+OBJECTS := parser.o nodes.o milo.o ui.o symbol.o xml.o eqn.o
 CPPARGS := -std=c++11 -Wall -Wextra -Werror -Wpedantic $(CFLAGS)
 MAKE ?= make
 export
@@ -43,6 +43,9 @@ xml.o: xml.cpp xml.h util.h
 
 ui.o: ui.cpp ui.h milo.h util.h
 	$(CXX) $(CPPARGS) ui.cpp -c
+
+eqn.o: eqn.cpp ui.h milo.h util.h
+	$(CXX) $(CPPARGS) eqn.cpp -c
 
 test: test.o
 	$(CXX) test.o -o test

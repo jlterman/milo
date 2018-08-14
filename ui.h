@@ -1,7 +1,7 @@
 #ifndef __UI_H
 #define __UI_H
 
-/* Copyright (C) 2017 - James Terman
+/* Copyright (C) 2018 - James Terman
  *
  * milo is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,13 +37,22 @@
  * This is the user interface for milo for porting to paticular interfaces.
  */
 namespace UI {
+	// Forward class declerations
 	class Graphics;
-	class GlobalContext;
+	class MiloApp;
+	class MiloWindow;
+	class MiloPanel;
 
 	/** @name UI namespace Type Declerations  */
 	//@{
-	using GraphicsPtr = std::shared_ptr<Graphics>;            ///< Shared pointer for Graphics
-	using GlobalContextPtr = std::shared_ptr<GlobalContext>;  ///< Shared pointer for GlobalContext
+	using MiloWindowPtr = std::shared_ptr<MiloWindow>; ///< Shared pointer for MiloWindow
+	using MiloPanelPtr = std::shared_ptr<MiloPanel>;   ///< Shared pointer for MiloPanel
+
+	/**
+	 * Function pointer to handle a menu item.
+	 * Return true, if event changed panel.
+	 */
+	using menu_handler = void (*)(void);
 	//@}
 
 	namespace Keys {
@@ -105,6 +114,15 @@ namespace UI {
 		    m_type{t}, m_button{b}, m_mod{md}, m_x{mouse_x}, m_y{mouse_y} {}
 		//@}
 
+		/**
+		 * Set mouse coordinates
+		 * @param mouse_x x-coordinate of mouse event
+		 * @param mouse_y y-coordinate of mouse event
+		 */
+        void setCoords(int mouse_x, int mouse_y) { m_x = mouse_x; m_y = mouse_y; }
+
+		/** @name MouseEvent class accessors */
+		//@{
 		enum Mouse getMouse() const { return m_type; }         ///< @return Mouse click type
 		int getButton() const { return m_button; }             ///< @return button pressed
 		enum Modifiers getModifiers() const { return m_mod; }  ///< @return Modifiers state.
@@ -115,13 +133,6 @@ namespace UI {
 		 * @param[out] mouse_y y-coordinate of mouse event
 		 */
         void getCoords(int& mouse_x, int& mouse_y) const { mouse_x = m_x; mouse_y = m_y; }
-
-		/**
-		 * Set mouse coordinates
-		 * @param mouse_x x-coordinate of mouse event
-		 * @param mouse_y y-coordinate of mouse event
-		 */
-        void setCoords(int mouse_x, int mouse_y) { m_x = mouse_x; m_y = mouse_y; }
 
 		/**
 		 * Check mouse event for no mouse modifiers.
@@ -145,7 +156,10 @@ namespace UI {
 		 * Return true if valid mouse
 		 */
 		operator bool() const { return m_type !=NO_MOUSE; }
-		
+		//@}
+
+		/** @name Help member functions */
+		//@{
 		/**
 		 * Calculate hash for this class object. Used by unordered map.
 		 * @return Hash value.
@@ -156,16 +170,22 @@ namespace UI {
 		}		
 
 		/**
-		 * Equal operator override.
-		 * Used by unordered map.
+		 * Return true is this mouse event is equal to parameter
+		 * @param e Mouse event to compare
+		 * @return True if equal
 		 */
-		bool operator==(const MouseEvent& e) const
+		bool equals(const MouseEvent& e) const
 		{
 			return e.m_type   == m_type &&
 			       e.m_button == m_button &&
 			       e.m_mod    == m_mod;
 		}
 
+		/**
+		 * Assign value of mouse event paramter
+		 * @param e Mouse event to assign
+		 * @return Reference to this mouse event
+		 */
 		MouseEvent& operator=(const MouseEvent& e)
 		{
 			m_type   = e.m_type;
@@ -181,6 +201,7 @@ namespace UI {
 		 * @return String representing event
 		 */
 		std::string toString() const;
+		//@}
 		
 	private:
 		enum Mouse m_type;     ///< Mouse click type.
@@ -189,6 +210,17 @@ namespace UI {
 		int m_x;               ///< mouse x-coordinate.
 		int m_y;               ///< mouse y-coordinate.
 	};
+
+	/**
+	 * Overloading == operator for class MouseEvent
+	 * @param m1 First mouse event
+	 * @param m2 Second mouse event
+	 * @return True if m1 == m2
+	 */
+	inline bool operator==(const MouseEvent& m1, const MouseEvent& m2)
+	{
+		return m1.equals(m2);
+	}
 	
 	/**
 	 * Milo UI Key Event.
@@ -227,17 +259,10 @@ namespace UI {
 	    constexpr KeyEvent(const KeyEvent& e) : m_key(e.m_key), m_mod(e.m_mod) {}
 		//@}
 		
-		Keyboard getKey() const { return m_key; }             ///< @return Key code.
+		/** @name KeyEvent class accessors */
+		//@{
+		Keyboard getKey() const { return m_key; }              ///< @return Key code.
 		enum Modifiers getModifiers() const { return m_mod; }  ///< @return Modifiers state.
-
-		/**
-		 * Calculate hash for this class object. Used by unordered map.
-		 * @return Hash value.
-		 */
-		std::size_t hash() const
-		{
-			return hash_calculate<int>({(int) m_key, (int) m_mod});
-		}
 
 		/**
 		 * Check key event for no key modifiers.
@@ -261,15 +286,40 @@ namespace UI {
 		 * Return true if valid key
 		 */
 		operator bool() const { return m_key != Keys::NONE; }
+		//@}
+
+		/** @name Help member functions */
+		//@{
+		/**
+		 * Calculate hash for this class object. Used by unordered map.
+		 * @return Hash value.
+		 */
+		std::size_t hash() const
+		{
+			return hash_calculate<int>({(int) m_key, (int) m_mod});
+		}
 
 		/**
-		 * Equal operator override.
-		 * Used by unordered map.
+		 * Return true is this key event is equal to parameter
+		 * @param e Key event to compare
+		 * @return True if equal
 		 */
-		bool operator==(const KeyEvent e) const
+		bool equals(const KeyEvent e) const
 		{
 			return e.m_key == m_key &&
 			       e.m_mod == m_mod;
+		}
+
+		/**
+		 * Assign value of key event paramter
+		 * @param e Key event to assign
+		 * @return Reference to this key event
+		 */
+		KeyEvent& operator=(const KeyEvent& e)
+		{
+			m_key = e.m_key;
+			m_mod = e.m_mod;
+			return *this;
 		}
 		
 		/**
@@ -277,19 +327,30 @@ namespace UI {
 		 * @return String representing event
 		 */
 		std::string toString() const;
-		
+		//@}
+	
 	private:
 		Keyboard m_key;       ///< Key code.
 		enum Modifiers m_mod; ///< Modifiers state.
 	};
 
 	/**
+	 * Overloading == operator for class KeyEvent
+	 * @param m1 First key event
+	 * @param m2 Second key event
+	 * @return True if k1 == k2
+	 */
+	inline bool operator==(const KeyEvent& k1, const KeyEvent& k2)
+	{
+		return k1.equals(k2);
+	}
+
+	/**
 	 * Abstract base class to provide a context free graphical interface.
 	 * Provides an interface of helper functions that allow nodes to draw themselves
 	 * on the current graphical interface.
 	 */
-	class Graphics
-	{
+	class Graphics	{
 	public:
 		/** @name Constructor and Virtual Destructor */
 		//@{
@@ -315,8 +376,7 @@ namespace UI {
 		enum Attributes { NONE=0, BOLD=1, ITALIC=2, BOLD_ITALIC=3 };
 		
 		/** @name Virtual Public Member Functions */
-		//@{
-		
+		//@{		
 		/**
 		 * Draw differential of width x0 and height y0 with char variable name.
 		 * @param x0 Horizontal origin of differential.
@@ -433,15 +493,6 @@ namespace UI {
 		virtual void set(int x, int y, int x0 = 0, int y0 = 0) { 
 			m_xSize = x; m_ySize = y; m_xOrig = x0, m_yOrig = y0;
 		}
-		//@}
-		
-		/**
-		 * Set size and origin of this graphics window from a rectangle.
-		 * @param box Rectangle containing origin and size of window.
-		 */
-		void set(const Box& box) { 
-			set(box.width(), box.height(), box.x0(), box.y0());
-		}
 		
 		/**
 		 * Select the area of size x,y at origin x0,y0.
@@ -451,6 +502,17 @@ namespace UI {
 		 * @param y0 Vertical origin of selection area.
 		 */
 		virtual void setSelect(int x, int y, int x0, int y0) { m_select.set(x, y, x0, y0); }
+		//@}
+
+		/** @name Public helper member functions. */
+		//@{
+		/**
+		 * Set size and origin of this graphics window from a rectangle.
+		 * @param box Rectangle containing origin and size of window.
+		 */
+		void set(const Box& box) { 
+			set(box.width(), box.height(), box.x0(), box.y0());
+		}
 		
 		/**
 		 * Set selection area from rectangle.
@@ -474,6 +536,7 @@ namespace UI {
 		 * @param[in,out] y Vertical coordinate to be shifted.
 		 */
 		void relativeOrig(int& x, int& y) { x -= m_xOrig; y -= m_yOrig; }
+		//@}
 
 	protected:
 		int m_xSize;   ///< Horizontal size of graphic window.
@@ -484,69 +547,294 @@ namespace UI {
 	};
 
 	/**
-	 * Class that provides a Graphics class object, equation and equation
-	 * undo list. The static member variable GlobalContext::current always
-	 * points to the equation that has focus.
+	 * Template function to create a shared pointer of a particular type
+	 *
+	 * @param init String to initialize panel
+	 * @return Shared pointer to panel
 	 */
-	class GlobalContext
+	template <class T> MiloPanelPtr createPanel(const std::string& init)
+	{
+		return std::make_shared<T>(init);
+	}
+
+	using panel_factory = MiloPanelPtr (*)(const std::string&);
+	
+	/** MiloPanel is an abstract base class interface for all milo panels.
+	 *  This will provide hooks into the user interface.
+	 */
+	class MiloPanel
+	{
+	public:
+		/** @name Constructors and Virtual Destructor */
+		//@{
+		/** Constructor for MiloPanel initializing graphics context
+		 */
+        MiloPanel() {}
+
+		/** Virtual deconstructor for MiloPanel initializing graphics context
+		 */
+        ~MiloPanel() {}
+		//@}
+
+		/** @name Virtual Public Member Functions */
+		//@{		
+		/**
+		 * Handle key event for panel
+		 * @param key Key event
+		 */
+		virtual void doKey(const UI::KeyEvent& key) = 0;
+
+		/**
+		 * Handle mouse event for panel
+		 * @param mouse Mouse event
+		 */
+		virtual void doMouse(const UI::MouseEvent& mouse) = 0;
+
+		/**
+		 * Execute panel specific function based on its name. Used for menu handling.
+		 * @param menuFunctionName Name of menu function to be executed.
+		 * @return True if menuFunctionName found.
+		 */
+		virtual bool doMenu(const std::string& menuFunctionName) = 0;
+		
+		/** Handle redraw event
+		 */
+		virtual void doDraw() = 0;
+		
+		/**
+		 * Push state of panel to undo stack.
+		 */
+		virtual void pushUndo()=0;
+		
+		/**
+		 * Restore state of panel on top of undo stack.
+		 */
+		virtual void popUndo()=0;
+
+		/**
+		 * Save panel to XML stream
+		 * @param[in|out] Panel as XML to output stream
+		 */
+		virtual void saveState(std::ostream& fs) = 0;
+
+		/**
+		 * Load panel from XML stream.
+		 * @param is input stream
+		 */
+		virtual void loadState(std::istream& is) = 0;
+
+		/**
+		 * Save panel to file
+		 * @param filename Name of file
+		 */
+		void saveState(const std::string& filename) {
+			std::fstream out(filename,  std::fstream::out | std::fstream::trunc);
+			saveState(out);
+		}
+
+		/**
+		 * Load panel from file
+		 * @param filename Name of file
+		 */
+		void loadState(const std::string& filename) {
+			std::ifstream ifs(filename);
+			loadState(ifs);
+		}
+
+		/**
+		 * Check where there is an active input in this panel.
+		 * @return If true, there is an active input.
+		 */
+		virtual bool blink() = 0;
+
+		/**
+		 * Get coordinates of current active input.
+		 * @param[out] x Horizontal origin of curosr.
+		 * @param[out] y Vertical origin cursor.
+		 */
+		virtual void getCursorOrig(int& x, int& y) = 0;
+		//@}
+
+		/** 
+		 * Get a shared pointer to a panel class object by name.
+		 * @param name Name of panel class object to create
+		 * @param init Initilization xml string
+		 * @return Shared pointer to panel class object
+		 */
+		static MiloPanelPtr makePanel(const std::string& name, const std::string& init);
+		
+	protected:
+		static std::unordered_map<std::string, panel_factory> panel_map; ///< Map of name to panel create functions.
+	};
+
+	/**
+	 * Abstract base class that provides a window class object and a list of panels.
+	 */
+	class MiloWindow
 	{
 	public:
 		/** @name Constructors and Virtual Destructor */
 		//@{
 
 		/**
-		 * Constructor with new equation.
+		 * Constructor with new panel.
 		 */
-	    GlobalContext(Graphics* gc);
+	    MiloWindow(MiloPanelPtr panel) : m_panels(1, panel), m_current_panel(m_panels.begin()) {}
+
+	    MiloWindow();
 
 		/**
-		 * Constructor with input equation.
+		 * Abstract base class needs virtual destructor.
 		 */
-	    GlobalContext(Graphics* gc, std::istream& is);
-
-		/**
-		 * Abstract base class needs vertical destructor.
-		 */
-		virtual ~GlobalContext() {}
+		virtual ~MiloWindow() {}
 		//@}
+
+		/** @name Public helper member functions. */
+		//@{
+		/** 
+		 * Get active panel.
+		 * @return Active panel.
+		 */
+		MiloPanel& getPanel() { return *(m_current_panel->get()); }
+
+		/**
+		 * Add new panel to window after current panel.
+		 * @param panel New panel added to window.
+		 */
+		void addPanel(MiloPanelPtr panel) {
+			m_current_panel = AddAfter(m_panels, m_current_panel, panel);
+		}
+
+		/**
+		 * Delete panel from window.
+		 * @param it Iterator to panel to be deleted.
+		 */
+		void deletePanel(std::vector<MiloPanelPtr>::iterator it) {
+			m_current_panel = m_panels.erase(it);
+		}
+
+		/**
+		 * Delete current panel from window.
+		 */
+		void deletePanel() {
+			m_current_panel = m_panels.erase(m_current_panel);
+		}
+		//@}
+
+		/** @name Virtual Public Member Functions */
+		//@{
+		/** 
+		 * Make this window top window.
+		 */
+		virtual void makeTopWindow()=0;
+		//@}
+
+	protected:
+		std::vector<MiloPanelPtr> m_panels; ///< List of panels for this window
+		std::vector<MiloPanelPtr>::iterator m_current_panel; ///< Current active panel
+	};
+
+	/**
+	 * Singleton class that provides a global context for menu and current window.
+	 */
+	class MiloApp
+	{
+	public:
+		/** @name Virtual Public Member Functions */
+		//@{		
+		/**
+		 * Redraw entire screen.
+		 */
+		virtual void redraw_screen()=0;
 
 		/**
 		 * Get graphics context.
 		 * @return Graphics context object.
 		 */
-		Graphics& getGraphics() { return *m_gc; }
+		virtual Graphics& getGraphics()=0;
+		//@}
+
+		/** @name Public helper member functions. */
+		//@{
+		/**
+		 * Execute function based on its name. Used for menu handling.
+		 */
+		void doMenu(const std::string& menuFunctionName);
+	
+		/**
+		 * Query if program should quit.
+		 * @return If true, exit main loop.
+		 */
+		static bool isRunning();
 
 		/** 
-		 * Get working equation.
-		 * @return Working equation.
+		 * Get active window.
+		 * @return Active window.
 		 */
-		Equation& getEqn() { return *m_eqn; }
+		MiloWindow& getWindow() { return *(m_current_window->get()); }
 
 		/**
-		 * Save working equation and create new equation.
+		 * Add new window to application after current window.
+		 * @param win New window added to application
 		 */
-		void saveEqn();
+		void addWindow(MiloWindowPtr win) {
+			m_current_window = AddAfter(m_windows, m_current_window, win);
+		}
 
 		/**
-		 * Undo working equation with last saved eqn in list.
+		 * Close current window from application.
 		 */
-		void undoEqn();
+		void closeWindow() {
+			m_current_window = m_windows.erase(m_current_window);
+		}
 
 		/**
-		 * Redraw entire screen.
+		 * Close window from application.
+		 * @param it Iterator to window to be deleted.
 		 */
-		virtual void redraw_screen()=0;
+		void closeWindow(std::vector<MiloWindowPtr>::iterator it) {
+			m_current_window = m_windows.erase(it);
+		}
+		//@}
+
+		/**
+		 * Return current global context.
+		 * @return current global context
+		 */
+		static MiloApp& getGlobal() { return m_current; }
+
+	protected:
+		/** @name Constructors and Virtual Destructor */
+		//@{
+
+		/**
+		 * Protected constructor for singleton base class for windowless context.
+		 */
+		MiloApp() {}
+
+		/**
+		 * Protected constructor for singleton base class.
+		 * @param win Default window
+		 */
+		MiloApp(MiloWindowPtr win) : m_windows(1, win), m_current_window(m_windows.begin()) {}
+
+		/**
+		 * Abstract base class needs virtual destructor.
+		 */
+		~MiloApp() {}
+		//@}
 		
-		static GlobalContextPtr current; ///< Shared pointer to current global context.
-		
-        Node* start_select = nullptr;    ///< If not null, node is selected.
-        int start_mouse_x = -1;          ///< Horiz coord of start of mouse drag.
-        int start_mouse_y = -1;          ///< Vertical coord of start of mouse drag
- 
+		std::vector<MiloWindowPtr> m_windows; ///< List of windows for this application.
+		std::vector<MiloWindowPtr>::iterator m_current_window; ///< Current active window.
+
+		static MiloApp& m_current; ///< Shared pointer to current global context.
+
 	private:
-		GraphicsPtr m_gc;   ///< Shared pointer to current Graphics.
-		EqnPtr      m_eqn;  ///< Shared pointer to current equation.
-		EqnUndoList m_eqns; ///< Equation undo stack
+		
+		/**
+		 * Map of names to functions that handle menu items.
+		 */
+		static std::unordered_map<std::string, menu_handler> menu_map;
 	};
 
 	/**
@@ -581,37 +869,16 @@ namespace UI {
 		virtual void define_menu_line()=0;
 		//@}
 
+		/** @name Public helper member functions. */
+		//@{
 		/**
 		 * Parse menu tag in XML calling the virtual menu member functions
 		 * define_menu, define_menu_end, define_menu_item and define_menu_line.
 		 * @param in XML::Parser already initialized with xml file
 		 */
 		void parse_menu(XML::Parser& in);
+		//@}
 	};
-	
-	/**
-	 * Query if program should quit.
-	 * @return If true, exit main loop.
-	 */
-	bool isRunning();
-	
-	/**
-	 * Execute function based on its name. Used for menu handling.
-	 * @return Equation has changed.
-	 */
-	bool doMenu(const std::string& menuFunctionName);
-
-	/**
-	 * Handle key event from main loop.
-	 * @return Equation has changed.
-	 */
-	bool doKey(const KeyEvent& key);
-
-	/**
-	 * Handle mouse event from main loop.
-	 * @return Equation has changed.
-	 */
-	bool doMouse(const MouseEvent& mouse);
 }
 
 namespace std

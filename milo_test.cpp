@@ -25,54 +25,10 @@
 #include <map>
 #include "milo.h"
 #include "ui.h"
+#include "panel.h"
 
 using namespace std;
 using namespace UI;
-
-/**
- * Global context class for testing.
- */
-class TextContext : public GlobalContext
-{
-public:
-	/** @name Constructors and Destructor */
-	//@{
-	TextContext(Graphics* gc) : GlobalContext(gc) {}
-
-	~TextContext() {}
-	//@}
-	
-	/** @name Overridden Public Member Functions */
-	//@{
-	/**
-	 * Start of menu with attributes
-	 * @param attributes All menu settings in map.
-	 */
-	void define_menu(const StringMap&) {}
-	
-	/**
-	 * No more menu items for current menu
-	 * @param name Name of menu coming to end
-	 */
-	void define_menu_end(const std::string&) {}
-	
-	/**
-	 * Menu item for current menu
-	 * @param attributes All menu item settings in map.
-	 */
-	void define_menu_item(const StringMap& attributes);
-	
-	/**
-	 * Menu line for current menu
-	 */
-	void define_menu_line() {}
-
-	/**
-	 * Dummy redraw screen function
-	 */
-	void redraw_screen() {}
-	//@}
-};
 
 /**
  * Class derived from ABC graphics so Equation can draw to a 2D character array.
@@ -231,6 +187,7 @@ void AsciiGraphics::clear_screen()
 	for (int i = 0; i < m_ySize; ++i ) {
 		for (int j = 0; j < m_xSize; ++j) {
 			m_field[i][j] = ' ';
+			m_colors[i][j] = Color::BLACK;
 		}
 	}
 }
@@ -266,27 +223,6 @@ void AsciiGraphics::parenthesis(int x_size, int y_size, int x0, int y0)
 	}
 }
 
-/** Map ncurses keys to a name representing a function to call.
- */
-static unordered_map<KeyEvent, string> key_menu_map;
-
-void TextContext::define_menu_item(const StringMap& attributes)
-{
-	auto menu_key = attributes.find("key");
-	if ( menu_key == attributes.end()) {
-		throw logic_error("No key attribute in menu item");
-	}
-	auto menu_action = attributes.find("action");
-	if ( menu_action == attributes.end()) {
-		throw logic_error("No action attribute in menu item");
-	}
-	KeyEvent key(menu_key->second);
-	if (!key) {
-		return;
-	}
-	key_menu_map.emplace(key, menu_action->second);
-}
-
 void AsciiGraphics::differential(int x0, int y0, char variable)
 {
 	m_field[y0][x0+1] = 'd';
@@ -296,13 +232,45 @@ void AsciiGraphics::differential(int x0, int y0, char variable)
 }
 
 /**
+ * Application class to support AsciiGraphics
+ */
+class AsciiApp : public MiloApp
+{
+public:
+	AsciiApp() : MiloApp(), m_gc(cout) {}
+
+	~AsciiApp() {}
+
+	/**
+	 * Dummy function for redraw entire screen.
+	 */
+	void redraw_screen() {}
+
+	/**
+	 * Get graphics context.
+	 * @return Graphics context object.
+	 */
+	Graphics& getGraphics() { return m_gc; }
+
+private:
+	AsciiGraphics m_gc; ///< Ascii graphics context.
+};
+
+AsciiApp app;  /// Ascii app class object
+
+MiloApp& MiloApp::m_current = app;
+
+Graphics& gc = app.getGraphics(); /// Asciigraphics class objects
+
+EqnPanel panel; /// EqnPanel class object
+
+/**
  * Load parsed equation string into global equation object.
  * @param eqn_str String with text version of equation.
  */
 static void parse(const string& eqn_str)
 {
-	Equation new_eqn(eqn_str);
-	GlobalContext::current->getEqn() = new_eqn;
+	panel.newEqn(eqn_str);
 }
 
 /**
@@ -312,8 +280,7 @@ static void parse(const string& eqn_str)
 static void xml_in(const string& fname)
 {
 	ifstream in(fname);
-	Equation new_eqn(in);
-	GlobalContext::current->getEqn() = new_eqn;
+	panel.newEqn(in);
 }
 
 /** Output current equation in xml to standard output.
@@ -321,7 +288,7 @@ static void xml_in(const string& fname)
 static void xml_out(const string&)
 {
 	string xml;
-	GlobalContext::current->getEqn().xml_out(xml);
+	panel.getEqn().xml_out(xml);
 	cout << xml << endl;
 }
 
@@ -329,8 +296,7 @@ static void xml_out(const string&)
  */
 static void test(const string&)
 {
-	Equation& eqn = GlobalContext::current->getEqn();
-	Graphics& gc = GlobalContext::current->getGraphics();
+	Equation& eqn = panel.getEqn();
 	
 	cout << "---------" << endl;
 	cout << eqn.toString() << endl;
@@ -354,15 +320,14 @@ static void test(const string&)
  */
 static void eqn_out(const string&)
 {
-	cout << GlobalContext::current->getEqn().toString() << endl;
+	cout << panel.getEqn().toString() << endl;
 }
 
 /** Output current equation as ascii art to standard output.
  */
 static void art(const string&)
 {
-	Equation& eqn = GlobalContext::current->getEqn();
-	Graphics& gc = GlobalContext::current->getGraphics();
+	Equation& eqn = panel.getEqn();
 
 	eqn.draw(gc);
 	gc.out();
@@ -372,14 +337,14 @@ static void art(const string&)
  */
 static void normalize(const string&)
 {
-	GlobalContext::current->getEqn().normalize();
+	panel.getEqn().normalize();
 }
 
 /** Simplify current equation.
  */
 static void simplify(const string&)
 {
-	GlobalContext::current->getEqn().simplify();
+	panel.getEqn().simplify();
 }
 
 /** Add keys as input to equation.
@@ -388,14 +353,29 @@ static void keys(const string& keys)
 {
 	string input = keys;
 	string::size_type sep;
+	panel.set_refresh(false);
 	do {
 		sep = input.find(",");
-		doKey(KeyEvent(input.substr(0, sep)));
+		gc.clear_screen();
+		panel.doKey(KeyEvent(input.substr(0, sep)));
 		if (sep != string::npos) {
 			input.erase(0, sep+1);
 		}
 	}
 	while (sep != string::npos);
+	panel.set_refresh(true);
+}
+
+/** Set geometry of internal ascii screen
+ */
+static void geometry(const string& params)
+{
+	auto n = count(params.begin(), params.end(), ',');
+	if (n != 1) throw logic_error("--gc needs two parameters");
+	auto sep = params.find(",");
+	int x = stoi(params.substr(0, sep));
+	int y = stoi(params.substr(sep+1));
+	gc.set(x, y);
 }
 
 /** Output help to standard output.
@@ -418,6 +398,7 @@ const unordered_map<string, func_ptr> test_funcs = {
 	{ "normalize", normalize },
 	{ "simplify",  simplify  },
 	{ "keys:",     keys      },
+	{ "geom:",     geometry  },
 	{ "help",      help      }
 };
 
@@ -447,7 +428,6 @@ static void help(const string&)
  */
 int main(int argc, char* argv[])
 {
-	GlobalContext::current = GlobalContextPtr(new TextContext(new AsciiGraphics(cout)));
 	int i = 1;
 	while (i < argc && argv[i][0] == '-' && argv[i][1] == '-') {
 		string option(argv[i]+2);
@@ -464,3 +444,4 @@ int main(int argc, char* argv[])
 		++i;
 	}
 }
+

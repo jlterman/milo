@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['init',['init',['../classCursesGraphics.html#a7761c4f94fef1e220d29a70d5a7fc5b2',1,'CursesGraphics']]],
+  ['init',['init',['../classCursesGraphics.html#a7761c4f94fef1e220d29a70d5a7fc5b2',1,'CursesGraphics::init()'],['../classUI_1_1EqnPanel.html#ae7890dcd7ffc498bbe6f31547bc196ce',1,'UI::EqnPanel::init()']]],
   ['input',['Input',['../classInput.html',1,'Input'],['../classInput.html#a78c0999f4d415c372c2b264808739b08',1,'Input::Input(Parser &amp;p, Node *parent=nullptr)'],['../classInput.html#ae3b8bc6bb16f8557b7fc04bcade9cb01',1,'Input::Input(Equation &amp;eqn, std::string txt=std::string(), bool current=true, Node *parent=nullptr, bool neg=false, Node::Select s=Node::Select::NONE)'],['../classInput.html#a02a8568a3cd3f61c866dfadb045f4f7b',1,'Input::Input(EqnXMLParser &amp;in, Node *parent)']]],
   ['input_5fsn',['input_sn',['../classInput.html#ab453c7e598c72de3d8e6e30c00226183',1,'Input']]],
   ['ins',['ins',['../classCursesGraphics.html#af7d375300c488aeb5355193f9d0f1a77',1,'CursesGraphics']]],
@@ -8,17 +8,18 @@ var searchData=
   ['insert_5findex',['insert_index',['../classSmartVector.html#a9cfcbd62558780084d5cfaca177b5ea2',1,'SmartVector']]],
   ['insertafter',['insertAfter',['../classFactorIterator.html#a16b5f9bde4e1d1fe91e810257e819d5e',1,'FactorIterator::insertAfter(Node *node)'],['../classFactorIterator.html#a928a176f4b5a717fba8fb6d0b039ea36',1,'FactorIterator::insertAfter(Term *term, bool sign=true)']]],
   ['insertafterme',['insertAfterMe',['../classTerm.html#a2aaabaee0346fc5d196edd4b6722ad73',1,'Term']]],
-  ['insertelement',['insertElement',['../util_8h.html#aefab60e96ac215a52e5c8c11ad90c2c6',1,'util.h']]],
+  ['insertelement',['insertElement',['../util_8h.html#aea262e909bfe2f094565cfcf2c7aad52',1,'util.h']]],
   ['inside',['inside',['../classRectangle.html#ae568c12a21b82b73491e7e112b92b897',1,'Rectangle::inside(T x, T y) const '],['../classRectangle.html#a5644d5cae59929e8964d91ba3982d7f5',1,'Rectangle::inside(Rectangle r) const ']]],
   ['intersect',['intersect',['../classRectangle.html#ae19b189dc83b282f857aa42220e4182e',1,'Rectangle']]],
   ['isbegin',['isBegin',['../classFactorIterator.html#a10854997f9a3e523eb58e94214cfd706',1,'FactorIterator']]],
   ['isbeginterm',['isBeginTerm',['../classFactorIterator.html#ae091a65713785cc7a3f78c8a2d8d3c2c',1,'FactorIterator']]],
+  ['iscurrent',['isCurrent',['../classMenu.html#a36ccb9cf5a0764c68ba35a06c5338f6c',1,'Menu']]],
   ['isend',['isEnd',['../classFactorIterator.html#a6647c81d960d7615bd70a9096e71228a',1,'FactorIterator']]],
   ['isendterm',['isEndTerm',['../classFactorIterator.html#a96513b5ba79ccf68fbce0d77b0aaac69',1,'FactorIterator']]],
   ['isfactor',['isFactor',['../classNode.html#abf8f4ce95e10b8a91f79ee560b1d5eb7',1,'Node::isFactor()'],['../classTerm.html#a2a1f8b31e7166cb5ac583e41d70a68a7',1,'Term::isFactor()']]],
   ['isinteger',['isInteger',['../milo_8cpp.html#ad1bd8f6974f3092dafadaec2ec2ed5b1',1,'isInteger(double value):&#160;milo.cpp'],['../util_8h.html#ace8a9cbcf31ee421d156f5ec6972654c',1,'isInteger(const std::string &amp;n):&#160;util.h'],['../util_8h.html#ad1bd8f6974f3092dafadaec2ec2ed5b1',1,'isInteger(double value):&#160;milo.cpp']]],
   ['isleaf',['isLeaf',['../classNode.html#af41372929f2b230d11943113bf28308e',1,'Node::isLeaf()'],['../classTerm.html#a9c87c3a34447c1a96e8c027e1698ab7c',1,'Term::isLeaf()'],['../classExpression.html#a7d0c0a4591dc5ad1f9e01bb6d6133a98',1,'Expression::isLeaf()'],['../classBinary.html#ae188ccc73ffe95f2f9d2f0175d4fc55a',1,'Binary::isLeaf()'],['../classFunction.html#ab62111d3eda5e9681d14d283d3ef4a83',1,'Function::isLeaf()'],['../classDifferential.html#a32f8ce5f636927e5c2017818b46f0fc0',1,'Differential::isLeaf()']]],
-  ['isrunning',['isRunning',['../namespaceUI.html#a517bcce903c32bee5a74e8febd95e30b',1,'UI']]],
+  ['isrunning',['isRunning',['../classUI_1_1MiloApp.html#ae60e67c5c7c216f40d82f394c48069f8',1,'UI::MiloApp']]],
   ['iszero',['isZero',['../milo_8cpp.html#aa183967a7a915749e9800658481403e8',1,'isZero(double x):&#160;milo.cpp'],['../milo_8cpp.html#a041fd3028dff324d2132320c5be1f069',1,'isZero(Complex z):&#160;milo.cpp'],['../util_8h.html#aa183967a7a915749e9800658481403e8',1,'isZero(double x):&#160;milo.cpp'],['../util_8h.html#a35c3c39314c9396a0988935987af9a6d',1,'isZero(std::complex&lt; double &gt; z):&#160;milo.cpp']]],
   ['iterator',['iterator',['../classSmartVector.html#a6a58647a47ddf7b598d719f954bd4ef8',1,'SmartVector']]]
 ];

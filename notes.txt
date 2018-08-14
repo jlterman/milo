@@ -806,3 +806,43 @@ unicode box characters
 \U250C \U2500 \U2510
 \U2502        \U2502
 \U2514 \U2500 \U2518
+
+map member funtion example
+
+#include <string>
+#include <iostream>
+#include <unordered_map>
+
+class foo
+{
+public:
+	foo(int n) : i(n) {}
+
+	int get() { return i; }
+
+	int run(const std::string& s) { return foo_map[s](*this); }
+
+private:
+	int i;
+	
+	using math_func = int (*)(foo&);
+
+	static std::unordered_map<std::string, math_func> foo_map;
+
+	int dbl() { return 2*i; }
+	int sqr() { return i*i; }
+	int cube() { return i*i*i; }
+};
+
+
+std::unordered_map<std::string, foo::math_func> foo::foo_map = {
+	{ "double", [](foo& f) { return f.dbl();  } },
+	{ "square", [](foo& f) { return f.sqr();  } },
+	{ "cube",   [](foo& f) { return f.cube(); } },
+};
+
+int main()
+{
+	foo f(2);
+	std::cout << "double of " << f.get() << ": " << f.run("double") << std::endl;
+}

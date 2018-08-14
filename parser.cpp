@@ -96,7 +96,7 @@ public:
 	 * @param in XML input stream.
 	 * @param eqn Equation object containing node tree.
 	 */
-    EqnXMLParser(std::istream& in, Equation& eqn) : XML::Parser(in, "document"), m_eqn(eqn) {}
+    EqnXMLParser(istream& in, Equation& eqn) : XML::Parser(in, "document"), m_eqn(eqn) {}
 	~EqnXMLParser() {} ///< Virtual destructor.
 
 	/**
@@ -122,7 +122,7 @@ private:
 	/**
 	 * Map associating class Node names with a function that will create it.
 	 */
-	static const unordered_map<std::string, createPtr> create_factors;
+	static const unordered_map<string, createPtr> create_factors;
 };
 
 // Get next character to be parsed or '\0' if at end.
@@ -218,7 +218,7 @@ void Equation::xml_in(EqnXMLParser& in)
 }
 
 // Constructor for Equation read in from input stream.
-Equation::Equation(std::istream& is)
+Equation::Equation(istream& is)
 {
 	EqnXMLParser in(is, *this);
 	xml_in(in);
@@ -288,7 +288,7 @@ const unordered_map<string, EqnXMLParser::createPtr> EqnXMLParser::create_factor
 	  {        Power::name, create<Power>        },
 	};
 
-Term* Expression::getTerm(Equation& eqn, const std::string& text, Expression* parent)
+Term* Expression::getTerm(Equation& eqn, const string& text, Expression* parent)
 {
 	Parser p(text, eqn);
 	return getTerm(p, parent);
@@ -333,13 +333,13 @@ void Equation::xml_out(XML::Stream& xml) const
 	xml << XML::FOOTER;
 }
 
-void Equation::xml_out(std::ostream& os) const 
+void Equation::xml_out(ostream& os) const 
 {
 	XML::Stream xml(os, "document");
 	xml_out(xml);
 }
 
-void Equation::xml_out(std::string& str) const
+void Equation::xml_out(string& str) const
 {
 	ostringstream os; 
 	xml_out(os);
@@ -402,7 +402,7 @@ void Expression::xml_out(XML::Stream& xml) const
 	xml << XML::FOOTER;
 }
 
-Equation::Equation(std::string eq)
+Equation::Equation(const string& eq)
 { 
 	Parser p(eq, *this); 
 	m_root = new Expression(p);

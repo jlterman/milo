@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['key_5fevent_5fmap',['key_event_map',['../ui_8cpp.html#af272fa886b35743341f7cb20eb87546f',1,'ui.cpp']]],
-  ['key_5fmap',['key_map',['../main_8cpp.html#ab40826fe83a3de1e3916cc5240f9b25b',1,'main.cpp']]],
-  ['key_5fmenu_5fmap',['key_menu_map',['../milo__test_8cpp.html#a890c7ae466e61acdbad1747bf42b4283',1,'key_menu_map():&#160;milo_test.cpp'],['../main_8cpp.html#a890c7ae466e61acdbad1747bf42b4283',1,'key_menu_map():&#160;main.cpp']]]
+  ['key_5fevent_5fmap',['key_event_map',['../classUI_1_1EqnPanel.html#a40012e3bb3f17b0636efe24fb4ad82ef',1,'UI::EqnPanel']]],
+  ['key_5fmap',['key_map',['../classCursesApp.html#a93f31f82f835ac342933af0f00608d33',1,'CursesApp']]],
+  ['key_5fmenu_5fmap',['key_menu_map',['../classMenuBar.html#a792424e9f23134ae246fb4284ea57c7a',1,'MenuBar']]]
 ];

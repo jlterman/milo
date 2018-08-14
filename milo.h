@@ -1332,7 +1332,7 @@ public:
 	 * Constructor to load an equation represented by string such as 'a+b/c'.
 	 * @param eq String containing equation to be created.
 	 */
-	Equation(std::string eq);
+	Equation(const std::string& eq);
 
 	/**
 	 * Constructor to load an equation from xml.

@@ -1,3 +1,5 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classXML_1_1Stream.html" title="XML::Stream" alt="" coords="5,5,104,32"/>
+<area shape="rect" id="node1" href="$classUI_1_1MiloApp.html" title="UI::MiloApp" alt="" coords="5,31,96,57"/>
+<area shape="rect" id="node2" href="$classAsciiApp.html" title="AsciiApp" alt="" coords="150,5,225,32"/>
+<area shape="rect" id="node3" href="$classCursesApp.html" title="CursesApp" alt="" coords="144,56,231,83"/>
 </map>

@@ -1,11 +1,13 @@
 var searchData=
 [
   ['save',['save',['../classEqnUndoList.html#a10ffe2a708c2c553cc4d2c53b7f043f5',1,'EqnUndoList']]],
-  ['saveeqn',['saveEqn',['../classUI_1_1GlobalContext.html#a9be8c1b56257222d79f200f5562c00d7',1,'UI::GlobalContext']]],
+  ['savestate',['saveState',['../classUI_1_1EqnPanel.html#a8675ea69e947aa3a1addf21251037c9f',1,'UI::EqnPanel::saveState()'],['../classUI_1_1MiloPanel.html#a3aaba28388c9eb9461a18b2ca32bdad7',1,'UI::MiloPanel::saveState(std::ostream &amp;fs)=0'],['../classUI_1_1MiloPanel.html#afd197bd0a23ce66faec54546456445f5',1,'UI::MiloPanel::saveState(const std::string &amp;filename)']]],
   ['searchmapvalue',['searchMapValue',['../util_8h.html#a43d86adaa315dd8e0be338761b5142e9',1,'util.h']]],
+  ['select',['select',['../classMenuBaseItem.html#a4ff6f48ed60ef156ef8161a1e56b2f67',1,'MenuBaseItem::select()'],['../classMenu.html#a06aa310db0ce0373a6b5fed1be8cd500',1,'Menu::select()'],['../classMenuItem.html#aed7655180d032699d4a99ab651298116',1,'MenuItem::select()'],['../classMenuLine.html#ac0bd6c00f5d20c86a9b17a3ad13590f2',1,'MenuLine::select()'],['../classMenuBar.html#ae4bd18341704f1129e5ee7d25a1e5ab5',1,'MenuBar::select()']]],
   ['selectbox',['selectBox',['../classEquation.html#a8b76c69029b06b836466d2cd10467357',1,'Equation']]],
   ['selectnodeorinput',['selectNodeOrInput',['../classEquation.html#aab6b54677bce584a3bd3ae5aec884c2d',1,'Equation']]],
   ['set',['set',['../classAsciiGraphics.html#a5d977df3214a5f85f66eb4fbc97c08ce',1,'AsciiGraphics::set()'],['../classCursesGraphics.html#a406f6d7951c58091ba8266eb75a1c79a',1,'CursesGraphics::set()'],['../classUI_1_1Graphics.html#abb91f5e1aeca34b8a0ab8d1f0cb6a0ad',1,'UI::Graphics::set(int x, int y, int x0=0, int y0=0)'],['../classUI_1_1Graphics.html#a81c5c37843a9000cc6a134a0eaa3aae4',1,'UI::Graphics::set(const Box &amp;box)'],['../classRectangle.html#a9de1a9811a277abc91d326a5fdf30fb2',1,'Rectangle::set()']]],
+  ['set_5frefresh',['set_refresh',['../classUI_1_1EqnPanel.html#a43be583ab5deecf9449b282a3801921a',1,'UI::EqnPanel']]],
   ['setcoords',['setCoords',['../classUI_1_1MouseEvent.html#a6f8f7cc86d293109c4690083a42eac20',1,'UI::MouseEvent']]],
   ['setcurrent',['setCurrent',['../classInput.html#a11410b405c12808e50aad7583d6425e2',1,'Input']]],
   ['setcurrentinput',['setCurrentInput',['../classEquation.html#adce9ff6a96e33cc97a58c09937489cf2',1,'Equation']]],

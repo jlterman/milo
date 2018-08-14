@@ -249,7 +249,7 @@ public:
 	/**
 	 * Select this menu item
 	 */
-	void select() { UI::doMenu(m_action); }
+	void select() { UI::MiloApp::getGlobal().doMenu(m_action); }
 
 	/**
 	 * Get title of menu
@@ -378,6 +378,13 @@ public:
 	 */
 	bool handleKey(int code);
 
+	/**
+	 * Static function to call function that corresponds to menu key
+	 * @param key Key event.
+	 * @return True if menu key found
+	 */
+	bool doMenuKey(const UI::KeyEvent& key);
+
 	/** @name Overridden Public Member Functions */
 	//@{
 	/**
@@ -403,15 +410,15 @@ public:
 	 */
 	void define_menu_line();
 	//@}
-
-	/**
-	 * Map ncurses keys to a name representing a function to call.
-	 */
-	static std::unordered_map<UI::KeyEvent, std::string> key_menu_map;
 	
 private:
     MenuPtr m_root;                ///< current menu on bar open
 	int m_level;                   ///< Keep track of menu level
 	std::vector<MenuPtr> m_menus;  ///< vector of menus in menu bar
 	std::stack<Menu*> m_menu_heap; ///< Stack of menus being created
+
+	/**
+	 * Map ncurses keys to a name representing a function to call.
+	 */
+    std::unordered_map<UI::KeyEvent, std::string> key_menu_map;
 };
