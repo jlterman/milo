@@ -12,7 +12,7 @@ var searchData=
   ['clear_5fscreen',['clear_screen',['../classAsciiGraphics.html#ab7910a3145066533a35dea66f0675d04',1,'AsciiGraphics::clear_screen()'],['../classCursesGraphics.html#addde49c864acfa3fc4c0b44ff812723f',1,'CursesGraphics::clear_screen()'],['../classUI_1_1Graphics.html#ab6618f3c38642baa592875cc46c0d94f',1,'UI::Graphics::clear_screen()']]],
   ['clearselect',['clearSelect',['../classEquation.html#add24695f823a38a27e6fa427fbf33686',1,'Equation']]],
   ['clone',['clone',['../classEquation.html#a3b8bcea85922109d254f629658aaabce',1,'Equation']]],
-  ['closewindow',['closeWindow',['../classUI_1_1MiloApp.html#af2bb3003f4a754aea4aa4c7205f68e70',1,'UI::MiloApp::closeWindow()'],['../classUI_1_1MiloApp.html#a586ecb4a9cebb2e8dcdbf04f3ec8aebf',1,'UI::MiloApp::closeWindow(std::vector&lt; MiloWindowPtr &gt;::iterator it)']]],
+  ['closewindow',['closeWindow',['../classUI_1_1MiloApp.html#af2bb3003f4a754aea4aa4c7205f68e70',1,'UI::MiloApp::closeWindow()'],['../classUI_1_1MiloApp.html#ad27cea2d3cd4e52a12e8931d7fdd8655',1,'UI::MiloApp::closeWindow(MiloWindowIter it)']]],
   ['color',['Color',['../classUI_1_1Graphics.html#a876a8f82c335902eccc81bc12093467f',1,'UI::Graphics']]],
   ['complex',['Complex',['../milo_8h.html#a9633ed5e22e786aa99c269f2fb0c005c',1,'milo.h']]],
   ['const_5fmap',['const_map',['../classConstant.html#a4d737f9e68c7dc5e65496dfb5e47943a',1,'Constant']]],

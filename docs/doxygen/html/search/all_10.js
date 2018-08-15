@@ -31,6 +31,8 @@ var searchData=
   ['smartptr',['SmartPtr',['../classSmartPtr.html',1,'SmartPtr&lt; T &gt;'],['../classSmartPtr.html#a83a29d4bb9aefcd16fe390a0a920a658',1,'SmartPtr::SmartPtr()'],['../classSmartPtr.html#a8c7c15c0ca67ae394b4700e17aea99c0',1,'SmartPtr::SmartPtr(T *p)'],['../classSmartPtr.html#a40f0f259ec28e01fd69aead0afcde486',1,'SmartPtr::SmartPtr(const std::shared_ptr&lt; T &gt; &amp;sp)']]],
   ['smartptr_3c_20node_20_3e',['SmartPtr&lt; Node &gt;',['../classSmartPtr.html',1,'']]],
   ['smartvector',['SmartVector',['../classSmartVector.html',1,'SmartVector&lt; T &gt;'],['../classSmartVector.html#a2235f162a4e842d3444435fd62cfd1df',1,'SmartVector::SmartVector()'],['../classSmartVector.html#a73debae0c7be8520a0ce8c0a623c0204',1,'SmartVector::SmartVector(std::initializer_list&lt; T * &gt; li)'],['../classSmartVector.html#a805926243d42ef8b3d5f9353b6f29a21',1,'SmartVector::SmartVector(T *p)'],['../classSmartVector.html#a844ad4b070603d457cf0bd5d9e9bb5a8',1,'SmartVector::SmartVector(std::initializer_list&lt; SmartPtr&lt; T &gt; &gt; li)']]],
+  ['smartvector_3c_20milopanel_20_3e',['SmartVector&lt; MiloPanel &gt;',['../classSmartVector.html',1,'']]],
+  ['smartvector_3c_20milowindow_20_3e',['SmartVector&lt; MiloWindow &gt;',['../classSmartVector.html',1,'']]],
   ['smartvector_3c_20node_20_3e',['SmartVector&lt; Node &gt;',['../classSmartVector.html',1,'']]],
   ['smartvector_3c_20term_20_3e',['SmartVector&lt; Term &gt;',['../classSmartVector.html',1,'']]],
   ['splitterm',['splitTerm',['../classFactorIterator.html#aa577911bd048a415c067a72844bbd08d',1,'FactorIterator']]],

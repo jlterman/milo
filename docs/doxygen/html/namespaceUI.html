@@ -118,17 +118,33 @@ Typedefs</h2></td></tr>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>Keyboard</b> = <a class="el" href="ui_8h.html#a1b6e356d8b0b8ee74e1c4719bbe58171">Keys::Key_Values</a></td></tr>
 <tr class="separator:af239d23ea9ba7d2e56e32ef27ed9709d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae9efafe6699af517e9ff2543b3699188"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ae9efafe6699af517e9ff2543b3699188"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>panel_factory</b> = <a class="el" href="namespaceUI.html#a80609473b616674982fd6068c24272d6">MiloPanelPtr</a>(*)(const std::string &amp;)</td></tr>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>panel_factory</b> = <a class="el" href="namespaceUI.html#aaedd43750a01ac3169b024566582ea88">MiloPanelPtr</a>(*)(const std::string &amp;)</td></tr>
 <tr class="separator:ae9efafe6699af517e9ff2543b3699188"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr><td colspan="2"><div class="groupHeader">UI namespace Type Declerations</div></td></tr>
-<tr class="memitem:a10e37e8c7a4733a74d625a65ce098c06"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a10e37e8c7a4733a74d625a65ce098c06"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceUI.html#a10e37e8c7a4733a74d625a65ce098c06">MiloWindowPtr</a> = std::shared_ptr&lt; <a class="el" href="classUI_1_1MiloWindow.html">MiloWindow</a> &gt;</td></tr>
-<tr class="memdesc:a10e37e8c7a4733a74d625a65ce098c06"><td class="mdescLeft">&#160;</td><td class="mdescRight">Shared pointer for <a class="el" href="classUI_1_1MiloWindow.html">MiloWindow</a>. <br /></td></tr>
-<tr class="separator:a10e37e8c7a4733a74d625a65ce098c06"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a80609473b616674982fd6068c24272d6"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a80609473b616674982fd6068c24272d6"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceUI.html#a80609473b616674982fd6068c24272d6">MiloPanelPtr</a> = std::shared_ptr&lt; <a class="el" href="classUI_1_1MiloPanel.html">MiloPanel</a> &gt;</td></tr>
-<tr class="memdesc:a80609473b616674982fd6068c24272d6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Shared pointer for <a class="el" href="classUI_1_1MiloPanel.html">MiloPanel</a>. <br /></td></tr>
-<tr class="separator:a80609473b616674982fd6068c24272d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adc264845821008cdffd51976e95cd1bd"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="adc264845821008cdffd51976e95cd1bd"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceUI.html#adc264845821008cdffd51976e95cd1bd">MiloWindowPtr</a> = <a class="el" href="classSmartPtr.html">SmartPtr</a>&lt; <a class="el" href="classUI_1_1MiloWindow.html">MiloWindow</a> &gt;</td></tr>
+<tr class="memdesc:adc264845821008cdffd51976e95cd1bd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Smart pointer for <a class="el" href="classUI_1_1MiloWindow.html">MiloWindow</a>. <br /></td></tr>
+<tr class="separator:adc264845821008cdffd51976e95cd1bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a15e00545a448d19a2580862b67c6092b"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a15e00545a448d19a2580862b67c6092b"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceUI.html#a15e00545a448d19a2580862b67c6092b">MiloWindowVector</a> = <a class="el" href="classSmartVector.html">SmartVector</a>&lt; <a class="el" href="classUI_1_1MiloWindow.html">MiloWindow</a> &gt;</td></tr>
+<tr class="memdesc:a15e00545a448d19a2580862b67c6092b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Storage of <a class="el" href="classUI_1_1MiloWindow.html">MiloWindow</a> pointers. <br /></td></tr>
+<tr class="separator:a15e00545a448d19a2580862b67c6092b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0945ac808de05f5daed90ef0ee436c58"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a0945ac808de05f5daed90ef0ee436c58"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceUI.html#a0945ac808de05f5daed90ef0ee436c58">MiloWindowIter</a> = <a class="el" href="classSmartVector.html#a6a58647a47ddf7b598d719f954bd4ef8">MiloWindowVector::iterator</a></td></tr>
+<tr class="memdesc:a0945ac808de05f5daed90ef0ee436c58"><td class="mdescLeft">&#160;</td><td class="mdescRight">Iterator of <a class="el" href="classUI_1_1MiloWindow.html">MiloWindow</a> pointers vector. <br /></td></tr>
+<tr class="separator:a0945ac808de05f5daed90ef0ee436c58"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaedd43750a01ac3169b024566582ea88"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="aaedd43750a01ac3169b024566582ea88"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceUI.html#aaedd43750a01ac3169b024566582ea88">MiloPanelPtr</a> = <a class="el" href="classSmartPtr.html">SmartPtr</a>&lt; <a class="el" href="classUI_1_1MiloPanel.html">MiloPanel</a> &gt;</td></tr>
+<tr class="memdesc:aaedd43750a01ac3169b024566582ea88"><td class="mdescLeft">&#160;</td><td class="mdescRight">Smart pointer for <a class="el" href="classUI_1_1MiloPanel.html">MiloPanel</a>. <br /></td></tr>
+<tr class="separator:aaedd43750a01ac3169b024566582ea88"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac35aafb32d8e2020ae28044745876991"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ac35aafb32d8e2020ae28044745876991"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceUI.html#ac35aafb32d8e2020ae28044745876991">MiloPanelVector</a> = <a class="el" href="classSmartVector.html">SmartVector</a>&lt; <a class="el" href="classUI_1_1MiloPanel.html">MiloPanel</a> &gt;</td></tr>
+<tr class="memdesc:ac35aafb32d8e2020ae28044745876991"><td class="mdescLeft">&#160;</td><td class="mdescRight">Storage of <a class="el" href="classUI_1_1MiloPanel.html">MiloPanel</a> pointers. <br /></td></tr>
+<tr class="separator:ac35aafb32d8e2020ae28044745876991"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a492f55ceb262e249f6a47451826a87e9"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a492f55ceb262e249f6a47451826a87e9"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceUI.html#a492f55ceb262e249f6a47451826a87e9">MiloPanelIter</a> = <a class="el" href="classSmartVector.html#a6a58647a47ddf7b598d719f954bd4ef8">MiloPanelVector::iterator</a></td></tr>
+<tr class="memdesc:a492f55ceb262e249f6a47451826a87e9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Iterator of <a class="el" href="classUI_1_1MiloPanel.html">MiloPanel</a> pointers vector. <br /></td></tr>
+<tr class="separator:a492f55ceb262e249f6a47451826a87e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abff9bac61ee427573224f0dd66556764"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceUI.html#abff9bac61ee427573224f0dd66556764">menu_handler</a> = void(*)(void)</td></tr>
 <tr class="separator:abff9bac61ee427573224f0dd66556764"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -166,7 +182,7 @@ Functions</h2></td></tr>
 <tr class="memitem:a3f3cb4a23c8eae2c16bcd80051ea06e9"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceUI.html#a3f3cb4a23c8eae2c16bcd80051ea06e9">operator==</a> (const <a class="el" href="classUI_1_1KeyEvent.html">KeyEvent</a> &amp;k1, const <a class="el" href="classUI_1_1KeyEvent.html">KeyEvent</a> &amp;k2)</td></tr>
 <tr class="separator:a3f3cb4a23c8eae2c16bcd80051ea06e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a99490033d8d3695dd277d37ab37008e5"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
-<tr class="memitem:a99490033d8d3695dd277d37ab37008e5"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="namespaceUI.html#a80609473b616674982fd6068c24272d6">MiloPanelPtr</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceUI.html#a99490033d8d3695dd277d37ab37008e5">createPanel</a> (const std::string &amp;init)</td></tr>
+<tr class="memitem:a99490033d8d3695dd277d37ab37008e5"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="namespaceUI.html#aaedd43750a01ac3169b024566582ea88">MiloPanelPtr</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceUI.html#a99490033d8d3695dd277d37ab37008e5">createPanel</a> (const std::string &amp;init)</td></tr>
 <tr class="separator:a99490033d8d3695dd277d37ab37008e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
@@ -220,7 +236,7 @@ Functions</h2></td></tr>
 template&lt;class T &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="namespaceUI.html#a80609473b616674982fd6068c24272d6">MiloPanelPtr</a> UI::createPanel </td>
+          <td class="memname"><a class="el" href="namespaceUI.html#aaedd43750a01ac3169b024566582ea88">MiloPanelPtr</a> UI::createPanel </td>
           <td>(</td>
           <td class="paramtype">const std::string &amp;&#160;</td>
           <td class="paramname"><em>init</em></td><td>)</td>
@@ -228,14 +244,14 @@ template&lt;class T &gt; </div>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Template function to create a shared pointer of a particular type</p>
+<p>Template function to create a smart pointer of a particular type</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">init</td><td>String to initialize panel </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>Shared pointer to panel </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>Smart pointer to panel </dd></dl>
 
 </div>
 </div>
