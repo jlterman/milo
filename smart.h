@@ -1,8 +1,5 @@
 #ifndef __SMART_H
 #define __SMART_H
-#include <vector>
-#include <memory>
-#include <initializer_list>
 
 /* Copyright (C) 2017 - James Terman
  *
@@ -26,6 +23,10 @@
  * This file templates that support SmartPtr and SmartVector. These classes
  * extend std::shared_ptr<T> so they more easily work with the pointer T*.
  */
+
+#include <vector>
+#include <memory>
+#include <initializer_list>
 
 /** @name Smart Pointer Templates */
 //@{

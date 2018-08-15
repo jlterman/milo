@@ -327,7 +327,7 @@ class CursesApp : public MiloApp
 public:
 	/** @name Constructors and Destructor */
 	//@{
-	CursesApp() : MiloApp(make_shared<CursesWindow>()), m_menubar(m_menuXML)
+	CursesApp() : MiloApp(MiloWindowPtr(new CursesWindow())), m_menubar(m_menuXML)
 	{
 		m_menubar.draw();
 	}

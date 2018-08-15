@@ -133,7 +133,7 @@ MiloPanelPtr MiloPanel::makePanel(const string& name, const string& init)
 	if (panel_entry != panel_map.end()) {
 		return (panel_entry->second)(init);
 	}
-	return 0;
+	return MiloPanelPtr();;
 }
 
 bool MiloApp::isRunning()
