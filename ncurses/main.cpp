@@ -361,7 +361,7 @@ public:
 	 * @param[out] fOk True, if mouse event
 	 * @return Mouse event
 	 */
-	MouseEvent getMouseEvent(int code, bool& fOk);
+	MouseEvent getMouseEvent(int code);
 	
 	/** Run main event loop
 	 */
@@ -678,10 +678,9 @@ const unordered_map<int, MouseEvent> CursesApp::mouse_event_map = {
 	{ 0x18000000, MouseEvent(Mouse::POSITION, 0, Modifiers::NO_MOD) }
 };
 
-MouseEvent CursesApp::getMouseEvent(int code, bool& fOk)
+MouseEvent CursesApp::getMouseEvent(int code)
 {
 	constexpr int MOUSE_EVENT_MASK = 0x10000000;
-	fOk = false;
 	MEVENT mouse_event;
 	if (code == KEY_MOUSE && getmouse(&mouse_event) == OK) {
 		code = mouse_event.bstate|MOUSE_EVENT_MASK;
@@ -693,7 +692,6 @@ MouseEvent CursesApp::getMouseEvent(int code, bool& fOk)
 			
 			LOG_TRACE_MSG("mouse event: " + to_hexstring(code) + ", (x,y) = " +
 						  to_string(mouse_event.x) + ", " + to_string(mouse_event.y));
-			fOk = true;
 			return mouseEvent;
 		}
 	}
@@ -718,17 +716,23 @@ void CursesApp::do_loop()
 		redraw_screen();
 		if (m_menubar.active()) {
 			code = gcurses.getChar(0, 0, false);
-			m_menubar.handleKey(code);
+			MouseEvent mouseEvent = getMouseEvent(code);
+			if (mouseEvent) {
+				m_menubar.handleMouse(mouseEvent);
+			}
+			else {
+				m_menubar.handleKey(code);
+			}
 			continue;
 		}
 		
 		getWindow().getPanel().getCursorOrig(xCursor, yCursor);
 		code = gcurses.getChar(yCursor, xCursor - 1, getWindow().getPanel().blink());
-
-		bool fIsMouse;
-		MouseEvent mouseEvent = getMouseEvent(code, fIsMouse);
-		if (fIsMouse) {
-			getWindow().getPanel().doMouse(mouseEvent);
+		MouseEvent mouseEvent = getMouseEvent(code);
+		if (mouseEvent) {
+			if (!m_menubar.handleMouse(mouseEvent)) {
+				getWindow().getPanel().doMouse(mouseEvent);
+			}
 		}
 		else {
 			if (code == KEY_RESIZE) {

@@ -128,7 +128,7 @@ bool MenuBar::handleKey(int code)
 	else {
 		switch(code) {
 		    case KEY_SLEFT: {
-				m_root->handleKey(UI::Keys::ESC);
+				m_root->handleKey(Keys::ESC);
 				if (m_root == *m_menus.begin()) {
 					m_root = *(m_menus.end() - 1);
 				}
@@ -144,7 +144,7 @@ bool MenuBar::handleKey(int code)
 				break;
 		    }
 		    case KEY_SRIGHT: {
-				m_root->handleKey(UI::Keys::ESC);
+				m_root->handleKey(Keys::ESC);
 				if (m_root == *(m_menus.end() - 1)) {
 					m_root = *m_menus.begin();
 				}
@@ -190,12 +190,12 @@ bool Menu::handleKey(int code)
 			while (!(*m_highlight)->getActive());
 			break;
 	    }
-	    case UI::Keys::ESC: {
+	    case Keys::ESC: {
 			m_current = m_parent;
 			return true;
 			break;
 		}
-	    case UI::Keys::ENTER: {
+	    case Keys::ENTER: {
 			(*m_highlight)->select();
 			return true;
 			break;
@@ -204,6 +204,63 @@ bool Menu::handleKey(int code)
 			return false;
 			break;
 	    }
+	}
+	return false;
+}
+
+bool Menu::handleMouse(const MouseEvent& mouse)
+{
+	int mouse_x, mouse_y;
+	mouse.getCoords(mouse_x, mouse_y);
+	if ( mouse_x < m_x0 ||
+		 mouse_x > m_x0 + m_width ||
+		 mouse_y < m_y0 ||
+		 mouse_y > m_y0 + m_height )
+	{
+		return false;
+	}
+	auto item = m_items.begin() + (mouse_y - m_y0) - 1;
+	if (!(*item)->getActive()) {
+		return true;
+	}
+	if (mouse == MouseEvent(Mouse::POSITION, 0, Modifiers::NO_MOD)) {
+		m_highlight = item;
+		return true;
+	}
+	if ( mouse == MouseEvent(Mouse::CLICKED,  1, Modifiers::NO_MOD) ||
+		 mouse == MouseEvent(Mouse::PRESSED,  1, Modifiers::NO_MOD) )
+	{
+		(*item)->select();
+		return true;
+	}
+	return false;
+}
+
+bool MenuBar::handleMouse(const MouseEvent& mouse)
+{
+	int x_mouse, y_mouse;
+	mouse.getCoords(x_mouse, y_mouse);
+	if (y_mouse == 0 &&
+		(mouse == MouseEvent(Mouse::POSITION, 0, Modifiers::NO_MOD) ||
+		 mouse == MouseEvent(Mouse::CLICKED,  1, Modifiers::NO_MOD)))
+	{
+		if (m_root) {
+			m_root->handleKey(Keys::ESC);
+			m_root = 0;
+		}
+		for ( auto menu : m_menus ) {
+			if (x_mouse > menu->m_xbar &&
+				x_mouse < menu->m_xbar + menu->m_wbar)
+			{
+				m_root = menu;
+				menu->select();
+			    return true;
+			}
+		}
+		return false;
+	}
+	if (m_root) {
+		return m_root->handleMouse(mouse);
 	}
 	return false;
 }

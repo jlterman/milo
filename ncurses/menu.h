@@ -139,6 +139,13 @@ public:
 	void drawInBar(int x, bool fHighlight = false);
 
 	/**
+	 * Handle mouse event for menus.
+	 * @param mouse Mouse event.
+	 * @return True, if handled.
+	 */
+	bool handleMouse(const UI::MouseEvent& mouse);
+
+	/**
 	 * Handle key event
 	 * @param code Key code.
 	 * @return Event was handled.
@@ -359,7 +366,7 @@ public:
 	void draw();
 
 	/**
-	 * Handle event loop for menu bar
+	 * Activate menu bar and open menu
 	 * @param mouse_x Menu clicked (default first menu)
 	 * @return Menu was selected
 	 */
@@ -371,6 +378,13 @@ public:
 	 */
 	bool active() { return m_root != 0; }
 
+	/**
+	 * Handle mouse event for menus.
+	 * @param mouse Mouse event.
+	 * @return True, if handled.
+	 */
+	bool handleMouse(const UI::MouseEvent& mouse);
+	
 	/** 
 	 * Send key code to active menu
 	 * @param code Key code
