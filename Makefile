@@ -1,5 +1,5 @@
 OBJECTS := parser.o nodes.o milo.o ui.o symbol.o xml.o eqn.o
-CPPARGS := -std=c++11 -Wall -Wextra -Werror -Wpedantic $(CFLAGS)
+CPPARGS := -std=c++17 -Wall -Wextra -Werror -Wpedantic $(CFLAGS)
 MAKE ?= make
 export
 

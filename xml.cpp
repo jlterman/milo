@@ -99,9 +99,9 @@ namespace XML
 	// output state to Stream. Legality of transistion checked
 	void Stream::out(State state)
 	{
-		switch (state) {
-			if (m_pending != NONE) state = ILLEGAL;
+		if (m_pending != NONE) state = ILLEGAL;
 
+		switch (state) {
 		    case NAME_VALUE:
 				m_pending = NAME;
 				break;
@@ -433,10 +433,10 @@ namespace XML
 				fsm.next(ELEMENT);
 				break;
 			}
-		    case HEADER: {
+		    case HEADER:
 				m_attributes.clear(); // clear attributes of last header
 				m_element.clear();    // clear any previous element tags
-			}                         // header falls through here
+			                          // falls through
 		    case FOOTER: {
 				m_tag = tag;
 				fsm.next(state, m_tag);

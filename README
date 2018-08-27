@@ -6,7 +6,7 @@ A debug build:
 
      make debug
 
-This makefile assumes gcc 5.7
+This makefile assumes gcc 8.x
 
 Dependencies beyond standared libc and libc++:
 
