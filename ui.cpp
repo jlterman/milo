@@ -1,4 +1,4 @@
-/* Copyright (C) 2017 - James Terman
+/* Copyright (C) 2018 - James Terman
  *
  * milo is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,22 +22,17 @@
  */
 
 #include "ui.h"
-#include "milo.h"
-#include "panel.h"
 
 using namespace std;
 using namespace UI;
 
-static bool fRunning = true;         ///< When false, quit program.
+static bool fRunning = true;                ///< When false, quit program.
 
-MiloWindow::MiloWindow() :
-	MiloWindow(MiloPanel::makePanel(EqnPanel::name, "#"))
-{
-}
+static MiloApp& app = MiloApp::getGlobal(); ///< Reference to current app
 
 unordered_map<string, menu_handler> MiloApp::menu_map = {
-	{ "undo",   []() { MiloApp::getGlobal().getWindow().getPanel().pushUndo(); } },
-	{ "redraw", []() { MiloApp::getGlobal().redraw_screen(); } },
+	{ "undo",   []() { if (app.hasPanel()) { app.getPanel().popUndo(); } } },
+	{ "redraw", []() { app.redraw_screen(); } },
 	{ "quit",   []() { fRunning = false; } }
 };
 
@@ -127,13 +122,31 @@ string KeyEvent::toString() const
 		return string("Key event: ") + mod_string.at(m_mod) + key_string.at(m_key);
 }
 
-MiloPanelPtr MiloPanel::makePanel(const string& name, const string& init)
+MiloPanelPtr MiloPanel::make(const string& name,
+							 const string& init,
+							 GraphicsPtr gc,
+							 MiloWindow* win)
 {
 	auto panel_entry = panel_map.find(name);
 	if (panel_entry != panel_map.end()) {
-		return (panel_entry->second)(init);
+		return (panel_entry->second)(init, gc, win);
 	}
 	return MiloPanelPtr();;
+}
+
+void MiloWindow::stepPanel(bool dir)
+{
+	if (dir) {
+		++m_current_panel;
+		if (m_current_panel == m_panels.end()) {
+			m_current_panel = m_panels.begin();
+		}
+	} else {
+		if (m_current_panel == m_panels.begin()) {
+			m_current_panel = m_panels.end();
+		}
+		--m_current_panel;
+	}
 }
 
 bool MiloApp::isRunning()

@@ -410,17 +410,16 @@ bool EqnPanel::do_space(const KeyEvent& event)
 
 bool EqnPanel::do_mouse_pressed(const MouseEvent& mouse)
 {
-	auto& gc = MiloApp::getGlobal().getGraphics();
 	mouse.getCoords(m_start_mouse_x, m_start_mouse_y);
 	LOG_TRACE_MSG("mouse press x: " + to_string(m_start_mouse_x) +
 				            ", y: " + to_string(m_start_mouse_y));
-	m_start_select = m_eqn->findNode(gc, m_start_mouse_x, m_start_mouse_y);
+	m_start_select = m_eqn->findNode(*m_gc, m_start_mouse_x, m_start_mouse_y);
 	if (m_start_select == nullptr) {
 		return false;
 	}
 	LOG_TRACE_MSG("node found: " + m_start_select->toString());
 	m_eqn->setSelect(m_start_select);
-	m_eqn->draw(gc, true);
+	m_eqn->draw(*m_gc);
 	return false;
 }
 
@@ -438,16 +437,15 @@ bool EqnPanel::do_mouse_released(const MouseEvent&)
 
 bool EqnPanel::do_mouse_clicked(const MouseEvent& mouse)
 {
-	auto& gc = MiloApp::getGlobal().getGraphics();
 	int mouse_x, mouse_y;
 	mouse.getCoords(mouse_x, mouse_y);
 	LOG_TRACE_MSG("mouse clicked x: " + to_string(mouse_x) + ", y: " + to_string(mouse_y));
-	Node* node = m_eqn->findNode(gc, mouse_x, mouse_y);
+	Node* node = m_eqn->findNode(*m_gc, mouse_x, mouse_y);
 	if (node == nullptr) return false;
 	LOG_TRACE_MSG("node found: " + node->toString());
 	m_eqn->clearSelect();
 	m_eqn->selectNodeOrInput(node);
-	m_eqn->draw(gc, true);
+	m_eqn->draw(*m_gc);
 	return true;	
 }
 
@@ -456,7 +454,7 @@ bool EqnPanel::do_mouse_double(const MouseEvent& mouse)
 	int mouse_x, mouse_y;
 	mouse.getCoords(mouse_x, mouse_y);
 	LOG_TRACE_MSG("mouse double clicked x: " + to_string(mouse_x) + ", y: " + to_string(mouse_y));
-	Node* node = m_eqn->findNode(MiloApp::getGlobal().getGraphics(), mouse_x, mouse_y);
+	Node* node = m_eqn->findNode(*m_gc, mouse_x, mouse_y);
 	if (node == nullptr || node == m_eqn->getCurrentInput()) return false;
 	LOG_TRACE_MSG("node found: " + node->toString());
 	if (node->getType() == Input::type) {
@@ -472,7 +470,6 @@ bool EqnPanel::do_mouse_double(const MouseEvent& mouse)
 
 bool EqnPanel::do_mouse_position(const MouseEvent& mouse)
 {
-	auto& gc = MiloApp::getGlobal().getGraphics();
 	Box box = { 0, 0, 0, 0 };
 	if (m_start_mouse_x > 0 && m_start_mouse_y > 0) {
 		int event_x = -1, event_y = -1;
@@ -488,22 +485,22 @@ bool EqnPanel::do_mouse_position(const MouseEvent& mouse)
 		mouse.getCoords(m_start_mouse_x, m_start_mouse_y);
 	}
 	if (m_start_select != nullptr && box.area() > 1 ) {
-		Node* new_select = m_eqn->findNode(gc, box);
+		Node* new_select = m_eqn->findNode(*m_gc, box);
 		LOG_TRACE_MSG("node found: " + ((new_select == nullptr) ? "None" : new_select->toString()));
 		if (new_select != nullptr && new_select->getDepth() < m_start_select->getDepth()) {
 			m_start_select = new_select;
 		}
-		m_eqn->selectBox(gc, m_start_select, box);
-		m_eqn->draw(gc, true);
+		m_eqn->selectBox(*m_gc, m_start_select, box);
+		m_eqn->draw(*m_gc);
 	}
 	else if (m_start_select == nullptr && box.area() > 0) {
-		m_start_select = m_eqn->findNode(gc, box);
+		m_start_select = m_eqn->findNode(*m_gc, box);
 		LOG_TRACE_MSG("node found: " + ((m_start_select == nullptr) ?
 										"None" :
 										m_start_select->toString()));
 		if (m_start_select != nullptr) {
 			m_eqn->setSelect(m_start_select);
-			m_eqn->draw(gc, true);
+			m_eqn->draw(*m_gc);
 		}
 	}
 	return false;
@@ -614,7 +611,7 @@ void EqnPanel::doKey(const KeyEvent& key)
 		fChange = (key_entry->second)(*this, key);
 	}
 	if (fChange) {
-		doDraw();
+		calculateSize();
 		pushUndo();
 	}
 }
@@ -627,7 +624,7 @@ void EqnPanel::doMouse(const MouseEvent& mouse)
 		fChange = (mouse_entry->second)(*this, mouse);
 	}
 	if (fChange) {
-		doDraw();
+		calculateSize();
 		pushUndo();
 	}
 }
@@ -644,7 +641,7 @@ bool EqnPanel::doMenu(const string& menuFunctionName)
 	if (menu_entry != menu_map.end()) {
 		fChange = (menu_entry->second)(*this);
 		if (fChange) {
-			doDraw();
+			calculateSize();
 			pushUndo();
 		}
 		return true;
@@ -664,7 +661,7 @@ void EqnPanel::popUndo()
 	if (undo_eqn) {
 		m_eqn = undo_eqn;
 		LOG_TRACE_MSG("undo to " + m_eqn->toString());
-		m_eqn->draw(MiloApp::getGlobal().getGraphics(), true);
+		m_eqn->draw(*m_gc);
 	}
 }
 
@@ -693,7 +690,13 @@ void EqnPanel::getCursorOrig(int& x, int& y)
 
 void EqnPanel::doDraw()
 {
-	m_eqn->draw(MiloApp::getGlobal().getGraphics(), m_fRefresh);
+	m_eqn->setSelect(*m_gc);
+	m_eqn->getRoot()->draw(*m_gc);
 }
 
-
+Box EqnPanel::calculateSize()
+{
+	m_eqn->getRoot()->calculateSize(*m_gc);
+	m_eqn->getRoot()->calculateOrigin(*m_gc, 0, 0);
+	return m_eqn->getRoot()->getFrame().box;
+}

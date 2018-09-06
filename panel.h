@@ -27,6 +27,7 @@
 #include <unordered_map>
 #include <string>
 #include <memory>
+#include "milo.h"
 #include "ui.h"
 
 /**
@@ -66,15 +67,8 @@ namespace UI {
 		//@{
 		/** Default Constructor for EqnPanel initializing Equation with single input.
 		 */
- 	    EqnPanel() : MiloPanel(),  m_eqn(new Equation("#")) {}
-
-		/** Constructor for EqnPanel initializing Equation with text stream.
-		 */
-	    EqnPanel(std::istream& is) : MiloPanel(), m_eqn(new Equation(is)) {}
-
-		/** Constructor for EqnPanel initializing Equation with string.
-		 */
-        EqnPanel(const std::string& eq) : MiloPanel(), m_eqn(new Equation(eq)) {}
+	    EqnPanel(const std::string& init, GraphicsPtr gc, MiloWindow* win) :
+		    MiloPanel(gc, win),  m_eqn(new Equation(init)) { pushUndo(); }
 
 		~EqnPanel() {} ///< Virtual desctructor.
 		//@}
@@ -102,6 +96,10 @@ namespace UI {
 		/** Handle redraw event
 		 */
 		void doDraw();
+
+		/** Calculate size of panel.
+		 */
+		Box calculateSize();
 		
 		/**
 		 * Push state of panel to undo stack.
@@ -166,19 +164,12 @@ namespace UI {
 			m_eqn.reset(new Equation(is));
 			return *m_eqn;
 		}
-
-		/**
-		 * Set drawing refresh state for panel
-		 * @param refresh If true, refresh on every draw
-		 */
-		void set_refresh(bool refresh) { m_fRefresh = refresh; }
 		//@}
 
 		static const std::string name; ///< Name of this panel
 	private:
 		EqnPtr      m_eqn;              ///< Shared pointer to current equation.
 		EqnUndoList m_eqns;             ///< Equation undo stack
-		bool m_fRefresh = true;         ///< Refresh on very draw by default
 		Node* m_start_select = nullptr; ///< If not null, node is selected.
 		int m_start_mouse_x = -1;       ///< Horiz coord of start of mouse drag.
 		int m_start_mouse_y = -1;       ///< Vertical coord of start of mouse drag

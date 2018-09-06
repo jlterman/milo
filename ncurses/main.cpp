@@ -40,28 +40,9 @@ class CursesGraphics : public Graphics
 public:
 	/** @name Constructor and Virtual Destructor */
 	//@{
-	CursesGraphics() { 
-		if (!init) {
-			setenv("TERM", "xterm-milo", true);
-			setlocale(LC_ALL,"");
-			initscr(); raw(); noecho();
-#ifndef DEBUG
-			curs_set(0);
-#endif
-			keypad(stdscr, TRUE); mouseinterval(300);
-			mousemask(ALL_MOUSE_EVENTS | REPORT_MOUSE_POSITION, NULL);
-			m_has_colors = (has_colors() == TRUE);
-			if (m_has_colors) {
-				start_color();/* Start color */
-				init_color(COLOR_WHITE, 1000, 1000, 1000);
-				assume_default_colors(COLOR_BLACK, COLOR_WHITE);
-				for (int i = Graphics::Color::RED; i <= Graphics::Color::WHITE; ++i)
-					init_pair(i, COLOR_BLACK + i, COLOR_WHITE);
-			}
-			init = true;
-		}
-	}
-	~CursesGraphics() { endwin(); }
+	CursesGraphics() : m_has_colors(has_colors()) {}
+	
+	~CursesGraphics() {}
 	//@}
 
 	/** @name Virtual Public Member Functions */
@@ -129,7 +110,7 @@ public:
 			if (chrAttr != NONE) c |= attribute_map.at(chrAttr);
 			if (m_select.inside(x, y)) c |= A_REVERSE;
 			if (color != BLACK && m_has_colors) attron(COLOR_PAIR(color));
-			mvaddch(y + m_yOrig, x + m_xOrig, c);
+			mvaddch(y + m_frame.y0(), x + m_frame.x0(), c);
 			if (color != BLACK && m_has_colors) attroff(COLOR_PAIR(color));
 		}
 		else {
@@ -150,7 +131,7 @@ public:
 		if (m_select.inside(x, y)) attron(A_REVERSE);
 		if (chrAttr != NONE) attron(attribute_map.at(chrAttr));
 
-		move(y + m_yOrig, x + m_xOrig); printw(s.c_str());
+		move(y + m_frame.y0(), x + m_frame.x0()); printw(s.c_str());
 
 		if (color != BLACK && m_has_colors) attroff(COLOR_PAIR(color));
 		if (m_select.inside(x, y)) attroff(A_REVERSE);
@@ -224,7 +205,7 @@ public:
 	 */
 	void setSelect(int x, int y, int x0, int y0) { 
 		Graphics::setSelect(x, y, x0, y0);
-		for (int j = 0; j < y; ++j) mvchgat(m_yOrig + y0 + j, m_xOrig + x0, x, A_REVERSE, 0, NULL);
+		for (int j = 0; j < y; ++j) mvchgat(m_frame.y0() + y0 + j, m_frame.x0() + x0, x, A_REVERSE, 0, NULL);
 	}
 	//@}
 
@@ -237,7 +218,7 @@ public:
 	 * @return Character at x,y coordinate.
 	 */
 	unsigned int ins(int x, int y) {
-		return mvinch(y + m_yOrig, x + m_xOrig);
+		return mvinch(y + m_frame.y0(), x + m_frame.x0());
 	}
 
 	/**
@@ -257,30 +238,19 @@ public:
 			return getch();
 		}
 		curs_set(2);
-		mvaddch(y + m_yOrig, x + m_xOrig, ' '); 
-		move(y + m_yOrig, x + m_xOrig);
+		mvaddch(y + m_frame.y0(), x + m_frame.x0(), ' '); 
+		move(y + m_frame.y0(), x + m_frame.x0());
 		int ch = getch();
 #ifndef DEBUG
 		curs_set(0);
 #endif
-		mvaddch(y + m_yOrig, x + m_xOrig, '?'); 
+		mvaddch(y + m_frame.y0(), x + m_frame.x0(), '?'); 
 		return ch;
-	}
-
-	/**
-	 * Static fucntion that return singleton CursesGraphics object attached to screen
-	 * @return CursesGraphics singleton.
-	 */
-	static CursesGraphics& getInstance() {
-		static CursesGraphics draw;
-		
-		return draw;
 	}
 	//@}
 
 private:
-	static bool init;       ///< Singleton has been initialized.
-	bool m_has_colors;      ///< If true, flag is screen has colors.
+    bool m_has_colors;      ///< If true, flag is screen has colors.
 	int m_xMouse;           ///< Last mouse horizontal coordinate
 	int m_yMouse;           ///< Last mouse vertical coordinate
 
@@ -302,7 +272,7 @@ private:
 	 */
 	void at(int x, int y, int c) {
 		if (m_select.inside(x, y)) c |= A_REVERSE;
-		mvaddch(y + m_yOrig, x + m_xOrig, c);
+		mvaddch(y + m_frame.y0(), x + m_frame.x0(), c);
 	}
 };
 
@@ -312,11 +282,18 @@ private:
 class CursesWindow : public MiloWindow
 {
 public:
-	CursesWindow() : MiloWindow() {}
+	CursesWindow() : MiloWindow("equation", "#", new CursesGraphics()) {}
 
 	~CursesWindow() {}
 
-	void makeTopWindow() {}
+	/**
+	 * Find panel that applies to mouse event and have it
+	 * handle event in local coords.
+	 * @param mouse Mouse event.
+	 */
+	void doMouse(const UI::MouseEvent& mouse);
+
+	void redraw();
 };
 
 /**
@@ -327,12 +304,28 @@ class CursesApp : public MiloApp
 public:
 	/** @name Constructors and Destructor */
 	//@{
-	CursesApp() : MiloApp(MiloWindowPtr(new CursesWindow())), m_menubar(m_menuXML)
+	CursesApp() : MiloApp(new CursesWindow()), m_menubar(m_menuXML)
 	{
+		setenv("TERM", "xterm-milo", true);
+		setlocale(LC_ALL,"");
+		initscr(); raw(); noecho();
+#ifndef DEBUG
+		curs_set(0);
+#endif
+		keypad(stdscr, TRUE); mouseinterval(300);
+		mousemask(ALL_MOUSE_EVENTS | REPORT_MOUSE_POSITION, NULL);
+		bool fHasColors = (has_colors() == TRUE);
+		if (fHasColors) {
+			start_color();/* Start color */
+			init_color(COLOR_WHITE, 1000, 1000, 1000);
+			assume_default_colors(COLOR_BLACK, COLOR_WHITE);
+			for (int i = Graphics::Color::RED; i <= Graphics::Color::WHITE; ++i)
+				init_pair(i, COLOR_BLACK + i, COLOR_WHITE);
+		}
 		m_menubar.draw();
 	}
 
-	~CursesApp() {}
+	~CursesApp() { endwin(); }
 	//@}
 
 	/** @name Virtual Public Member Functions */
@@ -341,12 +334,6 @@ public:
 	 * Redraw entire screen.
 	 */
 	void redraw_screen();
-
-	/**
-	 * Get graphics context.
-	 * @return Graphics context object.
-	 */
-	Graphics& getGraphics() { return m_gc; }
 
 	/**
 	 * Get key event from ncurses code.using key_map
@@ -366,11 +353,40 @@ public:
 	/** Run main event loop
 	 */
 	void do_loop();
+
+	/**
+	 * Get CurseGraphics context.
+	 * @return CursesGraphics references.
+	 */
+	CursesGraphics& getGraphics() {
+		if (hasPanel()) {
+			return dynamic_cast<CursesGraphics&>(getPanel().getGraphics());
+		}
+		else {
+			return m_default_graphics;
+		}
+	}
+
+	/**
+	 * Get CursesWindow of top window.
+	 * @return CursesWindow reference.
+	 */
+	CursesWindow& getWindow() {
+		return dynamic_cast<CursesWindow&>(*(m_current_window->get()));
+	}
 	//@}
 
 private:
+	CursesGraphics m_default_graphics; // Graphics context for no panel
 	MenuBar m_menubar;   ///< menu bar
-	CursesGraphics m_gc; ///< Graphics context
+
+	/**
+	 * GUI specific virtual member function to put current window on top.
+	 */
+	void makeTopWindow()
+	{
+		redraw_screen();
+	}
 
 	/**
 	 * Map ncurses key code (modulo mouse mask) to a mouse event.
@@ -386,8 +402,6 @@ private:
 	 */
 	static constexpr const char* m_menuXML = "/usr/local/milo/data/menu/menu.xml";
 };
-
-bool CursesGraphics::init = false;
 
 CursesApp app; ///< Instance of application class
 
@@ -678,6 +692,37 @@ const unordered_map<int, MouseEvent> CursesApp::mouse_event_map = {
 	{ 0x18000000, MouseEvent(Mouse::POSITION, 0, Modifiers::NO_MOD) }
 };
 
+void CursesWindow::redraw()
+{
+	int h0 = 0, w0 = 0;
+	for ( auto p : m_panels ) {
+		Box b = p->calculateSize();
+		h0 += b.height() + 2;
+		w0 = max(w0, b.width() + 2);
+	}
+	int h_max, w_max;
+	getmaxyx(stdscr, h_max, w_max);
+	h0 = 1 + (h_max - 1 - h0)/2;
+	w0 = (w_max - w0)/2;
+	for ( auto p : m_panels ) {
+		Box b = p->getGraphics().getBox();
+		p->getGraphics().set(w_max, b.height() + 2, w0, h0);
+		h0 += b.height() + 2;
+		p->doDraw();
+	}	
+}
+
+void CursesWindow::doMouse(const MouseEvent& mouse)
+{
+	int x, y;
+	mouse.getCoords(x, y);
+	for ( auto p : m_panels ) {
+		if (p->getGraphics().getBox().inside(x, y)) {
+			p->doMouse(mouse);
+		}
+	}
+}
+
 MouseEvent CursesApp::getMouseEvent(int code)
 {
 	constexpr int MOUSE_EVENT_MASK = 0x10000000;
@@ -701,21 +746,19 @@ MouseEvent CursesApp::getMouseEvent(int code)
 void CursesApp::redraw_screen()
 {
 	clear();
-	getWindow().getPanel().doDraw();
+	getWindow().redraw();
 	m_menubar.draw();
 	refresh();
 }
 
 void CursesApp::do_loop()
 {
-	CursesGraphics& gcurses = dynamic_cast<CursesGraphics&>(getGraphics());
-	
 	while (UI::MiloApp::isRunning()) {
 		int xCursor = 0, yCursor = 0;
 		int code = 0;
 		redraw_screen();
-		if (m_menubar.active()) {
-			code = gcurses.getChar(0, 0, false);
+		if (m_menubar.active() || !hasPanel()) {
+			code = getGraphics().getChar(0, 0, false);
 			MouseEvent mouseEvent = getMouseEvent(code);
 			if (mouseEvent) {
 				m_menubar.handleMouse(mouseEvent);
@@ -725,13 +768,18 @@ void CursesApp::do_loop()
 			}
 			continue;
 		}
-		
-		getWindow().getPanel().getCursorOrig(xCursor, yCursor);
-		code = gcurses.getChar(yCursor, xCursor - 1, getWindow().getPanel().blink());
+
+		if (hasPanel()) {
+			getPanel().getCursorOrig(xCursor, yCursor);
+			code = getGraphics().getChar(yCursor, xCursor - 1, getPanel().blink());
+		}
+		else {
+			continue;
+		}
 		MouseEvent mouseEvent = getMouseEvent(code);
 		if (mouseEvent) {
 			if (!m_menubar.handleMouse(mouseEvent)) {
-				getWindow().getPanel().doMouse(mouseEvent);
+				getWindow().doMouse(mouseEvent);
 			}
 		}
 		else {
@@ -749,7 +797,7 @@ void CursesApp::do_loop()
 			}
 			
 			if (!m_menubar.doMenuKey(key_event)) {
-				getWindow().getPanel().doKey(key_event);
+				getPanel().doKey(key_event);
 			}
 		}
 	}
@@ -767,9 +815,8 @@ int main(int argc, char* argv[])
 	LOG_TRACE_MSG("Starting milo_ncurses...");
 
    	if (argc > 1) {
-		app.getWindow().getPanel().loadState(argv[1]);
+		app.getPanel().loadState(argv[1]);
 	}
-	app.getWindow().getPanel().pushUndo();
 	app.do_loop();
 	return 0;
 }

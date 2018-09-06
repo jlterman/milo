@@ -1,4 +1,4 @@
-/* Copyright (C) 2017 - James Terman
+/* Copyright (C) 2018 - James Terman
  *
  * milo is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -215,12 +215,11 @@ void Node::setUpDraw(UI::Graphics& gc)
 	gc.set(m_frame.box);
 }
 
-void Equation::draw(UI::Graphics& gc, bool fRefresh)
+void Equation::draw(UI::Graphics& gc)
 {
 	m_root->setUpDraw(gc);
 	setSelect(gc);
 	m_root->draw(gc);
-	if (fRefresh) gc.out();
 }
 
 

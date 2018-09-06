@@ -1,7 +1,7 @@
 #ifndef __SMART_H
 #define __SMART_H
 
-/* Copyright (C) 2017 - James Terman
+/* Copyright (C) 2018 - James Terman
  *
  * milo is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -102,6 +102,8 @@ public:
 	{
 		for ( T* n : li ) { this->push_back(n); }
 	}
+
+	explicit SmartVector(SmartPtr<T> sp) { this->base::push_back(sp); }
 		
 	/**
 	 * Constructor for SmartVector initialized with a single object

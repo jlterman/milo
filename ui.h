@@ -25,12 +25,13 @@
  * be ported.
  */
 
-#include <iostream>
+#include <fstream>
 #include <unordered_map>
 #include <string>
 #include <memory>
 #include "util.h"
-#include "milo.h"
+#include "smart.h"
+#include "xml.h"
 
 /**
  * User Interface for milo namespace.
@@ -45,6 +46,7 @@ namespace UI {
 
 	/** @name UI namespace Type Declerations  */
 	//@{
+	using GraphicsPtr = SmartPtr<Graphics>;            ///< Smart pointer for Graphics
 	using MiloWindowPtr = SmartPtr<MiloWindow>;        ///< Smart pointer for MiloWindow
 	using MiloWindowVector = SmartVector<MiloWindow>;  ///< Storage of MiloWindow pointers
 	using MiloWindowIter = MiloWindowVector::iterator; ///< Iterator of MiloWindow pointers vector
@@ -387,7 +389,7 @@ namespace UI {
 		 * @param y0 Vertical origin of differential.
 		 * @param variable Name of variable of differential.
 		 */
-		virtual void differential(int x0, int y0, char variable)=0;
+		virtual void differential(int x0, int y0, char variable) = 0;
 		
 		/**
 		 * Draw pair of parenthesis around a node of size x_size, y_size and origin x0,y0.
@@ -396,7 +398,7 @@ namespace UI {
 		 * @param x0 Horizontal origin of parenthesis.
 		 * @param y0 Vertical origin of parenthesis.
 		 */
-		virtual void parenthesis(int x_size, int y_size, int x0, int y0)=0;
+		virtual void parenthesis(int x_size, int y_size, int x0, int y0) = 0;
 		
 		/**
 		 * Draw a horizontal line starting at x0,y0 length x_size.
@@ -404,7 +406,7 @@ namespace UI {
 		 * @param x0 Horizontal origin of line.
 		 * @param y0 Vertical origin of line.
 		 */
-		virtual void horiz_line(int x_size, int x0, int y0)=0;
+		virtual void horiz_line(int x_size, int x0, int y0) = 0;
 		
 		/**
 		 * Draw a character at x,y with a color.
@@ -414,7 +416,7 @@ namespace UI {
 		 * @param chrAttr Attribute of character.
 		 * @param color Color of character.
 		 */
-		virtual void at(int x0, int y0, int c, Attributes chrAttr, Color color = BLACK)=0;
+		virtual void at(int x0, int y0, int c, Attributes chrAttr, Color color = BLACK) = 0;
 		
 		/**
 		 * Draw a string at x,y with a color.
@@ -424,79 +426,68 @@ namespace UI {
 		 * @param chrAttr Attribute of character.
 		 * @param color Color of line.
 		 */
-		virtual void at(int x0, int y0, const std::string& s, Attributes chrAttr, Color color = BLACK)=0;
+		virtual void at(int x0, int y0, const std::string& s, Attributes chrAttr, Color color = BLACK) = 0;
 
 		/**
 		 * Clear screen.
 		 */
-		virtual void clear_screen()=0;
+		virtual void clear_screen() = 0;
 		
 		/**
 		 * Flush all drawing so far to graphic interface.
 		 */
-		virtual void out()=0;
+		virtual void out() = 0;
 		
 		/**
 		 * Get height of text in pixels.
 		 * @return Height of text in pixels.
 		 */
-		virtual int getTextHeight()=0;
+		virtual int getTextHeight() = 0;
 		
 		/**
 		 * Get length of string in pixels.
 		 * @return Length of string in pixels.
 		 */
-		virtual int getTextLength(const std::string& s)=0;
+		virtual int getTextLength(const std::string& s) = 0;
 		
 		/**
 		 * Get length of character in pixels.
 		 * @return Length of character in pixels.
 		 */
-		virtual int getCharLength(char c)=0;
+		virtual int getCharLength(char c) = 0;
 		
 		/**
 		 * Get width of a parenthesis for a given height in pixels.
 		 * @return Width of parenthesis.
 		 */
-		virtual int getParenthesisWidth(int height = 1)=0;
+		virtual int getParenthesisWidth(int height = 1) = 0;
 		
 		/**
 		 * Get height of line in a division node.
 		 * @return Height of division line.
 		 */
-		virtual int getDivideLineHeight()=0;
+		virtual int getDivideLineHeight() = 0;
 		
 		/**
 		 * Get height of differential.
 		 * @param c Variable name of differential.
 		 * @return Height of differential in pixels.
 		 */
-		virtual int getDifferentialHeight(char c)=0;
+		virtual int getDifferentialHeight(char c) = 0;
 		
 		/**
 		 * Get width of differential.
 		 * @param c Variable name of differential.
 		 * @return Width of differential in pixels.
 		 */
-		virtual int getDifferentialWidth(char c)=0;
+		virtual int getDifferentialWidth(char c) = 0;
 		
 		/**
 		 * Get vertical offset of differential.
 		 * @param c Variable name of differential.
 		 * @return Vertical offset of differential in pixels.
 		 */
-		virtual int getDifferentialBase(char c)=0;
-		
-		/**
-		 * Set size and origin of this graphics window.
-		 * @param x Horizontal size of both graphics window.
-		 * @param y Vertical size of graphics window.
-		 * @param x0 Horizontal origin of graphics window.
-		 * @param y0 Vertical origin of graphics window.
-		 */
-		virtual void set(int x, int y, int x0 = 0, int y0 = 0) { 
-			m_xSize = x; m_ySize = y; m_xOrig = x0, m_yOrig = y0;
-		}
+		virtual int getDifferentialBase(char c) = 0;
 		
 		/**
 		 * Select the area of size x,y at origin x0,y0.
@@ -511,11 +502,28 @@ namespace UI {
 		/** @name Public helper member functions. */
 		//@{
 		/**
+		 * Get size of graphics area..
+		 * @return Box containing drawing area.
+		 */
+		Box getBox() { return m_frame; }
+
+		/**
+		 * Set size and origin of this graphics window.
+		 * @param x Horizontal size of both graphics window.
+		 * @param y Vertical size of graphics window.
+		 * @param x0 Horizontal origin of graphics window.
+		 * @param y0 Vertical origin of graphics window.
+		 */
+		void set(int x, int y, int x0 = 0, int y0 = 0) {
+			m_frame.set(x, y, x0, y0);
+		}
+
+		/**
 		 * Set size and origin of this graphics window from a rectangle.
 		 * @param box Rectangle containing origin and size of window.
 		 */
 		void set(const Box& box) { 
-			set(box.width(), box.height(), box.x0(), box.y0());
+			m_frame = box;
 		}
 		
 		/**
@@ -539,14 +547,11 @@ namespace UI {
 		 * @param[in,out] x Horizontal coordinate to be shifted.
 		 * @param[in,out] y Vertical coordinate to be shifted.
 		 */
-		void relativeOrig(int& x, int& y) { x -= m_xOrig; y -= m_yOrig; }
+		void relativeOrig(int& x, int& y) { x -= m_frame.x0(); y -= m_frame.y0(); }
 		//@}
 
 	protected:
-		int m_xSize;   ///< Horizontal size of graphic window.
-		int m_ySize;   ///< Vertical size of graphic window.
-		int m_xOrig;   ///< Horizontal origin of graphic window.
-		int m_yOrig;   ///< Vertical origin of graphic window.
+		Box m_frame;   ///< Frame of this panel.
 		Box m_select;  ///< Currently selected area.
 	};
 
@@ -554,30 +559,41 @@ namespace UI {
 	 * Template function to create a smart pointer of a particular type
 	 *
 	 * @param init String to initialize panel
+	 * @param gc Graphics object
+	 * @param win MiloWindow reference that contains panel
 	 * @return Smart pointer to panel
 	 */
-	template <class T> MiloPanelPtr createPanel(const std::string& init)
+	template <class T> MiloPanelPtr createPanel(const std::string& init,
+												GraphicsPtr gc,
+												MiloWindow* win)
 	{
-		return MiloPanelPtr(new T(init));
+		return MiloPanelPtr(new T(init, gc, win));
 	}
 
-	using panel_factory = MiloPanelPtr (*)(const std::string&);
+	/** Function pointer to return panel object with initilization string and Graphics object
+	 */
+	using panel_factory = MiloPanelPtr (*)(const std::string&, GraphicsPtr, MiloWindow*);
 	
 	/** MiloPanel is an abstract base class interface for all milo panels.
 	 *  This will provide hooks into the user interface.
 	 */
-	class MiloPanel
+	class MiloPanel : public std::enable_shared_from_this<MiloPanel>
 	{
 	public:
+		friend class MiloApp;
+		
 		/** @name Constructors and Virtual Destructor */
 		//@{
-		/** Constructor for MiloPanel initializing graphics context
+		/** Constructor for MiloPanel base class.
+		 * @param gc Graphics object
+		 * @param win MiloWindow reference that contains panel
 		 */
-        MiloPanel() {}
+	    MiloPanel(GraphicsPtr gc, MiloWindow* win) :
+		    m_gc(gc), m_win(win) {}
 
 		/** Virtual deconstructor for MiloPanel initializing graphics context
 		 */
-        ~MiloPanel() {}
+        virtual ~MiloPanel() {}
 		//@}
 
 		/** @name Virtual Public Member Functions */
@@ -604,16 +620,20 @@ namespace UI {
 		/** Handle redraw event
 		 */
 		virtual void doDraw() = 0;
+
+		/** Calculate size of panel.
+		 */
+		virtual Box calculateSize() = 0;
 		
 		/**
 		 * Push state of panel to undo stack.
 		 */
-		virtual void pushUndo()=0;
+		virtual void pushUndo() = 0;
 		
 		/**
 		 * Restore state of panel on top of undo stack.
 		 */
-		virtual void popUndo()=0;
+		virtual void popUndo() = 0;
 
 		/**
 		 * Save panel to XML stream
@@ -626,6 +646,29 @@ namespace UI {
 		 * @param is input stream
 		 */
 		virtual void loadState(std::istream& is) = 0;
+
+		/**
+		 * Check where there is an active input in this panel.
+		 * @return If true, there is an active input.
+		 */
+		virtual bool blink() = 0;
+
+		/**
+		 * Get coordinates of current active input.
+		 * @param[out] x Horizontal origin of curosr.
+		 * @param[out] y Vertical origin cursor.
+		 */
+		virtual void getCursorOrig(int& x, int& y) = 0;
+		//@}
+
+		/** @name Public helper member functions */
+		//@{
+
+		/**
+		 * Get graphics context.
+		 * @return Graphics context object.
+		 */
+		Graphics& getGraphics() { return *m_gc; }
 
 		/**
 		 * Save panel to file
@@ -644,50 +687,61 @@ namespace UI {
 			std::ifstream ifs(filename);
 			loadState(ifs);
 		}
-
-		/**
-		 * Check where there is an active input in this panel.
-		 * @return If true, there is an active input.
-		 */
-		virtual bool blink() = 0;
-
-		/**
-		 * Get coordinates of current active input.
-		 * @param[out] x Horizontal origin of curosr.
-		 * @param[out] y Vertical origin cursor.
-		 */
-		virtual void getCursorOrig(int& x, int& y) = 0;
 		//@}
-
 		/** 
 		 * Get a smart pointer to a panel class object by name.
 		 * @param name Name of panel class object to create
 		 * @param init Initilization xml string
+		 * @param gc Graphics object
+		 * @param win MiloWindow reference that contains panel
 		 * @return Smart pointer to panel class object
 		 */
-		static MiloPanelPtr makePanel(const std::string& name, const std::string& init);
+		static MiloPanelPtr make(const std::string& name,
+								 const std::string& init,
+								 GraphicsPtr gc,
+								 MiloWindow* win);
 		
 	protected:
+		GraphicsPtr m_gc;  ///< Graphics object for panel.
+		MiloWindow* m_win; ///< Windows object for this panel.
+		
 		static std::unordered_map<std::string, panel_factory> panel_map; ///< Map of name to panel create functions.
 	};
 
 	/**
-	 * Abstract base class that provides a window class object and a list of panels.
+	 * Milo Window class that contains a list of panels.
 	 */
-	class MiloWindow
+	class MiloWindow : public std::enable_shared_from_this<MiloWindow>
 	{
 	public:
+		friend class MiloApp;
+
 		/** @name Constructors and Virtual Destructor */
 		//@{
 
 		/**
 		 * Constructor with new panel.
+		 * @param name Name of panel class.
+		 * @param init Initialization string.
+		 * @param gc   Graphics object.
 		 */
-	    MiloWindow(MiloPanelPtr panel) :
-		    m_panels({panel}), m_current_panel(m_panels.begin()) {}
+	    MiloWindow(const std::string& name,
+				   const std::string& init,
+				   GraphicsPtr gc) :
+		    m_panels(MiloPanel::make(name, init, gc, this)),
+			m_current_panel(m_panels.begin()) {}
 
-	    MiloWindow();
-
+		/**
+		 * Constructor with new panel.
+		 * @param name Name of panel class.
+		 * @param init Initialization string.
+		 * @param gc   Graphics object.
+		 */
+		MiloWindow(const std::string& name,
+				   const std::string& init,
+				   Graphics* gc) :
+			MiloWindow(name, init, GraphicsPtr(gc)) {}
+			
 		/**
 		 * Abstract base class needs virtual destructor.
 		 */
@@ -724,19 +778,50 @@ namespace UI {
 		void deletePanel() {
 			m_current_panel = m_panels.erase(m_current_panel);
 		}
-		//@}
 
-		/** @name Virtual Public Member Functions */
-		//@{
-		/** 
-		 * Make this window top window.
+		/**
+		 * Get iterator of panel
+		 * @param win MiloPanel reference.
+		 * @return Iterator of panel.
 		 */
-		virtual void makeTopWindow()=0;
-		//@}
+		MiloPanelIter getPanelIterator(const MiloPanel& panel) {
+			for ( auto it = m_panels.begin(); it != m_panels.end(); ++it ) {
+				if (panel.shared_from_this() == (*it)->shared_from_this()) {
+					return it;
+				}
+			}
+			return m_panels.end();;
+		}
 
+		/**
+		 * Set panel to be current active panel.
+		 * @param panel MiloPanel reference.
+		 */
+		void setActivePanel(const MiloPanel& panel) {
+			m_current_panel = getPanelIterator(panel);
+		}
+
+		/**
+		 * Step through panel list
+		 * @param dir Postive if true.
+		 */
+		void stepPanel(bool dir = true);
+
+		/**
+		 * Return iterator of first panel.
+		 * @return Iterator of first panel.
+		 */
+		MiloPanelIter begin() { return m_panels.begin(); }
+
+		/**
+		 * Return iterator of end panel iterator.
+		 * @return End panel iterator.
+		 */
+		MiloPanelIter end() { return m_panels.end(); }
+		//@}
 	protected:
-		MiloPanelVector m_panels;      ///< List of panels for this window
-		MiloPanelIter m_current_panel; ///< Current active panel
+		MiloPanelVector m_panels;      ///< List of panels for this window.
+		MiloPanelIter m_current_panel; ///< Current active panel.
 	};
 
 	/**
@@ -750,13 +835,7 @@ namespace UI {
 		/**
 		 * Redraw entire screen.
 		 */
-		virtual void redraw_screen()=0;
-
-		/**
-		 * Get graphics context.
-		 * @return Graphics context object.
-		 */
-		virtual Graphics& getGraphics()=0;
+		virtual void redraw_screen() = 0;
 		//@}
 
 		/** @name Public helper member functions. */
@@ -777,6 +856,12 @@ namespace UI {
 		 * @return Active window.
 		 */
 		MiloWindow& getWindow() { return *(m_current_window->get()); }
+
+		/**
+		 * Get active panel from active window
+		 * @return Active panel
+		 */
+		MiloPanel& getPanel() { return *((*m_current_window)->m_current_panel->get()); }
 
 		/**
 		 * Add new window to application after current window.
@@ -800,6 +885,71 @@ namespace UI {
 		void closeWindow(MiloWindowIter it) {
 			m_current_window = m_windows.erase(it);
 		}
+
+		/**
+		 * Check for existing window.
+		 * @return True if there is a window.
+		 */
+		bool hasWindow() { return !m_windows.empty(); }
+
+		/**
+		 * Check for existing panel in current window
+		 * @return True if there is a panel.
+		 */
+		bool hasPanel() { return !(m_windows.empty() || (*m_current_window)->m_panels.empty()); }
+
+		/**
+		 * Get iterator of window
+		 * @param win MiloWindow reference.
+		 * @return Iterator of window.
+		 */
+		MiloWindowIter getWindowIterator(const MiloWindow& win) {
+			for ( auto it = m_windows.begin(); it != m_windows.end(); ++it ) {
+				if (win.shared_from_this() == (*it)->shared_from_this()) {
+					return it;
+				}
+			}
+			return m_windows.end();
+		}
+
+		/**
+		 * Set window to be current top window.
+		 * @param win MiloWindow reference.
+		 */
+		void setTopWindow(const MiloWindow& win) {
+			m_current_window = getWindowIterator(win);
+			makeTopWindow();
+		}
+
+		/**
+		 * Step through window list
+		 * @param dir Postive if true.
+		 */
+		void stepWindow(bool dir = true) {
+			if (dir) {
+				++m_current_window;
+				if (m_current_window == m_windows.end()) {
+					m_current_window = m_windows.begin();
+				}
+			} else {
+				if (m_current_window == m_windows.begin()) {
+					m_current_window = m_windows.end();
+				}
+				--m_current_window;
+			}
+		}
+
+		/**
+		 * Return iterator of first window.
+		 * @return Iterator of first window.
+		 */
+		MiloWindowIter begin() { return m_windows.begin(); }
+
+		/**
+		 * Return iterator of end window iterator.
+		 * @return End window iterator.
+		 */
+		MiloWindowIter end() { return m_windows.end(); }
 		//@}
 
 		/**
@@ -825,6 +975,12 @@ namespace UI {
 		    m_windows({win}), m_current_window(m_windows.begin()) {}
 
 		/**
+		 * Protected constructor for singleton base class.
+		 * @param win Default window
+		 */
+	    MiloApp(MiloWindow* win) : MiloApp(MiloWindowPtr(win)) {}
+
+		/**
 		 * Abstract base class needs virtual destructor.
 		 */
 		~MiloApp() {}
@@ -836,6 +992,10 @@ namespace UI {
 		static MiloApp& m_current; ///< Reference to current application singleton
 
 	private:
+		/**
+		 * GUI specific virtual member function to put current window on top.
+		 */
+		virtual void makeTopWindow() = 0;
 		
 		/**
 		 * Map of names to functions that handle menu items.
@@ -855,24 +1015,24 @@ namespace UI {
 		 * Start of menu with attributes
 		 * @param attributes All menu settings in map.
 		 */
-		virtual void define_menu(const StringMap& attributes)=0;
+		virtual void define_menu(const StringMap& attributes) = 0;
 
 		/**
 		 * No more menu items for current menu
 		 * @param name Name of menu coming to end
 		 */
-		virtual void define_menu_end(const std::string& name)=0;
+		virtual void define_menu_end(const std::string& name) = 0;
 
 		/**
 		 * Menu item for current menu
 		 * @param attributes All menu item settings in map.
 		 */
-		virtual void define_menu_item(const StringMap& attributes)=0;
+		virtual void define_menu_item(const StringMap& attributes) = 0;
 
 		/**
 		 * Menu line for current menu
 		 */
-		virtual void define_menu_line()=0;
+		virtual void define_menu_line() = 0;
 		//@}
 
 		/** @name Public helper member functions. */

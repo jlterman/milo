@@ -1,7 +1,3 @@
---keys PLUS,PLUS,a,b,(,c,d,+,e,f,TAB,c,o,s,(,x,PLUS,2,TAB,/,a,^,b,TAB,a,^,(,/,t,a,n,(,y,TAB,a,b,MINUS,c,d,PLUS,e,f,ENTER --test
----------
-(+cos(+x+2)+(+(+a)^(+(+(+ab-cd+ef)/(+tan(+y)))))/(+(+a)^(+b))+ab(+cd+ef))
----------
 <document>
   <equation>
     <expression>
@@ -100,14 +96,3 @@
     </expression>
   </equation>
 </document>
----------
-          /ab-cd+[31me[37mf\          
-          |--------|          
-          \ [32mt[37m[32ma[37m[32mn[37m(y) /          
-         a                    
-[32mc[37m[32mo[37m[32ms[37m(x+2)+-----------+ab(cd+[31me[37mf)
-              b               
-             a                
----------
-XML test passed
----------

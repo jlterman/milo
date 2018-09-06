@@ -1,4 +1,4 @@
-/* Copyright (C) 2017 - James Terman
+/* Copyright (C) 2018 - James Terman
  *
  * milo is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,7 +20,7 @@
  * This file allows you to test the equation engine of milo.
  */
 
-#include <iostream>
+#include <fstream>
 #include <vector>
 #include <map>
 #include "milo.h"
@@ -38,7 +38,7 @@ class AsciiGraphics : public Graphics
 public:
 	/** @name Constructor and Virtual Destructor */
 	//@{
-	AsciiGraphics(ostream& os) : Graphics(), m_os(os) {}
+	AsciiGraphics(ostream& os) : Graphics(), m_os(os) { set(80, 24, 0, 0); }
 
 	~AsciiGraphics() { }
 	//@}
@@ -184,8 +184,8 @@ void AsciiGraphics::at(int x, int y, const string& s, Attributes, Color color)
 
 void AsciiGraphics::clear_screen()
 { 
-	for (int i = 0; i < m_ySize; ++i ) {
-		for (int j = 0; j < m_xSize; ++j) {
+	for (int i = 0; i < m_frame.height(); ++i ) {
+		for (int j = 0; j < m_frame.width(); ++j) {
 			m_field[i][j] = ' ';
 			m_colors[i][j] = Color::BLACK;
 		}
@@ -194,8 +194,8 @@ void AsciiGraphics::clear_screen()
 
 void AsciiGraphics::out()
 { 
-	for (int i = 0; i < m_ySize; ++i ) {
-		for (int j = 0; j < m_xSize; ++j) {
+	for (int i = 0; i < m_frame.height(); ++i ) {
+		for (int j = 0; j < m_frame.width(); ++j) {
 			if (m_colors[i][j]) m_os << "\033[3" + to_string(m_colors[i][j]) + "m";
 			m_os << m_field[i][j];
 			if (m_colors[i][j]) m_os << "\033[37m";
@@ -232,37 +232,21 @@ void AsciiGraphics::differential(int x0, int y0, char variable)
 }
 
 /**
- * Application class to support AsciiGraphics
+ * Dummy class CursesApp
  */
+
 class AsciiApp : public MiloApp
 {
-public:
-	AsciiApp() : MiloApp(), m_gc(cout) {}
-
-	~AsciiApp() {}
-
-	/**
-	 * Dummy function for redraw entire screen.
-	 */
 	void redraw_screen() {}
 
-	/**
-	 * Get graphics context.
-	 * @return Graphics context object.
-	 */
-	Graphics& getGraphics() { return m_gc; }
-
-private:
-	AsciiGraphics m_gc; ///< Ascii graphics context.
+	void makeTopWindow() {}
 };
 
-AsciiApp app;  /// Ascii app class object
+AsciiApp app;
+MiloApp&  MiloApp::m_current = app; ///< Dummy app object
 
-MiloApp& MiloApp::m_current = app;
-
-Graphics& gc = app.getGraphics(); /// Asciigraphics class objects
-
-EqnPanel panel; /// EqnPanel class object
+AsciiGraphics* gc = new AsciiGraphics(cout);   ///< Asciigraphics class object.
+EqnPanel panel("#", GraphicsPtr(gc), nullptr); ///< EqnPanel class object.
 
 /**
  * Load parsed equation string into global equation object.
@@ -305,8 +289,8 @@ static void test(const string&)
 	eqn.xml_out(xml);
 	cout << xml << endl;
 	cout << "---------" << endl;
-	eqn.draw(gc);
-	gc.out();
+	eqn.draw(*gc);
+	gc->out();
 	cout << "---------" << endl;
 	istringstream in(xml);
 	Equation new_eqn(in);
@@ -329,8 +313,8 @@ static void art(const string&)
 {
 	Equation& eqn = panel.getEqn();
 
-	eqn.draw(gc);
-	gc.out();
+	eqn.draw(*gc);
+	gc->out();
 }
 
 /** Normalize current equation.
@@ -353,17 +337,15 @@ static void keys(const string& keys)
 {
 	string input = keys;
 	string::size_type sep;
-	panel.set_refresh(false);
 	do {
 		sep = input.find(",");
-		gc.clear_screen();
+		gc->clear_screen();
 		panel.doKey(KeyEvent(input.substr(0, sep)));
 		if (sep != string::npos) {
 			input.erase(0, sep+1);
 		}
 	}
 	while (sep != string::npos);
-	panel.set_refresh(true);
 }
 
 /** Set geometry of internal ascii screen
@@ -375,7 +357,7 @@ static void geometry(const string& params)
 	auto sep = params.find(",");
 	int x = stoi(params.substr(0, sep));
 	int y = stoi(params.substr(sep+1));
-	gc.set(x, y);
+	gc->set(x, y, 0, 0);
 }
 
 /** Output help to standard output.

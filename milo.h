@@ -1,7 +1,7 @@
 #ifndef __MILO_H
 #define __MILO_H
 
-/* Copyright (C) 2017 - James Terman
+/* Copyright (C) 2018 - James Terman
  *
  * milo is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1387,9 +1387,8 @@ public:
 	/**
 	 * Draw equation in given graphic context.
 	 * @param gc Grahics context.
-	 * @param fRefresh If true, complete all drawing to graphics context.
 	 */
-	void draw(UI::Graphics& gc, bool fRefresh = false);
+	void draw(UI::Graphics& gc);
 
 	/**
 	 * Get equation object that is copy of this equation object.
@@ -1470,6 +1469,12 @@ public:
 	 * @param end   Node that ends selection.
 	 */
 	void setSelect(Node* start, Node* end = nullptr);
+
+	/**
+	 * Draw current selection in graphics context.
+	 * @param gc Graphics context.
+	 */
+	void setSelect(UI::Graphics& gc);
 
 	/**
 	 * Either select single node or if Input node make current input.
@@ -1567,12 +1572,6 @@ private:
 	int m_input_index = -1;        ///< Index of current input.
 	Node* m_selectStart = nullptr; ///< Node at start of selection.
 	Node* m_selectEnd = nullptr;   ///< Node at end of selection.
-
-	/**
-	 * Draw current selection in graphics context.
-	 * @param gc Graphics context.
-	 */
-	void setSelect(UI::Graphics& gc);
 
 	/**
 	 * Helper static function that parses term in string, load factors into array.
