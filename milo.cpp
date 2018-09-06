@@ -230,7 +230,7 @@ void Equation::eraseSelection(Node* node)
 	clearSelect();
 	if (start == m_root) {
 		if (!node) node = new Input(*this);
-		m_root = new Expression(node);
+		m_root = new Expression(node, *this);
 	}
 	else if (start == end) {
 		auto it = FactorIterator(start);
@@ -562,7 +562,7 @@ void FactorIterator::mergeNextTerm()
 Term* FactorIterator::splitTerm(bool fNeg)
 {
 	Term* oldTerm = m_pTerm;
-	Term* newTerm = new Term(m_node, m_gpExpr, fNeg);
+	Term* newTerm = new Term(m_node, m_node->m_eqn, m_gpExpr, fNeg);
 	erase();
 	while (m_node && m_pTerm == oldTerm) {
 		newTerm->factors.push_back(m_node);

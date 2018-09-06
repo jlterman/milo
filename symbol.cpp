@@ -1,8 +1,8 @@
-/*
+/**
  * symbol.cpp
  * This file is part of milo
  *
- * Copyright (C) 2015 - James Terman
+ * Copyright (C) 2018 - James Terman
  *
  * milo is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -125,8 +125,8 @@ bool Expression::simplify()
 void Expression::add(double n)
 {
 	if ( n == 0 ) return;
-	auto num = new Number(abs(n), nullptr);
-	auto term = new Term(num, this, (n < 0));
+	auto num = new Number(abs(n), m_eqn, nullptr);
+	auto term = new Term(num, m_eqn, this, (n < 0));
 	terms.push_back(term);
 }
 
@@ -138,7 +138,7 @@ void Expression::add(ExpressionPtr old_expr)
 void Term::multiply(double n)
 {
 	if ( n == 1 ) return;
-	auto num = new Number(abs(n), nullptr, (n < 0));
+	auto num = new Number(abs(n), m_eqn, nullptr, (n < 0));
 	factors.insert(factors.begin(), num);
 }
 
@@ -175,7 +175,7 @@ void Term::normalize()
 		if ( (*pos)->getNth() == 0 ) { 
 			pos = factors.erase(pos);
 			if ( factors.empty() ) {
-				factors.push_back(new Number(1, this));
+				factors.push_back(new Number(1, m_eqn, this));
 				break;
 			}
 			continue;
@@ -210,7 +210,7 @@ void Term::normalize()
 	}
 	if (zero) {
 		factors.clear();
-		factors.push_back(new Number(0, this));
+		factors.push_back(new Number(0, m_eqn, this));
 	} else if (!sign) {
 		negative();
 	}
@@ -274,7 +274,7 @@ bool Term::simplify(TermVector& terms, TermVector::iterator a, TermVector::itera
 	if ((*a)->factors.front()->getType() == Number::type) {
 		(*a)->factors.erase((*a)->factors.begin());
 	}
-	(*a)->factors.insert((*a)->factors.begin(), new Number(n, (*a)->getParent()));
+	(*a)->factors.insert((*a)->factors.begin(), new Number(n, (*a)->m_eqn, (*a)->getParent()));
 	terms.erase(b);
 	return true;
 }
@@ -292,10 +292,10 @@ void Power::normalize()
 	m_first->normalize();
 
 	if (getNth() != 1) {
-		Term* term = new Term(m_second);
+		Term* term = new Term(m_second.get(), m_eqn, nullptr);
 		term->multiply(getNth());
 		setNth(1);
-		m_second = new Expression(term, this);
+		m_second = new Expression(term, m_eqn, this);
 	}
 	m_second->normalize();
 
@@ -366,7 +366,7 @@ Node* Divide::normalize(Node* n)
 	Divide* d = dynamic_cast<Divide*>(n);
 	NodeVector factors = { d->m_first, d->m_second };
 	d->m_second->multNth(-1);
-	return new Expression(new Term(factors, nullptr), n->getParent());
+	return new Expression(new Term(factors, d->m_eqn, nullptr), d->m_eqn, n->getParent());
 }
 
 void Divide::normalize()

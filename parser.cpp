@@ -17,8 +17,8 @@
 
 /**
  * @file parser.cpp
- * This file contains the private classes Parser and EqnXMLParser and the member 
- * functions of other public classes that use them. Parser and EqnXMLParser are
+ * This file contains the private class Parser and the member 
+ * functions of other public classes that use them. Parser is
  * referenced as opaque references in other files.
  */
 
@@ -79,52 +79,6 @@ private:
 	size_t m_pos;    ///< Pointer to next character to be parsed.
 };
 
-/**
- * Read XML to build Equation.
- */
-class EqnXMLParser : public XML::Parser
-{
-public:
-	/**
-	 * Function pointer that takes XML and a parent node and 
-	 * returns new node object.
-	 */
-	using createPtr = Node* (*)(EqnXMLParser&, Node*);
-
-	/**
-	 * Constructor for EqnXMLParser.
-	 * @param in XML input stream.
-	 * @param eqn Equation object containing node tree.
-	 */
-    EqnXMLParser(istream& in, Equation& eqn) : XML::Parser(in, "document"), m_eqn(eqn) {}
-	~EqnXMLParser() {} ///< Virtual destructor.
-
-	/**
-	 * Get reference to Equation object.
-	 * @return Equation object reference.
-	 */
-	Equation& getEqn() const { return m_eqn; }
-
-	/**
-	 * Get next factor from xml.
-	 * @param parent Set parent of factor.
-	 * @return Parser factor or null if not found.
-	 */
-	Node* getFactor(Node* parent);
-
-	/**
-	 * Throw an error if there are attributes left.
-	 */
-	void assertNoAttributes() { if (hasAttributes()) syntaxError("Unknown attribute"); }
-private:
-	Equation& m_eqn; ///< Reference to Equation object.
-
-	/**
-	 * Map associating class Node names with a function that will create it.
-	 */
-	static const unordered_map<string, createPtr> create_factors;
-};
-
 // Get next character to be parsed or '\0' if at end.
 char Parser::next()
 {
@@ -144,18 +98,6 @@ bool Parser::match(const string& s)
 		return false;
 }
 
-// Look for XML for a node in parser. Return null if not found.
-Node* EqnXMLParser::getFactor(Node* parent)
-{
-	if (!check(XML::HEADER)) return nullptr;
-
-	next(XML::HEADER);
-	if (create_factors.find(getTag()) == create_factors.end()) return nullptr;
-
-	auto cp = create_factors.at(getTag());
-	return cp(*this, parent);
-}
-
 /* Serialize xml for Node object.
  * First output header with name of derived class and 
  * attributes nth, negatvie and select if needed.
@@ -170,9 +112,12 @@ void Node::out(XML::Stream& xml)
 	xml_out(xml);
 }
 
+Node::Node(Parser& p, Node* parent, bool fNeg, Select s) : 
+	m_eqn(p.getEqn()), m_parent(parent), m_sign(!fNeg), m_select(s) {}
+
 // Constructor for node class from XML parser.
-Node::Node(EqnXMLParser& in, Node* parent) : 
-	m_parent(parent), m_sign(true), m_select(NONE), m_nth(1)
+Node::Node(XML::Parser& in, Equation& eqn, Node* parent) : 
+	 m_eqn(eqn), m_parent(parent),m_sign(true), m_select(NONE), m_nth(1)
 {
 	// Check for name, value pairs to load in.
 	if (in.check(XML::NAME_VALUE)) in.next(XML::NAME_VALUE);
@@ -188,11 +133,11 @@ Node::Node(EqnXMLParser& in, Node* parent) :
 		if (pos == select_tags.end()) in.syntaxError("unknown select node value");
 		m_select = (Select) distance(select_tags.begin(), pos);
 		switch (m_select) {
-		    case START: in.getEqn().setSelectStart(this);
+		    case START: eqn.setSelectStart(this);
 			            break;
-		    case END:   in.getEqn().setSelectEnd(this);
+		    case END:   eqn.setSelectEnd(this);
 			            break;
-		    case ALL:   in.getEqn().setSelect(this);
+		    case ALL:   eqn.setSelect(this);
 			            break;
 		    default: 
 				   break;
@@ -202,16 +147,16 @@ Node::Node(EqnXMLParser& in, Node* parent) :
 		if (!isInteger(value)) in.syntaxError("not an integer");
 		m_nth = atoi(value.c_str());
 	}
-	in.getEqn().setSelectFromNode(this); // Register selection with Equation.
+	eqn.setSelectFromNode(this); // Register selection with Equation.
 }
 
 // Read in Equation from XML.
-void Equation::xml_in(EqnXMLParser& in)
+void Equation::xml_in(XML::Parser& in)
 {
 	// Read in equation header and then expression header.
-	in.next(XML::HEADER, "equation").next(XML::HEADER_END).next(XML::HEADER, Expression::name);
+	in.next(XML::HEADER_END).next(XML::HEADER, Expression::name);
 
-	m_root = new Expression(in, nullptr);
+	m_root = new Expression(in, *this, nullptr);
 	m_root->setDrawParenthesis(false);
 
 	in.next(XML::FOOTER);
@@ -220,7 +165,8 @@ void Equation::xml_in(EqnXMLParser& in)
 // Constructor for Equation read in from input stream.
 Equation::Equation(istream& is)
 {
-	EqnXMLParser in(is, *this);
+	XML::Parser in(is, "document");
+	in.next(XML::HEADER, "equation");
 	xml_in(in);
 }
 
@@ -237,7 +183,8 @@ Equation& Equation::operator=(const Equation& eqn)
 
 	// Read in serialized equation.
 	istringstream is(store);
-	EqnXMLParser in(is, *this);
+	XML::Parser in(is, "document");
+	in.next(XML::HEADER, "equation");
 	xml_in(in);
 	return *this;
 }
@@ -269,14 +216,20 @@ const string         Term::name = "term";         // Term class name.
  * pointer is to the node base class.
  */
 template <class T>
-static Node* create(EqnXMLParser& in, Node* parent)
+static Node* create(XML::Parser& in, Equation& eqn, Node* parent)
 {
-	return new T(in, parent);
+	return new T(in, eqn, parent);
 }
 
+/**
+ * Function pointer to create a new node.
+ */
+using createPtr = Node* (*)(XML::Parser&, Equation&, Node*);
 
-// Map of class name to named constructor.
-const unordered_map<string, EqnXMLParser::createPtr> EqnXMLParser::create_factors =
+/**
+ * Map of class name to named constructor.
+ */
+static const unordered_map<string, createPtr> create_factors =
 	{ { Differential::name, create<Differential> },
 	  {   Expression::name, create<Expression>   },
 	  {     Function::name, create<Function>     },
@@ -287,6 +240,24 @@ const unordered_map<string, EqnXMLParser::createPtr> EqnXMLParser::create_factor
 	  {        Input::name, create<Input>        },
 	  {        Power::name, create<Power>        },
 	};
+
+/**
+ * Get next factor from xml.
+ * @param parent Set parent of factor.
+ * @param eqn Equation associated with this node.
+ * @param in XML input parser object.
+ * @return Parser factor or null if not found.
+ */
+static Node* getFactor(XML::Parser& in, Equation& eqn, Node* parent)
+{
+	if (!in.check(XML::HEADER)) return nullptr;
+
+	in.next(XML::HEADER);
+	if (create_factors.find(in.getTag()) == create_factors.end()) return nullptr;
+
+	auto cp = create_factors.at(in.getTag());
+	return cp(in, eqn, parent);
+}
 
 Term* Expression::getTerm(Equation& eqn, const string& text, Expression* parent)
 {
@@ -440,14 +411,14 @@ Node* Binary::parse(Parser& p, Node* one, Node* parent)
 	if (!two) throw logic_error("bad format");
 
 	if ( c == '/' ) 
-		return new Divide(one, two, parent); 
+		return new Divide(one, two, p.getEqn(), parent); 
 	else if ( c == '^' ) 
-		return new Power(one, two, parent);
+		return new Power(one, two, p.getEqn(), parent);
 	return one;
 }
 
 // Parser constructor for variable. Get name from parser.
-Variable::Variable(Parser& p, Node* parent) : Node(parent), m_name( p.next() ) {}
+Variable::Variable(Parser& p, Node* parent) : Node(p.getEqn(), parent), m_name( p.next() ) {}
 
 Variable* Variable::parse(Parser& p, Node* parent)
 {
@@ -461,7 +432,7 @@ Variable* Variable::parse(Parser& p, Node* parent)
 
 // Parser constructor for constant. Get name from parser and find value.
 Constant::Constant(Parser& p, Node* parent) : 
-	Node(parent), m_name(p.next()), m_value(constants.find(m_name)->second) {}
+	Node(p.getEqn(), parent), m_name(p.next()), m_value(constants.find(m_name)->second) {}
 
 Constant* Constant::parse(Parser& p, Node* parent)
 {
@@ -540,7 +511,7 @@ bool Term::add(Parser& p)
 	return true;
 }
 
-Function::Function(EqnXMLParser& in, Node* parent) : Node(in, parent)
+Function::Function(XML::Parser& in, Equation& eqn, Node* parent) : Node(in, eqn, parent)
 {
 	in.next(XML::HEADER_END);
 
@@ -553,27 +524,27 @@ Function::Function(EqnXMLParser& in, Node* parent) : Node(in, parent)
 		in.syntaxError("function name not found");
 
 	in.assertNoAttributes();
-	m_arg  = in.getFactor(this);
+	m_arg  = getFactor(in, eqn, this);
 	if (!m_arg) in.syntaxError("header for factor expected");
 
 	in.next(XML::FOOTER);
 }
 
-Binary::Binary(EqnXMLParser& in, Node* parent) : Node(in, parent)
+Binary::Binary(XML::Parser& in, Equation& eqn, Node* parent) : Node(in, eqn, parent)
 {
 	in.next(XML::HEADER_END);
 	in.assertNoAttributes();
 
-	m_first  = in.getFactor(this);
+	m_first  = getFactor(in, eqn, this);
 	if (!m_first) in.syntaxError("header for factor expected");
 
-	m_second = in.getFactor(this);
+	m_second = getFactor(in, eqn, this);
 	if (!m_second) in.syntaxError("header for factor expected");
 
 	in.next(XML::FOOTER);
 }
 
-Variable::Variable(EqnXMLParser& in, Node* parent) : Node(in, parent)
+Variable::Variable(XML::Parser& in, Equation& eqn, Node* parent) : Node(in, eqn, parent)
 {
 	string value;
 	if (in.getAttribute("name", value)) {
@@ -586,7 +557,7 @@ Variable::Variable(EqnXMLParser& in, Node* parent) : Node(in, parent)
 	in.next(XML::ATOM_END);
 }
 
-Constant::Constant(EqnXMLParser& in, Node* parent) : Node(in, parent)
+Constant::Constant(XML::Parser& in, Equation& eqn, Node* parent) : Node(in, eqn, parent)
 {
 	string value;
 	if (in.getAttribute("name", value)) {
@@ -602,7 +573,7 @@ Constant::Constant(EqnXMLParser& in, Node* parent) : Node(in, parent)
 	in.next(XML::ATOM_END);
 }
 
-Number::Number(EqnXMLParser& in, Node* parent) : Node(in, parent)
+Number::Number(XML::Parser& in, Equation& eqn, Node* parent) : Node(in, eqn, parent)
 {
 	string real = "0";
 	if (!in.getAttribute("value", real)) in.syntaxError("Missing value attribute");
@@ -614,7 +585,7 @@ Number::Number(EqnXMLParser& in, Node* parent) : Node(in, parent)
 	in.next(XML::ATOM_END);
 }
 
-Input::Input(EqnXMLParser& in, Node* parent) : Node(in, parent), m_sn(++input_sn), m_current(false), m_eqn(in.getEqn())
+Input::Input(XML::Parser& in, Equation& eqn, Node* parent) : Node(in, eqn, parent), m_sn(++input_sn), m_current(false)
 {
 	m_eqn.addInput(this);
 	string value;
@@ -631,26 +602,26 @@ Input::Input(EqnXMLParser& in, Node* parent) : Node(in, parent), m_sn(++input_sn
 	in.next(XML::ATOM_END);
 }
 
-Term::Term(EqnXMLParser& in, Node* parent) : Node(in, parent)
+Term::Term(XML::Parser& in, Equation& eqn, Node* parent) : Node(in, eqn, parent)
 {
 	in.next(XML::HEADER_END);
 	in.assertNoAttributes();
 
-	while (Node* factor = in.getFactor(this)) { 
+	while (Node* factor = getFactor(in, eqn, this)) { 
 		factors.push_back(factor);
 	}
 
 	in.next(XML::FOOTER);
 }
 
-Expression::Expression(EqnXMLParser& in, Node* parent) : Node(in, parent)
+Expression::Expression(XML::Parser& in, Equation& eqn, Node* parent) : Node(in, eqn, parent)
 {
 	in.next(XML::HEADER_END);
 	in.assertNoAttributes();
 	
 	while (in.check(XML::HEADER, Term::name)) { 
 		in.next(XML::HEADER, Term::name);
-		terms.push_back(new Term(in, this));
+		terms.push_back(new Term(in, eqn, this));
 	}
 	setDrawParenthesis(true);
 
@@ -658,7 +629,7 @@ Expression::Expression(EqnXMLParser& in, Node* parent) : Node(in, parent)
 }
 
 Input::Input(Parser& p, Node* parent) : 
-	Node(parent), m_sn(++input_sn), m_typed(""), m_current(false), m_eqn(p.getEqn())
+	Node(p, parent), m_sn(++input_sn), m_typed(""), m_current(false)
 {
 	p.getEqn().addInput(this);
 	char c = p.next();
@@ -679,7 +650,7 @@ Input* Input::parse(Parser& p, Node* parent)
 		return nullptr;
 }
 
-Differential::Differential(Parser& p, Node* parent) : Node(parent)
+Differential::Differential(Parser& p, Node* parent) : Node(p, parent)
 {
 	p.match("D/D");
 	m_variable = p.next();
@@ -689,7 +660,7 @@ Differential::Differential(Parser& p, Node* parent) : Node(parent)
 	if (!m_function) throw logic_error("exected expression");
 }
 
-Differential::Differential(EqnXMLParser& in, Node* parent) : Node(in, parent)
+Differential::Differential(XML::Parser& in, Equation& eqn, Node* parent) : Node(in, eqn, parent)
 {
 	string name;
 	if (!in.getAttribute("variable", name)) in.syntaxError("missing variable name");
@@ -699,7 +670,7 @@ Differential::Differential(EqnXMLParser& in, Node* parent) : Node(in, parent)
 	in.next(XML::HEADER_END);
 	in.next(XML::HEADER, Expression::name);
 
-	m_function = new Expression(in, this);
+	m_function = new Expression(in, eqn, this);
 	in.next(XML::FOOTER);
 }
 

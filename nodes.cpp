@@ -444,7 +444,7 @@ Node* Expression::getRightSibling(Node* node)
 int Input::input_sn = -1;
 
 Input::Input(Equation& eqn, std::string txt, bool current, Node* parent, bool neg, Node::Select s) :
-	Node(parent, neg, s), m_sn(++input_sn), m_typed(txt), m_current(current), m_eqn(eqn)
+	Node(eqn, parent, neg, s), m_sn(++input_sn), m_typed(txt), m_current(current)
 {
 	eqn.addInput(this);
 	if (current) eqn.setCurrentInput(m_sn);
@@ -534,11 +534,11 @@ bool Divide::create(Equation& eqn)
 		in->makeCurrent();
 	}
 	Term* lower_term = in_pos.splitTerm();
-	Expression* upper = new Expression(upper_term);
-	Expression* lower = new Expression(lower_term);
+	Expression* upper = new Expression(upper_term, eqn);
+	Expression* lower = new Expression(lower_term, eqn);
 	
-	Divide* d = new Divide(upper, lower, nullptr);
-	Term* divide_term = new Term(d, nullptr, fNeg);
+	Divide* d = new Divide(upper, lower, eqn, nullptr);
+	Term* divide_term = new Term(d, eqn, nullptr, fNeg);
 	pos.replace(divide_term);
 	return true;
 }
@@ -558,10 +558,10 @@ bool Power::create(Equation& eqn)
 	else {
 		a_factor = in;
 	}
-	a = new Expression(a_factor);
+	a = new Expression(a_factor, eqn);
 	
-	Expression* b = new Expression(new Input(eqn));
-	Power* p = new Power(a, b, in->getParent());
+	Expression* b = new Expression(new Input(eqn), eqn);
+	Power* p = new Power(a, b, eqn, in->getParent());
 	in_pos.replace(p);
 	return true;
 }

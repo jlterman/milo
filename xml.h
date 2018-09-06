@@ -229,7 +229,7 @@ namespace XML {
 
 	/**
 	 * Parsing of XML tree from input stream.
-	 * Inspector member functions getTag, getAttributes, getElement 
+	 * Inspector member functions getTag, getAttribute, getElement 
 	 * allow you to extract the XML information read in.
 	 */
 	class Parser
@@ -300,6 +300,13 @@ namespace XML {
 		 * @return True if attributes have been processed.
 		 */
 		bool hasAttributes() { return m_attributes.size() != 0; }
+
+		/**
+		 * Throw an error if there are attributes left.
+		 */
+		void assertNoAttributes() {
+			if (hasAttributes()) syntaxError("Unknown attribute");
+		}
 
 		/**
 		 * Checks for any element in last header/footer tags processed.

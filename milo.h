@@ -51,7 +51,7 @@ class Equation;
 
 // Hidden class declerations for pointers and reference
 class Parser;
-class EqnXMLParser;
+namespace XML { class Parser; }
 
 /** @name Global Type Declerations  */
 //@{
@@ -103,20 +103,32 @@ public:
 	/**
 	 * Constructor for Node class.
 	 * Directly initialize the Node class private data members.
+	 * @param eqn Equation associated with this node.
 	 * @param parent Node object that is parent of this node. If NULL, this node is root.
 	 * @param fNeg True, if node is negated.
 	 * @param s Node selection state.
 	 */
-    Node(Node* parent = nullptr, bool fNeg = false, Select s = NONE ) : 
-	    m_parent(parent), m_sign(!fNeg), m_select(s) {}
+    Node(Equation& eqn, Node* parent, bool fNeg = false, Select s = NONE ) : 
+	    m_eqn(eqn), m_parent(parent), m_sign(!fNeg), m_select(s) {}
+
+	/**
+	 * Constructor for Node class.
+	 * Directly initialize the Node class private data members from parser
+	 * @param parser Parser to create this node from.
+	 * @param parent Node object that is parent of this node. If NULL, this node is root.
+	 * @param fNeg True, if node is negated.
+	 * @param s Node selection state.
+	 */
+	Node(Parser& p, Node* parent, bool fNeg = false, Select s = NONE );
 
 	/**
 	 * XML constructor for Node class.
 	 * Initialize the constructor from XML input stream.
 	 * @param in XML input stream.
+	 * @param eqn Equation associated with this node.
 	 * @param parent Parent node object.
 	 */
-	Node(EqnXMLParser& in, Node* parent);
+	Node(XML::Parser& in, Equation& eqn, Node* parent);
 	
 	virtual ~Node() {} ///< Abstract base class needs virtual desctructor.
 	//@}
@@ -369,7 +381,11 @@ public:
 		}
 		return sp;
 	}
-	
+
+	friend class FactorIterator;
+protected:
+	Equation& m_eqn;   ///< Equation object associated with this node.
+
 private:
 	/** @name Virtual Private Member Functions */
 	//@{
@@ -467,35 +483,37 @@ public:
 	 * @param p Parser object.
 	 * @param parent Parent node.
 	 */
-    Term(Parser& p, Expression* parent = nullptr) : Node((Node*) parent) { while(add(p)); }
+    Term(Parser& p, Expression* parent) : Node(p, (Node*) parent) { while(add(p)); }
 
-	 /**
-	  * XML constructor for Term class.
-	  * Read in XML for Term class.
-	  * @param in XML input stream.
-	  * @param parent Parent node object.	 
-	  */
-	Term(EqnXMLParser& in, Node* parent = nullptr);
+	/**
+	 * XML constructor for Term class.
+	 * Read in XML for Term class.
+	 * @param in XML input stream.
+	 * @param eqn Equation associated with this node.
+	 * @param parent Parent node object.	 
+	 */
+	Term(XML::Parser& in, Equation& eqn, Node* parent);
 
 	/**
 	 * Constructor for Term class loading in factors from a node vector.
 	 * @param f Factors to be loaded into new Term object.
 	 * @param parent Parent expresion.
 	 */
-    Term(NodeVector& f, Expression* parent) : Node((Node*) parent) { factors.swap(f); }
+    Term(NodeVector& f, Equation& eqn, Expression* parent) : Node(eqn, (Node*) parent) { factors.swap(f); }
 	
  	/**
 	 * Constructor for Term class.
 	 * @param node Initialize node vector with this node.
+	 * @param eqn Equation associated with this node.
 	 * @param parent Parent expresion.
 	 * @param fNeg If true, node is negative.
 	 */
-     Term(Node* node, Expression* parent = nullptr, bool fNeg = false) : 
-	    Node((Node*) parent, fNeg), factors(node) 
+    Term(Node* node, Equation& eqn, Expression* parent, bool fNeg = false) : 
+	    Node(eqn, (Node*) parent, fNeg), factors(node) 
 	{
 		node->setParent(this);
 	}
-
+ 
 	/**
 	 * Abstract base class needs virtual destructor.
 	 */
@@ -751,15 +769,17 @@ public:
 	  * Read in XML for Expression class.
 	  * @param in XML input stream.
 	  * @param parent Parent node object.	 
+      * @param eqn Equation associated with this node.
 	  */
-	Expression(EqnXMLParser& in, Node* parent = nullptr);
+	Expression(XML::Parser& in, Equation& eqn, Node* parent);
 
 	/**
 	 * Parser constructor for Expression class.
 	 * @param p Parser object.
+	 * @param eqn Equation associated with this node.
 	 * @param parent Parent node.
 	 */
-    Expression(Parser& p, Node* parent = nullptr) : Node(parent)
+    Expression(Parser& p, Node* parent = nullptr) : Node(p, parent)
 	{
 		while(add(p));
 		setDrawParenthesis(true);
@@ -768,9 +788,10 @@ public:
  	/**
 	 * Constructor for Expression class.
 	 * @param term Initialize term vector with this term.
+	 * @param eqn Equation associated with this node.
 	 * @param parent Parent expresion.
 	 */
-    Expression(Term* term, Node* parent = nullptr) : Node(parent), terms(term)
+    Expression(Term* term, Equation& eqn, Node* parent = nullptr) : Node(eqn, parent), terms(term)
 	{ 
 		term->setParent(this); setDrawParenthesis(true);
 	}
@@ -778,10 +799,11 @@ public:
  	/**
 	 * Constructor for Expression class.
 	 * @param factor Initialize term vector with new term containing node.
+	 * @param eqn Equation associated with this node.
 	 * @param parent Parent expresion.
 	 */
-    Expression(Node* factor, Node* parent = nullptr) : 
-	    Node(parent), terms(new Term(factor, this))
+    Expression(Node* factor, Equation& eqn, Node* parent = nullptr) : 
+	    Node(eqn, parent), terms(new Term(factor, eqn, this))
 	{ 
 		factor->setParent(terms[0]); setDrawParenthesis(true);
 	}
@@ -1335,6 +1357,13 @@ public:
 	Equation(const std::string& eq);
 
 	/**
+	 * Constructor to load equation from xml
+	 * <equation><expression>...</expression></equation>
+	 * @param in XML::Parser object
+	 */
+	Equation(XML::Parser& in) { xml_in(in); }
+	
+	/**
 	 * Constructor to load an equation from xml.
 	 * @param is Input stream containing xml.
 	 */
@@ -1371,6 +1400,12 @@ public:
 	 * @return String representation of equation.
 	 */
 	std::string toString() const { return m_root->toString(); }
+
+	/**
+	 * Serialize this equation's root and child nodes to XML output stream.
+	 * @param xml XML ouput stream.
+	 */
+	void out(XML::Stream& xml) { xml_out(xml); }
 
 	/**
 	 * Serialize equation as xml to output stream.
@@ -1588,7 +1623,7 @@ private:
 	 * Load equation from input xml stream.
 	 * @param in Input XML stream.
 	 */
-	void xml_in(EqnXMLParser& in);
+	void xml_in(XML::Parser& in);
 };
 
 /**
@@ -1623,8 +1658,9 @@ public:
 	 * Constructor using xml for input
 	 * @param in XML input stream.
 	 * @param parent Parent of this input node.
+     * @param eqn Equation associated with this node.
 	 */
-	Input(EqnXMLParser& in, Node* parent);
+	Input(XML::Parser& in, Equation& eqn, Node* parent);
 	
 	~Input() {} ///< Virtual desctructor.
 	//@}
@@ -1749,7 +1785,6 @@ private:
 	int m_sn;            ///< Unique serial number of Input class.
 	std::string m_typed; ///< Stored type characters from keyboard.
 	bool m_current;      ///< True if current active Input class object.
-	Equation& m_eqn;     ///< Equation class object containing this input node.
 	Box m_internal;      ///< Bounding box of Input node.
 	
 	/** @name Virtual Private Member Functions */

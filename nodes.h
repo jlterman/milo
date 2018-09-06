@@ -1,7 +1,7 @@
 #ifndef __NODES_H
 #define __NODES_H
 
-/* Copyright (C) 2016 - James Terman
+/* Copyright (C) 2018 - James Terman
  *
  * milo is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -46,20 +46,22 @@ public:
 	 * @param op  Character representing operator.
 	 * @param one First expression.
 	 * @param two Second expression.
+	 * @param eqn Equation associated with this node.
 	 * @param parent Parent node.
 	 * @param neg If true, node is negative.
 	 * @param s   Selection state of node.
 	 */
-	Binary(char op, Node* one, Node* two, Node* parent, bool neg, Node::Select s) : 
-	    Node(parent, neg, s), m_op(op), m_first(one), m_second(two) {}
+    Binary(char op, Node* one, Node* two, Equation& eqn, Node* parent, bool neg, Node::Select s) : 
+	    Node(eqn, parent, neg, s), m_op(op), m_first(one), m_second(two) {}
 
 	/**
 	 * XML constructor for Binary class.
 	 * Read in XML that is common for all nodes that have a Binary base class.
 	 * @param in XML input stream.
+	 * @param eqn Equation associated with this node.
 	 * @param parent Parent node object.	 
 	 */
-	Binary(EqnXMLParser& in, Node* parent);
+	Binary(XML::Parser& in, Equation& eqn, Node* parent);
 
 	/**
 	 * Virtual desctructor.
@@ -187,24 +189,26 @@ public:
 	 * Constructor for Divide class.
 	 * @param one First expression.
 	 * @param two Second expression.
+     * @param eqn Equation associated with this node.
 	 * @param parent Parent node.
 	 * @param neg If true, node is negative.
 	 * @param s   Selection state of node.
 	 */
-    Divide(Node* one, Node* two, Node* parent, bool neg = false, Node::Select s = Node::Select::NONE) : 
-	    Binary('/', one, two, parent, neg, s) 
+    Divide(Node* one, Node* two, Equation& eqn, Node* parent, bool neg = false, Node::Select s = Node::Select::NONE) : 
+	    Binary('/', one, two, eqn, parent, neg, s) 
 	{ 
 		m_first->setParent(this); m_second->setParent(this); 
 		m_first->setDrawParenthesis(false); m_second->setDrawParenthesis(false);
 	}
 
-	 /**
+   /**
 	 * XML constructor for Divide class.
 	 * Read in XML for Divide class.
 	 * @param in XML input stream.
+     * @param eqn Equation associated with this node.
 	 * @param parent Parent node object.	 
-	 */
-    Divide(EqnXMLParser& in, Node* parent) : Binary(in, parent)
+ 	 */
+    Divide(XML::Parser& in, Equation& eqn, Node* parent) : Binary(in, eqn, parent)
 	{ 
 		m_op = '/'; m_first->setDrawParenthesis(false); m_second->setDrawParenthesis(false);
 	}
@@ -306,24 +310,26 @@ public:
 	 * Constructor for Power class.
 	 * @param one First expression.
 	 * @param two Second expression.
+     * @param eqn Equation associated with this node.
 	 * @param parent Parent node.
 	 * @param neg If true, node is negative.
 	 * @param s   Selection state of node.
 	 */
-     Power(Node* one, Node* two, Node* parent, bool neg = false, Node::Select s = Node::Select::NONE) : 
-	    Binary('^', one, two, parent, neg, s) 
+    Power(Node* one, Node* two, Equation& eqn, Node* parent, bool neg = false, Node::Select s = Node::Select::NONE) : 
+	    Binary('^', one, two, eqn, parent, neg, s) 
 	{ 
 		m_first->setParent(this); m_second->setParent(this);
 		m_first->setDrawParenthesis(m_first->numFactors()>1); m_second->setDrawParenthesis(false);
 	}
 
 	/**
-	  * XML constructor for Divide class.
-	  * Read in XML for Divide class.
-	  * @param in XML input stream.
-	  * @param parent Parent node object.	 
-	  */
-    Power(EqnXMLParser& in, Node* parent) : Binary(in, parent)
+	 * XML constructor for Divide class.
+	 * Read in XML for Divide class.
+	 * @param in XML input stream.
+     * @param eqn Equation associated with this node.
+	 * @param parent Parent node object.	 
+ 	 */
+    Power(XML::Parser& in, Equation& eqn, Node* parent) : Binary(in, eqn, parent)
 	{ 
 		m_op = '^'; m_first->setDrawParenthesis(m_first->numFactors()>1); m_second->setDrawParenthesis(false);
 	}
@@ -440,20 +446,22 @@ public:
 	 * Constructor for Constant class.
 	 * @param name Constant name.
 	 * @param value Complex value of constant.
+     * @param eqn Equation associated with this node.
 	 * @param parent Parent node.
 	 * @param neg If true, node is negative.
 	 * @param s   Selection state of node.
 	 */
-    Constant(char name, Complex value, Node* parent, bool neg = false, Node::Select s = Node::Select::NONE) : 
-	    Node(parent, neg, s), m_name(name), m_value(value) {}
+    Constant(char name, Complex value, Equation& eqn, Node* parent, bool neg = false, Node::Select s = Node::Select::NONE) : 
+	    Node(eqn, parent, neg, s), m_name(name), m_value(value) {}
 
 	 /**
 	  * XML constructor for Constant class.
 	  * Read in XML for Constant class.
 	  * @param in XML input stream.
+      * @param eqn Equation associated with this node.
 	  * @param parent Parent node object.	 
 	  */
-	Constant(EqnXMLParser& in, Node* parent);
+	Constant(XML::Parser& in, Equation& eqn, Node* parent);
 
 	/**
 	 * Abstract base class needs virtual destructor.
@@ -557,23 +565,25 @@ public:
 	/**
 	 * Constructor for Constant class.
 	 * @param name Variable name.
+     * @param eqn Equation associated with this node.
 	 * @param parent Parent node.
 	 * @param neg If true, node is negative.
 	 * @param s   Selection state of node.
 	 */
-     Variable(char name, Node* parent, bool neg = false, Node::Select s = Node::Select::NONE) : 
-	    Node(parent, neg, s), m_name(name)
+    Variable(char name, Equation& eqn, Node* parent, bool neg = false, Node::Select s = Node::Select::NONE) : 
+	    Node(eqn, parent, neg, s), m_name(name)
     { 
 		values.emplace(name, Complex(0, 0)); 
 	}
 
-	 /**
-	  * XML constructor for Variable class.
-	  * Read in XML for Variable class.
-	  * @param in XML input stream.
-	  * @param parent Parent node object.	 
-	  */
-	Variable(EqnXMLParser& in, Node* parent);
+	/**
+	 * XML constructor for Variable class.
+	 * Read in XML for Variable class.
+	 * @param in XML input stream.
+     * @param eqn Equation associated with this node.
+	 * @param parent Parent node object.	 
+	 */
+	Variable(XML::Parser& in, Equation& eqn, Node* parent);
 
 	/**
 	 * Abstract base class needs virtual destructor.
@@ -679,45 +689,49 @@ public:
 	 * @param p Parser object.
 	 * @param parent Parent node.
 	 */
-    Number(Parser& p, Node* parent) : Node(parent), m_isInteger(true) { getNumber(p); }
+    Number(Parser& p, Node* parent) : Node(p, parent), m_isInteger(true) { getNumber(p); }
 
 	/**
 	 * Constructor for Number class.
 	 * @param real String containing real value.
+     * @param eqn Equation associated with this node.
 	 * @param parent Parent node.
 	 * @param neg If true, node is negative.
 	 * @param s   Selection state of node.
 	 */
-	Number(std::string real, Node* parent, bool neg = false, Node::Select s = Node::Select::NONE) :
-	    Node(parent, neg, s), m_value(stod(real)), m_isInteger(isInteger(real)) {}
+    Number(std::string real, Equation& eqn, Node* parent, bool neg = false, Node::Select s = Node::Select::NONE) :
+	    Node(eqn, parent, neg, s), m_value(stod(real)), m_isInteger(isInteger(real)) {}
 
 	/**
 	 * Constructor for Number class.
 	 * @param n Integer containing real value.
+     * @param eqn Equation associated with this node.
 	 * @param parent Parent node.
 	 * @param neg If true, node is negative.
 	 * @param s   Selection state of node.
 	 */
-	Number(int n, Node* parent, bool neg = false, Node::Select s = Node::Select::NONE) :
-	    Node(parent, neg, s), m_value(n), m_isInteger(true) {}
+    Number(int n, Equation& eqn, Node* parent, bool neg = false, Node::Select s = Node::Select::NONE) :
+	    Node(eqn, parent, neg, s), m_value(n), m_isInteger(true) {}
 
 	/**
 	 * Constructor for Number class.
 	 * @param d Double containing real value.
+     * @param eqn Equation associated with this node.
 	 * @param parent Parent node.
 	 * @param neg If true, node is negative.
 	 * @param s   Selection state of node.
 	 */
-	Number(double d, Node* parent, bool neg = false, Node::Select s = Node::Select::NONE) :
-	    Node(parent, neg, s), m_value(d), m_isInteger(isInteger(d)) {}
+	Number(double d, Equation& eqn, Node* parent, bool neg = false, Node::Select s = Node::Select::NONE) :
+	    Node(eqn, parent, neg, s), m_value(d), m_isInteger(isInteger(d)) {}
 
 	 /**
 	  * XML constructor for Number class.
 	  * Read in XML for Number class.
 	  * @param in XML input stream.
+      * @param eqn Equation associated with this node.
 	  * @param parent Parent node object.	 
 	  */
-	Number(EqnXMLParser& in, Node* parent);
+	Number(XML::Parser& in, Equation& eqn, Node* parent);
 
 	/**
 	 * Abstract base class needs virtual destructor.
@@ -916,21 +930,23 @@ public:
 	 * @param name Name of function.
 	 * @param fp Pointer to function to evaluate arguments.
 	 * @param p Parser object.
+     * @param eqn Equation associated with this node.
 	 * @param parent Parent node.
 	 * @param neg If true, node is negative.
 	 * @param s   Selection state of node.
 	 */
     Function(const std::string& name, func_ptr fp, Parser& p, Node* parent, 
 			 bool neg = false, Node::Select s = Node::Select::NONE) : 
-	             Node(parent, neg, s), m_name(name), m_func(fp), m_arg(new Expression(p, this)) {}
+	    Node(p, parent, neg, s), m_name(name), m_func(fp), m_arg(new Expression(p, this)) {}
 
-	 /**
-	  * XML constructor for Function class.
-	  * Read in XML for Function class.
-	  * @param in XML input stream.
-	  * @param parent Parent node object.	 
-	  */
-	Function(EqnXMLParser& in, Node* parent);
+	/**
+	 * XML constructor for Function class.
+	 * Read in XML for Function class.
+	 * @param in XML input stream.
+     * @param eqn Equation associated with this node.
+	 * @param parent Parent node object.	 
+	 */
+	Function(XML::Parser& in, Equation& eqn, Node* parent);
 
 	/**
 	 * Abstract base class needs virtual destructor.
@@ -1022,9 +1038,10 @@ public:
 	  * XML constructor for Differential class.
 	  * Read in XML for Differential class.
 	  * @param in XML input stream.
+      * @param eqn Equation associated with this node.
 	  * @param parent Parent node object.	 
 	  */
-	Differential(EqnXMLParser& in, Node* parent);
+	Differential(XML::Parser& in, Equation& eqn, Node* parent);
 
 	/**
 	 * Abstract base class needs virtual destructor.
