@@ -24,7 +24,6 @@
 #include <vector>
 #include <map>
 #include "milo.h"
-#include "ui.h"
 #include "panel.h"
 
 using namespace std;
@@ -240,6 +239,12 @@ class AsciiApp : public MiloApp
 	void redraw_screen() {}
 
 	void makeTopWindow() {}
+
+	GraphicsPtr makeGraphics() { return GraphicsPtr(0); }
+
+	MiloWindowPtr makeWindow() { return MiloWindowPtr(0); }
+
+	MiloWindowPtr makeWindow(XML::Parser&, const std::string&) { return MiloWindowPtr(0); }
 };
 
 AsciiApp app;

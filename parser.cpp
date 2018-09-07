@@ -154,7 +154,7 @@ Node::Node(XML::Parser& in, Equation& eqn, Node* parent) :
 void Equation::xml_in(XML::Parser& in)
 {
 	// Read in equation header and then expression header.
-	in.next(XML::HEADER_END).next(XML::HEADER, Expression::name);
+	in.next(XML::HEADER, "equation").next(XML::HEADER_END).next(XML::HEADER, Expression::name);
 
 	m_root = new Expression(in, *this, nullptr);
 	m_root->setDrawParenthesis(false);
@@ -166,7 +166,6 @@ void Equation::xml_in(XML::Parser& in)
 Equation::Equation(istream& is)
 {
 	XML::Parser in(is, "document");
-	in.next(XML::HEADER, "equation");
 	xml_in(in);
 }
 

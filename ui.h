@@ -27,6 +27,7 @@
 
 #include <fstream>
 #include <unordered_map>
+#include <fstream>
 #include <string>
 #include <memory>
 #include "util.h"
@@ -556,23 +557,42 @@ namespace UI {
 	};
 
 	/**
-	 * Template function to create a smart pointer of a particular type
+	 * Template function to create a panel of a particular type
 	 *
 	 * @param init String to initialize panel
 	 * @param gc Graphics object
 	 * @param win MiloWindow reference that contains panel
-	 * @return Smart pointer to panel
+	 * @return Pointer to panel
 	 */
-	template <class T> MiloPanelPtr createPanel(const std::string& init,
-												GraphicsPtr gc,
-												MiloWindow* win)
+	template <class T> MiloPanel* createPanel(const std::string& init,
+											  GraphicsPtr gc,
+											  MiloWindow* win)
 	{
-		return MiloPanelPtr(new T(init, gc, win));
+		return new T(init, gc, win);
+	}
+
+	/**
+	 * Template function to create a panel of a particular type from XML
+	 *
+	 * @param in XML parser object.
+	 * @param gc Graphics object
+	 * @param win MiloWindow reference that contains panel
+	 * @return Pointer to panel
+	 */
+	template <class T> MiloPanel* createPanelXML(XML::Parser& in,
+												 GraphicsPtr gc,
+												 MiloWindow* win)
+	{
+		return new T(in, gc, win);
 	}
 
 	/** Function pointer to return panel object with initilization string and Graphics object
 	 */
-	using panel_factory = MiloPanelPtr (*)(const std::string&, GraphicsPtr, MiloWindow*);
+	using panel_factory = MiloPanel* (*)(const std::string&, GraphicsPtr, MiloWindow*);
+
+	/** Function pointer to return panel object with xml parser and Graphics object
+	 */
+	using panel_xml = MiloPanel* (*)(XML::Parser&, GraphicsPtr, MiloWindow*);
 	
 	/** MiloPanel is an abstract base class interface for all milo panels.
 	 *  This will provide hooks into the user interface.
@@ -624,6 +644,12 @@ namespace UI {
 		/** Calculate size of panel.
 		 */
 		virtual Box calculateSize() = 0;
+
+		/**
+		 * Get minimum size of panel.
+		 * @return Box Frame of panel's contents.
+		 */
+		virtual Box getMinSize() = 0;
 		
 		/**
 		 * Push state of panel to undo stack.
@@ -636,16 +662,10 @@ namespace UI {
 		virtual void popUndo() = 0;
 
 		/**
-		 * Save panel to XML stream
-		 * @param[in|out] Panel as XML to output stream
+		 * Output panel as xml to XML stream.
+		 * @param XML stream class object.
 		 */
-		virtual void saveState(std::ostream& fs) = 0;
-
-		/**
-		 * Load panel from XML stream.
-		 * @param is input stream
-		 */
-		virtual void loadState(std::istream& is) = 0;
+		virtual void out(XML::Stream& xml) = 0;
 
 		/**
 		 * Check where there is an active input in this panel.
@@ -671,41 +691,71 @@ namespace UI {
 		Graphics& getGraphics() { return *m_gc; }
 
 		/**
-		 * Save panel to file
-		 * @param filename Name of file
+		 * Set this panel.to be active panel
 		 */
-		void saveState(const std::string& filename) {
-			std::fstream out(filename,  std::fstream::out | std::fstream::trunc);
-			saveState(out);
-		}
+		void setActive();
 
 		/**
-		 * Load panel from file
-		 * @param filename Name of file
+		 * Get active state of panel.
+		 * @return True, if active panel.
 		 */
-		void loadState(const std::string& filename) {
-			std::ifstream ifs(filename);
-			loadState(ifs);
+		bool getActive();
+
+		/**
+		 * Return shared_ptr for this MiloPanel object.
+		 * If none exists, create one.
+		 * @return Shared pointer for this MiloPanel object
+		 */
+		std::shared_ptr<MiloPanel> getSharedPtr()
+		{
+			std::shared_ptr<MiloPanel> sp;
+			try {
+				sp = this->shared_from_this();
+			}
+			catch (std::exception& ex) {
+				sp = std::shared_ptr<MiloPanel>(this);
+			}
+			return sp;
 		}
 		//@}
+		
 		/** 
 		 * Get a smart pointer to a panel class object by name.
 		 * @param name Name of panel class object to create
 		 * @param init Initilization xml string
 		 * @param gc Graphics object
 		 * @param win MiloWindow reference that contains panel
-		 * @return Smart pointer to panel class object
+		 * @return Pointer to panel class object
 		 */
-		static MiloPanelPtr make(const std::string& name,
-								 const std::string& init,
-								 GraphicsPtr gc,
-								 MiloWindow* win);
+		static MiloPanel* make(const std::string& name,
+							   const std::string& init,
+							   GraphicsPtr gc,
+							   MiloWindow* win);
+		
+		/** 
+		 * Get a smart pointer to a panel class object by name with xml.
+		 * @param in XML parser to load panel.
+		 * @param[out] fActive True, if this is active panel
+		 * @param gc Graphics object.
+		 * @param win MiloWindow reference that contains panel.
+		 * @return Pointer to panel class object.
+		 */
+		static MiloPanel* make(XML::Parser& in,
+							   bool& fActive,
+							   GraphicsPtr gc,
+							   MiloWindow* win);
 		
 	protected:
 		GraphicsPtr m_gc;  ///< Graphics object for panel.
 		MiloWindow* m_win; ///< Windows object for this panel.
-		
-		static std::unordered_map<std::string, panel_factory> panel_map; ///< Map of name to panel create functions.
+
+		/** Map of name to panel create functions.
+		 */
+		static std::unordered_map<std::string, panel_factory> panel_map;
+
+		/** Map of name to panel create functions with xml.
+		 */
+		static std::unordered_map<std::string, panel_xml> panel_xml_map;
 	};
 
 	/**
@@ -729,7 +779,8 @@ namespace UI {
 				   const std::string& init,
 				   GraphicsPtr gc) :
 		    m_panels(MiloPanel::make(name, init, gc, this)),
-			m_current_panel(m_panels.begin()) {}
+			m_current_panel(m_panels.begin()),
+			m_title("Untitled 001") {}
 
 		/**
 		 * Constructor with new panel.
@@ -741,6 +792,12 @@ namespace UI {
 				   const std::string& init,
 				   Graphics* gc) :
 			MiloWindow(name, init, GraphicsPtr(gc)) {}
+
+		/**
+		 * Constructor from XML::Parser.
+		 * @param in XML::Parser object
+		 */
+		MiloWindow(XML::Parser& in, const std::string& fname) { m_filename = fname; xml_in(in); }
 			
 		/**
 		 * Abstract base class needs virtual destructor.
@@ -755,6 +812,12 @@ namespace UI {
 		 * @return Active panel.
 		 */
 		MiloPanel& getPanel() { return *(m_current_panel->get()); }
+
+		/** 
+		 * Get active panel iterator.
+		 * @return Active panel.
+		 */
+		MiloPanelIter getPanelIter() { return m_current_panel; }
 
 		/**
 		 * Add new panel to window after current panel.
@@ -794,10 +857,24 @@ namespace UI {
 		}
 
 		/**
+		 * Get iterator of panel
+		 * @param win MiloPanelPtr value.
+		 * @return Iterator of panel.
+		 */
+		MiloPanelIter getPanelIterator(const MiloPanelPtr panel) {
+			for ( auto it = m_panels.begin(); it != m_panels.end(); ++it ) {
+				if (panel.get() == it->get()) {
+					return it;
+				}
+			}
+			return m_panels.end();;
+		}
+
+		/**
 		 * Set panel to be current active panel.
 		 * @param panel MiloPanel reference.
 		 */
-		void setActivePanel(const MiloPanel& panel) {
+		void setActivePanel(MiloPanel& panel) {
 			m_current_panel = getPanelIterator(panel);
 		}
 
@@ -807,6 +884,34 @@ namespace UI {
 		 */
 		void stepPanel(bool dir = true);
 
+		/**
+		 * Load window from input xml stream.
+		 * @param in Input XML stream.
+		 */
+		void xml_in(XML::Parser& in);
+
+		/**
+		 * Output window as xml to XML stream.
+		 * @param XML stream class object.
+		 */
+		void out(XML::Stream& xml);
+
+		/** Save window as xml to a new filename.
+		 * @param fname Name of new file.
+		 */
+		void save(const std::string& fname) {
+			m_filename = fname;
+			save();
+		}
+		
+		/** Save window as xml to file m_filename.
+		 */
+		void save() {
+			std::ofstream ofs(m_filename);
+			XML::Stream xml(ofs, "document");
+			out(xml);
+		}
+		 
 		/**
 		 * Return iterator of first panel.
 		 * @return Iterator of first panel.
@@ -818,10 +923,29 @@ namespace UI {
 		 * @return End panel iterator.
 		 */
 		MiloPanelIter end() { return m_panels.end(); }
+
+		/**
+		 * Return shared_ptr for this MiloWindow object.
+		 * If none exists, create one.
+		 * @return Shared pointer for this MiloWindow object
+		 */
+		std::shared_ptr<MiloWindow> getSharedPtr()
+		{
+			std::shared_ptr<MiloWindow> sp;
+			try {
+				sp = this->shared_from_this();
+			}
+			catch (std::exception& ex) {
+				sp = std::shared_ptr<MiloWindow>(this);
+			}
+			return sp;
+		}
 		//@}
 	protected:
 		MiloPanelVector m_panels;      ///< List of panels for this window.
 		MiloPanelIter m_current_panel; ///< Current active panel.
+		std::string m_title;           ///< Title of window.
+		std::string m_filename;        ///< Filename of window's xml.
 	};
 
 	/**
@@ -836,6 +960,12 @@ namespace UI {
 		 * Redraw entire screen.
 		 */
 		virtual void redraw_screen() = 0;
+
+		/**
+		 * Get new graphics object.
+		 * @return New graphics object.
+		 */
+		virtual GraphicsPtr makeGraphics() = 0;
 		//@}
 
 		/** @name Public helper member functions. */
@@ -869,6 +999,28 @@ namespace UI {
 		 */
 		void addWindow(MiloWindowPtr win) {
 			m_current_window = AddAfter(m_windows, m_current_window, win);
+			makeTopWindow();
+		}
+
+		/**
+		 * Create a new window and add it to application.
+		 */
+		void addNewWindow() { addWindow(makeWindow()); }
+
+		/**
+		 * Create a new window from xml and add it to application.
+		 * @param in XML parser object.
+		 */
+		void addNewWindow(XML::Parser& in) { addWindow(makeWindow(in, std::string())); }
+
+		/**
+		 * Create a new window from xml in a file and add it to application.
+		 * @param fname Name of file to load.
+		 */
+		void addNewWindow(const std::string& fname) {
+			std::ifstream ifs(fname);
+			XML::Parser in(ifs, "document");
+			addWindow(makeWindow(in, fname));
 		}
 
 		/**
@@ -992,10 +1144,22 @@ namespace UI {
 		static MiloApp& m_current; ///< Reference to current application singleton
 
 	private:
-		/**
-		 * GUI specific virtual member function to put current window on top.
+		/** @name GUI specific Virtual Private Member Functions */
+		//@{		
+		/** Put current window on top.
 		 */
 		virtual void makeTopWindow() = 0;
+
+		/** Create default window.
+		 */
+		virtual MiloWindowPtr makeWindow() = 0;
+
+		/**
+		 * Create window from xml.
+		 * @param in XML parser object.
+		 */
+		virtual MiloWindowPtr makeWindow(XML::Parser& in, const std::string& fname) = 0;
+		//@}
 		
 		/**
 		 * Map of names to functions that handle menu items.

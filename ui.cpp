@@ -38,6 +38,8 @@ unordered_map<string, menu_handler> MiloApp::menu_map = {
 
 unordered_map<string, panel_factory> MiloPanel::panel_map;
 
+unordered_map<string, panel_xml> MiloPanel::panel_xml_map;
+
 static const unordered_map<enum Mouse, string> mouse_string = {
 	{ POSITION, "POSITION" }, { PRESSED, "PRESSED" }, { RELEASED, "RELEASED" },
 	{ CLICKED, "CLICKED" }, { DOUBLE, "DOUBLE" }
@@ -122,16 +124,54 @@ string KeyEvent::toString() const
 		return string("Key event: ") + mod_string.at(m_mod) + key_string.at(m_key);
 }
 
-MiloPanelPtr MiloPanel::make(const string& name,
-							 const string& init,
-							 GraphicsPtr gc,
-							 MiloWindow* win)
+bool MiloPanel::getActive()
+{
+	return getSharedPtr().get() == m_win->getPanelIter()->get();
+}
+
+void MiloPanel::setActive()
+{
+	m_win->setActivePanel(*this);
+}
+
+MiloPanel* MiloPanel::make(const string& name,
+						   const string& init,
+						   GraphicsPtr gc,
+						   MiloWindow* win)
 {
 	auto panel_entry = panel_map.find(name);
 	if (panel_entry != panel_map.end()) {
 		return (panel_entry->second)(init, gc, win);
 	}
-	return MiloPanelPtr();;
+	return nullptr;
+}
+
+MiloPanel* MiloPanel::make(XML::Parser& in,
+						   bool& fActive,
+						   GraphicsPtr gc,
+						   MiloWindow* win)
+{
+	fActive = false;
+	in.next(XML::HEADER, "panel").next(XML::NAME_VALUE).next(XML::HEADER_END);
+
+	string name;
+	if (!in.getAttribute("type", name)) {
+		in.syntaxError("type missing from panel");
+	}
+
+	if (string value; in.getAttribute("active", value)) {
+		if (value != "true" && value != "false") {
+			in.syntaxError("bad boolean value");
+		}
+		fActive = (value == "true");
+	}
+	MiloPanel* panel = nullptr;
+	auto panel_entry = panel_xml_map.find(name);
+	if (panel_entry != panel_xml_map.end()) {
+		panel = (panel_entry->second)(in, gc, win);
+	}
+	in.next(XML::FOOTER);
+	return panel;
 }
 
 void MiloWindow::stepPanel(bool dir)
@@ -146,6 +186,44 @@ void MiloWindow::stepPanel(bool dir)
 			m_current_panel = m_panels.end();
 		}
 		--m_current_panel;
+	}
+}
+
+void MiloWindow::xml_in(XML::Parser& in)
+{
+	in.next(XML::HEADER, "title").next(XML::HEADER_END).next(XML::ELEMENT);
+	if (in.hasElement()) {
+		m_title = in.getElement();
+	}
+	else {
+		in.syntaxError("Missing title");
+	}	
+	in.next(XML::FOOTER);
+	in.assertNoAttributes();
+
+	MiloPanel* active_panel = nullptr;
+	while (in.check(XML::HEADER, "panel")) {
+		bool fActive = false;
+		MiloPanel* p = MiloPanel::make(in, fActive, MiloApp::getGlobal().makeGraphics(), this);
+		m_panels.push_back(p);
+		if (fActive) {
+			active_panel = p;
+		}
+	}
+
+	if (active_panel != nullptr) {
+		setActivePanel(*active_panel);
+	}
+	else {
+		m_current_panel = m_panels.begin();
+	}	
+}
+
+void MiloWindow::out(XML::Stream& xml)
+{
+	xml << XML::HEADER << "title" << XML::ELEMENT << m_title << XML::FOOTER;
+	for ( auto panel : m_panels ) {
+		panel->out(xml);
 	}
 }
 

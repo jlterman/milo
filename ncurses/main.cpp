@@ -209,7 +209,7 @@ public:
 	}
 	//@}
 
-	/** @name Virtual Public Member Functions */
+	/** @name Public Member Functions */
 	//@{
 	/**
 	 * Return character drawn at screen coordinates.
@@ -284,6 +284,8 @@ class CursesWindow : public MiloWindow
 public:
 	CursesWindow() : MiloWindow("equation", "#", new CursesGraphics()) {}
 
+	CursesWindow(XML::Parser& in, const std::string& fname) : MiloWindow(in, fname) {}
+
 	~CursesWindow() {}
 
 	/**
@@ -291,8 +293,10 @@ public:
 	 * handle event in local coords.
 	 * @param mouse Mouse event.
 	 */
-	void doMouse(const UI::MouseEvent& mouse);
+	void doMouse(UI::MouseEvent& mouse);
 
+	/** Redraw ncurses screen. 
+	 */
 	void redraw();
 };
 
@@ -304,7 +308,7 @@ class CursesApp : public MiloApp
 public:
 	/** @name Constructors and Destructor */
 	//@{
-	CursesApp() : MiloApp(new CursesWindow()), m_menubar(m_menuXML)
+	CursesApp() : MiloApp(), m_menubar(m_menuXML)
 	{
 		setenv("TERM", "xterm-milo", true);
 		setlocale(LC_ALL,"");
@@ -336,6 +340,16 @@ public:
 	void redraw_screen();
 
 	/**
+	 * Get new graphics object.
+	 * @return New graphics object.
+	 */
+	GraphicsPtr makeGraphics()  { return GraphicsPtr(new CursesGraphics()); }
+	//@}
+
+	
+	/** @name Public Member Functions for ncurses UI */
+	//@{		
+	/**
 	 * Get key event from ncurses code.using key_map
 	 * @param code Ncurses key code
 	 * @return Referenceto key event
@@ -356,7 +370,7 @@ public:
 
 	/**
 	 * Get CurseGraphics context.
-	 * @return CursesGraphics references.
+	 * @return CursesGraphics reference.
 	 */
 	CursesGraphics& getGraphics() {
 		if (hasPanel()) {
@@ -366,6 +380,12 @@ public:
 			return m_default_graphics;
 		}
 	}
+
+	/**
+	 * Get global CurseGraphics context.
+	 * @return global CursesGraphics reference.
+	 */
+	CursesGraphics& getGlobalGraphics() { return m_default_graphics; }
 
 	/**
 	 * Get CursesWindow of top window.
@@ -386,6 +406,23 @@ private:
 	void makeTopWindow()
 	{
 		redraw_screen();
+	}
+
+	/**
+	 * Create a new default CursesWindow.
+	 * @return new default CursesWindow.
+	 */
+	MiloWindowPtr makeWindow() {
+		return MiloWindowPtr(new CursesWindow());
+	}
+
+	/**
+	 * Create a new  CursesWindow from xml.
+	 * @param in XML parser object.
+	 * @return new CursesWindow.
+	 */
+	MiloWindowPtr makeWindow(XML::Parser& in, const std::string& fname) {
+		return MiloWindowPtr(new CursesWindow(in, fname));
 	}
 
 	/**
@@ -697,27 +734,35 @@ void CursesWindow::redraw()
 	int h0 = 0, w0 = 0;
 	for ( auto p : m_panels ) {
 		Box b = p->calculateSize();
-		h0 += b.height() + 2;
+		h0 += b.height() + 1;
 		w0 = max(w0, b.width() + 2);
 	}
 	int h_max, w_max;
 	getmaxyx(stdscr, h_max, w_max);
 	h0 = 1 + (h_max - 1 - h0)/2;
 	w0 = (w_max - w0)/2;
+	bool m_first = true;
 	for ( auto p : m_panels ) {
-		Box b = p->getGraphics().getBox();
-		p->getGraphics().set(w_max, b.height() + 2, w0, h0);
-		h0 += b.height() + 2;
+		if (m_first) {
+			m_first = false;
+		} else {
+			app.getGlobalGraphics().horiz_line(w_max, 0, h0);
+		}
+		Box b = p->getMinSize();
+		p->getGraphics().set(w_max, b.height(), w0, h0 + 1);
+		h0 += b.height() + 1;
 		p->doDraw();
 	}	
 }
 
-void CursesWindow::doMouse(const MouseEvent& mouse)
+void CursesWindow::doMouse(MouseEvent& mouse)
 {
 	int x, y;
 	mouse.getCoords(x, y);
 	for ( auto p : m_panels ) {
 		if (p->getGraphics().getBox().inside(x, y)) {
+			p->getGraphics().relativeOrig(x, y);
+			mouse.setCoords(x, y);
 			p->doMouse(mouse);
 		}
 	}
@@ -815,7 +860,10 @@ int main(int argc, char* argv[])
 	LOG_TRACE_MSG("Starting milo_ncurses...");
 
    	if (argc > 1) {
-		app.getPanel().loadState(argv[1]);
+		app.addNewWindow(argv[1]);
+	}
+	else {
+		app.addNewWindow();
 	}
 	app.do_loop();
 	return 0;

@@ -33,6 +33,7 @@ bool EqnPanel::init = EqnPanel::do_init();
 bool EqnPanel::do_init()
 {
 	MiloPanel::panel_map[EqnPanel::name] = createPanel<EqnPanel>;
+	MiloPanel::panel_xml_map[EqnPanel::name] = createPanelXML<EqnPanel>;
 	return true;
 }
 
@@ -665,19 +666,6 @@ void EqnPanel::popUndo()
 	}
 }
 
-void EqnPanel::saveState(ostream& fs)
-{
-	string store;
-	m_eqn->xml_out(store);
-	fs << store << endl;
-}
-
-void EqnPanel::loadState(istream& is)
-{
-	m_eqn = make_shared<Equation>(is);
-	pushUndo();
-}
-
 bool EqnPanel::blink()
 {
 	return m_eqn->blink();
@@ -699,4 +687,15 @@ Box EqnPanel::calculateSize()
 	m_eqn->getRoot()->calculateSize(*m_gc);
 	m_eqn->getRoot()->calculateOrigin(*m_gc, 0, 0);
 	return m_eqn->getRoot()->getFrame().box;
+}
+
+void EqnPanel::out(XML::Stream& xml)
+{
+	xml << XML::HEADER << "panel" << XML::NAME_VALUE << "type" << "equation";
+	if (getActive()) {
+		xml << "active" << "true";
+	}
+	xml << XML::HEADER_END;
+	m_eqn->out(xml);
+	xml << XML::FOOTER;
 }

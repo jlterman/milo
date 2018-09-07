@@ -70,6 +70,10 @@ namespace UI {
 	    EqnPanel(const std::string& init, GraphicsPtr gc, MiloWindow* win) :
 		    MiloPanel(gc, win),  m_eqn(new Equation(init)) { pushUndo(); }
 
+	    EqnPanel(XML::Parser& in, GraphicsPtr gc, MiloWindow* win) :
+			MiloPanel(gc, win),
+			m_eqn(EqnPtr(new Equation(in)))	{}
+
 		~EqnPanel() {} ///< Virtual desctructor.
 		//@}
 		
@@ -100,6 +104,12 @@ namespace UI {
 		/** Calculate size of panel.
 		 */
 		Box calculateSize();
+
+		/**
+		 * Get minimum size of panel.
+		 * @return Box Frame of panel's contents.
+		 */
+		Box getMinSize() { return m_eqn->getRoot()->getFrame().box;	}
 		
 		/**
 		 * Push state of panel to undo stack.
@@ -112,16 +122,10 @@ namespace UI {
 		void popUndo();
 
 		/**
-		 * Save panel to XML stream
-		 * @param[in|out] Panel as XML to output stream
+		 * Output panel as xml to XML stream.
+		 * @param XML stream class object.
 		 */
-		void saveState(std::ostream& fs);
-		
-		/**
-		 * Load panel from XML stream.
-		 * @param filename Name of file
-		 */
-		void loadState(std::istream& is);
+		void out(XML::Stream& xml);
 		
 		/**
 		 * Check where there is an active input in this equation object.
