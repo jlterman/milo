@@ -165,7 +165,7 @@ void Equation::xml_in(XML::Parser& in)
 // Constructor for Equation read in from input stream.
 Equation::Equation(istream& is)
 {
-	XML::Parser in(is, "document");
+	XML::Parser in(is);
 	xml_in(in);
 }
 
@@ -182,7 +182,7 @@ Equation& Equation::operator=(const Equation& eqn)
 
 	// Read in serialized equation.
 	istringstream is(store);
-	XML::Parser in(is, "document");
+	XML::Parser in(is);
 	in.next(XML::HEADER, "equation");
 	xml_in(in);
 	return *this;
@@ -305,7 +305,7 @@ void Equation::xml_out(XML::Stream& xml) const
 
 void Equation::xml_out(ostream& os) const 
 {
-	XML::Stream xml(os, "document");
+	XML::Stream xml(os);
 	xml_out(xml);
 }
 

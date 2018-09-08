@@ -62,7 +62,7 @@ using NodeIter = NodeVector::iterator;    ///< Iterator into vector of node poin
 using TermPtr = SmartPtr<Term>;           ///< Shared pointer for Term class
 using TermVector = SmartVector<Term>;     ///< Specialized smart vector of terms.
 using ExpressionPtr = SmartPtr<Expression>; ///< Shared pointer for expression class.
-using EqnPtr = std::shared_ptr<Equation>; ///< Shared pointer for equation
+using EqnPtr = SmartPtr<Equation>;        ///< Shared pointer for equation
 //@}
 
 /**

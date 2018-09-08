@@ -34,6 +34,12 @@
 #include "smart.h"
 #include "xml.h"
 
+template <class T> inline XML::Stream& operator<<(XML::Stream& xml, SmartPtr<T> t)
+{
+	t->out(xml);
+	return xml;
+}
+
 /**
  * User Interface for milo namespace.
  * This is the user interface for milo for porting to paticular interfaces.

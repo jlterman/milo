@@ -651,16 +651,16 @@ void EqnUndoList::save(EqnPtr eqn)
 
 EqnPtr EqnUndoList::undo()
 {
-	if (m_eqns.size() <= 1) return nullptr;
+	if (m_eqns.size() <= 1) return EqnPtr(0);
 	m_eqns.pop_back();
 	return top();
 }
 
 EqnPtr EqnUndoList::top()
 {
-	if (m_eqns.empty()) return nullptr;
+	if (m_eqns.empty()) return EqnPtr(0);
 	istringstream in(m_eqns.back());
-	return make_shared<Equation>(in);
+	return EqnPtr(new Equation(in));
 }
 
 namespace Log

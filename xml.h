@@ -1,7 +1,7 @@
 #ifndef __XML_H
 #define __XML_H
 
-/* Copyright (C) 2015 - James Terman
+/* Copyright (C) 2018 - James Terman
  *
  * milo is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -52,7 +52,7 @@ namespace XML {
 	 *
 	 * HEADER     => <{tag_name}       ELEMENT => Any string in between tags
      * HEADER_END => >                 =========================================================
-	 * FOOTER     => <{tag_name}>      NEW     => State at beginning
+	 * FOOTER     => </{tag_name}>     NEW     => State at beginning
 	 * ATOM_END   => />                ILLEGAL => new state not legal transition from prev state
 	 * NAME_VALUE => {name}="{value}"  FINISH  => Output only. Close all open headers
 	 *
@@ -138,6 +138,10 @@ namespace XML {
 		};
 	};
 
+	/** Default root xml tag.
+	 */
+	const std::string ROOT = "document";
+
 	/**
 	 * Output stream for XML. 
 	 * Overloaded << operator is used to output XML states and tags.
@@ -173,7 +177,11 @@ namespace XML {
 		 * @param step Number of spaces to add to indention
 		 * @param sep  Character to add before each indention
 		 */
-		Stream(std::ostream& os, const std::string& root, int step = 2, std::string sep = "\n");
+		Stream(std::ostream& os,
+			   const std::string& root = ROOT,
+			   int step = 2,
+			   std::string sep = "\n"
+		      );
 
 		/**
 		 * Destructor for class stream.
@@ -217,6 +225,9 @@ namespace XML {
 	/**
 	 * Operator << overloading to send XML State to XML stream.
 	 * Allows xml << XML::FOOTER equivalent to xml.out(XML::FOOTER).
+	 * @param xml XML stream object.
+	 * @param state XML state to output to stream.
+	 * @return XML stream object.
 	 */
 	Stream& operator<<(Stream& xml, State state);
 
@@ -224,9 +235,12 @@ namespace XML {
 	 * Operator << overloading to send string to XML stream.
 	 * Allows xml << "foo & bar" equivalent to xml.out("foo & bar").
 	 * This ends up as "foo &amp; bar" in output
+	 * @param xml XML stream object.
+	 * @param tag XML tag to output to stream.
+	 * @return XML stream object.
 	 */
 	Stream& operator<<(Stream& xml, const std::string& tag);
-
+	
 	/**
 	 * Parsing of XML tree from input stream.
 	 * Inspector member functions getTag, getAttribute, getElement 
@@ -242,7 +256,7 @@ namespace XML {
 		 * @param in Input containing xml content
 		 * @param root Root xml tag
 		 */
-		Parser(std::istream& in, const std::string& root);
+		Parser(std::istream& in, const std::string& root = ROOT);
 
 		/**
 		 * Virtual desctructor for class Parser.

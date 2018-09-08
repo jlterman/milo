@@ -695,7 +695,5 @@ void EqnPanel::out(XML::Stream& xml)
 	if (getActive()) {
 		xml << "active" << "true";
 	}
-	xml << XML::HEADER_END;
-	m_eqn->out(xml);
-	xml << XML::FOOTER;
+	xml << XML::HEADER_END << m_eqn << XML::FOOTER;
 }
