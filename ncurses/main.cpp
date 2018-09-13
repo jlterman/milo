@@ -748,7 +748,7 @@ void CursesWindow::redraw()
 		} else {
 			app.getGlobalGraphics().horiz_line(w_max, 0, h0);
 		}
-		Box b = p->getMinSize();
+		Box b = p->calculateSize();
 		p->getGraphics().set(w_max, b.height(), w0, h0 + 1);
 		h0 += b.height() + 1;
 		p->doDraw();

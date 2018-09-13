@@ -35,6 +35,8 @@
  * This is the user interface for milo for porting to paticular interfaces.
  */
 namespace UI {
+	class EqnPanel;
+	using EqnPanelPtr = SmartPtr<EqnPanel>; ///< Smart pointer for EqnPanel
 
 	/**
 	 * Panel class for Equation class.
@@ -65,14 +67,33 @@ namespace UI {
 
 		/** @name Constructors and Virtual Desctructor */
 		//@{
-		/** Default Constructor for EqnPanel initializing Equation with single input.
+		/** 
+		 * Constructor for EqnPanel initializing Equation with
+		 * single initialization string.
+		 * @param init Initialization string.
+		 * @param gc   Graphics object.
 		 */
-	    EqnPanel(const std::string& init, GraphicsPtr gc, MiloWindow* win) :
-		    MiloPanel(gc, win),  m_eqn(new Equation(init)) { pushUndo(); }
+	    EqnPanel(const std::string& init, GraphicsPtr gc) :
+		    MiloPanel(gc),
+			m_eqn(new Equation(init)) { pushUndo(); }
 
-	    EqnPanel(XML::Parser& in, GraphicsPtr gc, MiloWindow* win) :
-			MiloPanel(gc, win),
-			m_eqn(EqnPtr(new Equation(in)))	{}
+		/** 
+		 * Constructor for EqnPanel passing equation directly.
+		 * @param eqn Equation for this panel.
+		 * @param gc  Graphics object.
+		 */
+	    EqnPanel(Equation* eqn, GraphicsPtr gc) :
+		    MiloPanel(gc),
+			m_eqn(eqn) { pushUndo(); }
+
+		/** 
+		 * Constructor for EqnPanel getting equation from XML paraser
+		 * @param in  XML parser object.
+		 * @param gc  Graphics object.
+		 */
+	    EqnPanel(XML::Parser& in, GraphicsPtr gc) :
+			MiloPanel(gc),
+			m_eqn(new Equation(in))	{ pushUndo(); }
 
 		~EqnPanel() {} ///< Virtual desctructor.
 		//@}
@@ -122,10 +143,16 @@ namespace UI {
 		void popUndo();
 
 		/**
-		 * Output panel as xml to XML stream.
+		 * Output panel contents as xml to XML stream.
 		 * @param XML stream class object.
 		 */
-		void out(XML::Stream& xml);
+		void xml_out(XML::Stream& xml) { xml << *m_eqn; }
+
+		/**
+		 * Get type name of panel.
+		 * @return String containing type of panel for xml tag.
+		 */
+		const std::string& getType() { return EqnPanel::name; }
 		
 		/**
 		 * Check where there is an active input in this equation object.
@@ -402,6 +429,151 @@ namespace UI {
 		 */
 		bool do_mouse_position(const MouseEvent& mouse);
 		//@}
+	};
+
+	/** MiloPanel derived class for two equations in alegebraic relatiohship.
+	 */
+	class AlgebraPanel : public MiloPanel
+	{
+	public:
+		/** Left or right side.
+		 */
+		enum Side { LEFT, RIGHT };
+		
+		/** @name Constructors and Virtual Desctructor */
+		//@{
+		/** 
+		 * Constructor for AlgebraPanel initializing Equation with
+		 * single initialization string.
+		 * @param init Initialization string for equation1+'='+equation2.
+		 * @param gc    Graphics object.
+		 */
+	    AlgebraPanel(const std::string& init,
+					 GraphicsPtr gc) :
+		    MiloPanel(gc),
+			m_side(LEFT),
+			m_left(new EqnPanel(init.substr(0, init.find('=')), gc)),
+			m_right(new EqnPanel(init.substr(init.rfind('=')), gc))
+		{
+			pushUndo();
+		}
+
+		/** 
+		 * Constructor for AlgebraPanel getting equation from XML paraser
+		 * @param in  XML parser object.
+		 * @param gc  Graphics object.
+		 */
+	    AlgebraPanel(XML::Parser& in, GraphicsPtr gc) :
+			MiloPanel(gc),
+			m_side(readSide(in)),
+			m_left(new EqnPanel(new Equation(in), gc)),
+			m_right(new EqnPanel(new Equation(in), gc))
+		{
+			pushUndo();
+		}
+
+		~AlgebraPanel() {} ///< Virtual desctructor.
+		//@}
+
+		/** @name Public Member Functions */
+		//@{		
+		/**
+		 * Handle key event for panel
+		 * @param key Key event
+		 */
+		void doKey(const UI::KeyEvent& key) { getCurrentSide().doKey(key); }
+
+		/**
+		 * Handle mouse event for panel
+		 * @param mouse Mouse event
+		 */
+		void doMouse(const UI::MouseEvent& mouse) { getCurrentSide().doMouse(mouse); }
+
+		/**
+		 * Execute panel specific function based on its name. Used for menu handling.
+		 * @param menuFunctionName Name of menu function to be executed.
+		 * @return True if menuFunctionName found.
+		 */
+		bool doMenu(const std::string& menuFunctionName) {
+			return getCurrentSide().doMenu(menuFunctionName);
+		}
+		
+		/** Handle redraw event
+		 */
+		void doDraw();
+
+		/** Calculate size of panel.
+		 */
+		Box calculateSize();
+		
+		/**
+		 * Push state of panel to undo stack.
+		 */
+		void pushUndo() { getCurrentSide().pushUndo(); }
+		
+		/**
+		 * Restore state of panel on top of undo stack.
+		 */
+		void popUndo() { getCurrentSide().popUndo(); }
+
+		/**
+		 * Output panel contents as xml to XML stream.
+		 * @param XML stream class object.
+		 */
+		void xml_out(XML::Stream& xml);
+
+		/**
+		 * Get type name of panel.
+		 * @return String containing type of panel for xml tag.
+		 */
+		const std::string& getType() { return AlgebraPanel::name; }
+
+		/**
+		 * Check where there is an active input in this panel.
+		 * @return If true, there is an active input.
+		 */
+		bool blink() { return getCurrentSide().blink(); }
+
+		/**
+		 * Get coordinates of current active input.
+		 * @param[out] x Horizontal origin of curosr.
+		 * @param[out] y Vertical origin cursor.
+		 */
+		void getCursorOrig(int& x, int& y) { getCurrentSide().getCursorOrig(x, y); }
+		//@}
+
+		/** @name Public helper member functions. */
+		//@{
+		/**
+		 * Get current side of equation.
+		 * @return Current side.
+		 */
+		EqnPanel& getCurrentSide() { return (m_side == LEFT) ? *m_left : *m_right; }
+
+		/**
+		 * Read side from XML::Parser.
+		 * @param in XML parser object.
+		 * @return Side read from xml.
+		 */
+		Side readSide(XML::Parser& in);
+		//@}
+
+		static const std::string name; ///< Name of this panel
+	private:
+		Side m_side;         ///< Side that is active.
+		EqnPanelPtr m_left;  ///< Equation of left of algebraic equality.
+		EqnPanelPtr m_right; ///< Equation of right of algebraic equality.
+
+		static const std::string side_tag;    ///< Side tag.
+		static const std::string left_value;  ///< Element value for left.
+		static const std::string right_value; ///< Element value for right.
+		
+		static bool init;    ///< Should be true after static initilization.
+
+		/**
+		 * Static initialization for class.
+		 */
+		static bool do_init();
 	};
 	
 }

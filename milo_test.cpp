@@ -250,8 +250,8 @@ class AsciiApp : public MiloApp
 AsciiApp app;
 MiloApp&  MiloApp::m_current = app; ///< Dummy app object
 
-AsciiGraphics* gc = new AsciiGraphics(cout);   ///< Asciigraphics class object.
-EqnPanel panel("#", GraphicsPtr(gc), nullptr); ///< EqnPanel class object.
+AsciiGraphics* gc = new AsciiGraphics(cout);  ///< Asciigraphics class object.
+EqnPanel panel("#", GraphicsPtr(gc));         ///< EqnPanel class object.
 
 /**
  * Load parsed equation string into global equation object.

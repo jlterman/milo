@@ -240,6 +240,12 @@ namespace XML {
 	 * @return XML stream object.
 	 */
 	Stream& operator<<(Stream& xml, const std::string& tag);
+
+	template <class T> inline auto operator<<(XML::Stream& xml, T& t) -> decltype(t.out(xml))
+	{
+		t.out(xml);
+		return xml;
+	}
 	
 	/**
 	 * Parsing of XML tree from input stream.

@@ -103,13 +103,14 @@ bool Parser::match(const string& s)
  * attributes nth, negatvie and select if needed.
  * Then call virtual member function xml_out for rest.
  */
-void Node::out(XML::Stream& xml)
+XML::Stream& Node::out(XML::Stream& xml)
 { 
 	xml << XML::HEADER << getName();
 	if (m_nth != 1) xml << XML::NAME_VALUE << "nth" << to_string(m_nth);
 	if (!m_sign) xml << XML::NAME_VALUE << "negative" << "true";
 	if (m_select != NONE) xml << XML::NAME_VALUE << "select" << select_tags.at(m_select);
 	xml_out(xml);
+	return xml;
 }
 
 Node::Node(Parser& p, Node* parent, bool fNeg, Select s) : 
@@ -522,7 +523,6 @@ Function::Function(XML::Parser& in, Equation& eqn, Node* parent) : Node(in, eqn,
 	else
 		in.syntaxError("function name not found");
 
-	in.assertNoAttributes();
 	m_arg  = getFactor(in, eqn, this);
 	if (!m_arg) in.syntaxError("header for factor expected");
 
@@ -532,7 +532,6 @@ Function::Function(XML::Parser& in, Equation& eqn, Node* parent) : Node(in, eqn,
 Binary::Binary(XML::Parser& in, Equation& eqn, Node* parent) : Node(in, eqn, parent)
 {
 	in.next(XML::HEADER_END);
-	in.assertNoAttributes();
 
 	m_first  = getFactor(in, eqn, this);
 	if (!m_first) in.syntaxError("header for factor expected");

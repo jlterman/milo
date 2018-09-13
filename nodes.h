@@ -630,7 +630,14 @@ public:
 	 * @param name Variable name.
 	 * @param value Value of Variable.
 	 */
-	static void setValue(char name, Complex value);
+	static void setValue(char name, const Complex& value);
+
+	/**
+	 * Static helper function to set real value of a variable.
+	 * @param name Variable name.
+	 * @param real Real value of Variable.
+	 */
+	static void setRealValue(char name, double real);
 
 private:
 	char m_name;    ///< Name of Variable

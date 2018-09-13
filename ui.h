@@ -34,12 +34,6 @@
 #include "smart.h"
 #include "xml.h"
 
-template <class T> inline XML::Stream& operator<<(XML::Stream& xml, SmartPtr<T> t)
-{
-	t->out(xml);
-	return xml;
-}
-
 /**
  * User Interface for milo namespace.
  * This is the user interface for milo for porting to paticular interfaces.
@@ -567,14 +561,11 @@ namespace UI {
 	 *
 	 * @param init String to initialize panel
 	 * @param gc Graphics object
-	 * @param win MiloWindow reference that contains panel
 	 * @return Pointer to panel
 	 */
-	template <class T> MiloPanel* createPanel(const std::string& init,
-											  GraphicsPtr gc,
-											  MiloWindow* win)
+	template <class T> MiloPanel* createPanel(const std::string& init, GraphicsPtr gc)
 	{
-		return new T(init, gc, win);
+		return new T(init, gc);
 	}
 
 	/**
@@ -582,23 +573,20 @@ namespace UI {
 	 *
 	 * @param in XML parser object.
 	 * @param gc Graphics object
-	 * @param win MiloWindow reference that contains panel
 	 * @return Pointer to panel
 	 */
-	template <class T> MiloPanel* createPanelXML(XML::Parser& in,
-												 GraphicsPtr gc,
-												 MiloWindow* win)
+	template <class T> MiloPanel* createPanelXML(XML::Parser& in, GraphicsPtr gc)
 	{
-		return new T(in, gc, win);
+		return new T(in, gc);
 	}
 
 	/** Function pointer to return panel object with initilization string and Graphics object
 	 */
-	using panel_factory = MiloPanel* (*)(const std::string&, GraphicsPtr, MiloWindow*);
+	using panel_factory = MiloPanel* (*)(const std::string&, GraphicsPtr);
 
 	/** Function pointer to return panel object with xml parser and Graphics object
 	 */
-	using panel_xml = MiloPanel* (*)(XML::Parser&, GraphicsPtr, MiloWindow*);
+	using panel_xml = MiloPanel* (*)(XML::Parser&, GraphicsPtr);
 	
 	/** MiloPanel is an abstract base class interface for all milo panels.
 	 *  This will provide hooks into the user interface.
@@ -607,15 +595,17 @@ namespace UI {
 	{
 	public:
 		friend class MiloApp;
+
+		static const std::string tag/* = "panel" */; ///< xml tag for panel.
+		const std::string type_tag = "type";        ///< xml type for <panel>.
+		const std::string active_tag = "active";    ///< name/value tag.
 		
 		/** @name Constructors and Virtual Destructor */
 		//@{
 		/** Constructor for MiloPanel base class.
 		 * @param gc Graphics object
-		 * @param win MiloWindow reference that contains panel
 		 */
-	    MiloPanel(GraphicsPtr gc, MiloWindow* win) :
-		    m_gc(gc), m_win(win) {}
+	    MiloPanel(GraphicsPtr gc) : m_gc(gc) {}
 
 		/** Virtual deconstructor for MiloPanel initializing graphics context
 		 */
@@ -650,12 +640,6 @@ namespace UI {
 		/** Calculate size of panel.
 		 */
 		virtual Box calculateSize() = 0;
-
-		/**
-		 * Get minimum size of panel.
-		 * @return Box Frame of panel's contents.
-		 */
-		virtual Box getMinSize() = 0;
 		
 		/**
 		 * Push state of panel to undo stack.
@@ -668,10 +652,16 @@ namespace UI {
 		virtual void popUndo() = 0;
 
 		/**
-		 * Output panel as xml to XML stream.
+		 * Output panel contents as xml to XML stream.
 		 * @param XML stream class object.
 		 */
-		virtual void out(XML::Stream& xml) = 0;
+		virtual void xml_out(XML::Stream& xml) = 0;
+
+		/**
+		 * Get type name of panel.
+		 * @return String containing type of panel for xml tag.
+		 */
+		virtual const std::string& getType() = 0;
 
 		/**
 		 * Check where there is an active input in this panel.
@@ -697,15 +687,11 @@ namespace UI {
 		Graphics& getGraphics() { return *m_gc; }
 
 		/**
-		 * Set this panel.to be active panel
+		 * Output panel as xml to XML stream.
+		 * @param XML stream class object.
+		 * @return XML stream object.
 		 */
-		void setActive();
-
-		/**
-		 * Get active state of panel.
-		 * @return True, if active panel.
-		 */
-		bool getActive();
+		XML::Stream& out(XML::Stream& xml);
 
 		/**
 		 * Return shared_ptr for this MiloPanel object.
@@ -730,30 +716,23 @@ namespace UI {
 		 * @param name Name of panel class object to create
 		 * @param init Initilization xml string
 		 * @param gc Graphics object
-		 * @param win MiloWindow reference that contains panel
 		 * @return Pointer to panel class object
 		 */
 		static MiloPanel* make(const std::string& name,
 							   const std::string& init,
-							   GraphicsPtr gc,
-							   MiloWindow* win);
+							   GraphicsPtr gc);
 		
 		/** 
 		 * Get a smart pointer to a panel class object by name with xml.
 		 * @param in XML parser to load panel.
 		 * @param[out] fActive True, if this is active panel
 		 * @param gc Graphics object.
-		 * @param win MiloWindow reference that contains panel.
 		 * @return Pointer to panel class object.
 		 */
-		static MiloPanel* make(XML::Parser& in,
-							   bool& fActive,
-							   GraphicsPtr gc,
-							   MiloWindow* win);
+		static MiloPanel* make(XML::Parser& in, GraphicsPtr gc);
 		
 	protected:
 		GraphicsPtr m_gc;  ///< Graphics object for panel.
-		MiloWindow* m_win; ///< Windows object for this panel.
 
 		/** Map of name to panel create functions.
 		 */
@@ -772,6 +751,9 @@ namespace UI {
 	public:
 		friend class MiloApp;
 
+		const std::string title_tag = "title";    ///< title xml tag.
+		const std::string active_tag = "active";  ///< active xml tag.
+
 		/** @name Constructors and Virtual Destructor */
 		//@{
 
@@ -784,7 +766,7 @@ namespace UI {
 	    MiloWindow(const std::string& name,
 				   const std::string& init,
 				   GraphicsPtr gc) :
-		    m_panels(MiloPanel::make(name, init, gc, this)),
+		m_panels(MiloPanel::make(name, init, gc)),
 			m_current_panel(m_panels.begin()),
 			m_title("Untitled 001") {}
 
@@ -850,7 +832,7 @@ namespace UI {
 
 		/**
 		 * Get iterator of panel
-		 * @param win MiloPanel reference.
+		 * @param panel MiloPanel reference.
 		 * @return Iterator of panel.
 		 */
 		MiloPanelIter getPanelIterator(const MiloPanel& panel) {
@@ -864,7 +846,7 @@ namespace UI {
 
 		/**
 		 * Get iterator of panel
-		 * @param win MiloPanelPtr value.
+		 * @param panel MiloPanelPtr value.
 		 * @return Iterator of panel.
 		 */
 		MiloPanelIter getPanelIterator(const MiloPanelPtr panel) {
@@ -899,8 +881,9 @@ namespace UI {
 		/**
 		 * Output window as xml to XML stream.
 		 * @param XML stream class object.
+		 * @return XML stream object.
 		 */
-		void out(XML::Stream& xml);
+		XML::Stream& out(XML::Stream& xml);
 
 		/** Save window as xml to a new filename.
 		 * @param fname Name of new file.
@@ -915,7 +898,7 @@ namespace UI {
 		void save() {
 			std::ofstream ofs(m_filename);
 			XML::Stream xml(ofs, "document");
-			out(xml);
+			xml << *this;
 		}
 		 
 		/**

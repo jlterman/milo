@@ -222,8 +222,9 @@ public:
 	/**
 	 * Serialize this node and child nodes to XML output stream.
 	 * @param xml XML ouput stream.
+	 * @return XML stream object.
 	 */
-	void out(XML::Stream& xml);
+	XML::Stream& out(XML::Stream& xml);
 
 	/**
 	 * Calculate origin of each node in subtree.
@@ -1404,8 +1405,9 @@ public:
 	/**
 	 * Serialize this equation's root and child nodes to XML output stream.
 	 * @param xml XML ouput stream.
+	 * @return XML stream object.
 	 */
-	void out(XML::Stream& xml) { xml_out(xml); }
+	XML::Stream& out(XML::Stream& xml) { xml_out(xml); return xml; }
 
 	/**
 	 * Serialize equation as xml to output stream.

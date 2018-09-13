@@ -259,10 +259,15 @@ void Variable::drawNode(UI::Graphics& gc) const
 	gc.at(m_internal.x0(), m_internal.y0(), m_name, UI::Graphics::Attributes::ITALIC);
 }
 
-void Variable::setValue(char name, Complex value)
+void Variable::setValue(char name, const Complex& value)
 {
 	auto it = values.find(name);
 	if (it != values.end() ) it->second = value;
+}
+
+void Variable::setRealValue(char name, double real)
+{
+	setValue(name, { real, 0 });
 }
 
 string Number::toString() const

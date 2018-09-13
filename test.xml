@@ -1,133 +1,147 @@
 <document>
   <title>Test</title>
+  <active>1</active>
   <panel type="equation">
-	<equation>
+    <equation>
       <expression>
-		<term>
+        <term>
           <function name="cos">
-			<expression>
+            <expression>
               <term>
-				<variable name="x"/>
+                <variable name="x"/>
               </term>
               <term>
-				<number value="2.000000"/>
+                <number value="2.000000"/>
               </term>
-			</expression>
+            </expression>
           </function>
-		</term>
-		<term>
+        </term>
+        <term>
           <divide>
-			<expression>
+            <expression>
               <term>
-				<power>
+                <power>
                   <expression>
-					<term>
+                    <term>
                       <variable name="a"/>
-					</term>
+                    </term>
                   </expression>
                   <expression>
-					<term>
+                    <term>
                       <expression>
-						<term>
+                        <term>
                           <divide>
-							<expression>
+                            <expression>
                               <term>
-								<variable name="a"/>
-								<variable name="b"/>
+                                <variable name="a"/>
+                                <variable name="b"/>
                               </term>
                               <term negative="true">
-								<variable name="c"/>
-								<variable name="d"/>
+                                <variable name="c"/>
+                                <variable name="d"/>
                               </term>
                               <term>
-								<constant name="e"/>
-								<variable name="f"/>
+                                <constant name="e"/>
+                                <variable name="f"/>
                               </term>
-							</expression>
-							<expression>
+                            </expression>
+                            <expression>
                               <term>
-								<function name="tan">
+                                <function name="tan">
                                   <expression>
-									<term>
+                                    <term>
                                       <variable name="y"/>
-									</term>
+                                    </term>
                                   </expression>
-								</function>
+                                </function>
                               </term>
-							</expression>
+                            </expression>
                           </divide>
-						</term>
+                        </term>
                       </expression>
-					</term>
+                    </term>
                   </expression>
-				</power>
+                </power>
               </term>
-			</expression>
-			<expression>
+            </expression>
+            <expression>
               <term>
-				<power>
+                <power>
                   <expression>
-					<term>
+                    <term>
                       <variable name="a"/>
-					</term>
+                    </term>
                   </expression>
                   <expression>
-					<term>
+                    <term>
                       <variable name="b"/>
-					</term>
+                    </term>
                   </expression>
-				</power>
+                </power>
               </term>
-			</expression>
+            </expression>
           </divide>
-		</term>
-		<term>
+        </term>
+        <term>
           <variable name="a"/>
           <variable name="b"/>
           <expression>
-			<term>
+            <term>
               <variable name="c"/>
               <variable name="d"/>
-			</term>
-			<term>
+            </term>
+            <term>
               <constant name="e"/>
               <variable name="f"/>
-			</term>
+            </term>
           </expression>
-		</term>
+        </term>
       </expression>
-	</equation>
-  </panel>
-  <panel type="equation" active="true">
-	<equation>
-      <expression>
-		<term>
-          <variable name="a"/>
-		</term>
-		<term>
-          <input current="true"/>
-		</term>
-      </expression>
-	</equation>
+    </equation>
   </panel>
   <panel type="equation">
+    <equation>
+      <expression>
+        <term>
+          <variable name="a"/>
+        </term>
+        <term>
+          <input current="true"/>
+        </term>
+      </expression>
+    </equation>
+  </panel>
+  <panel type="algebra">
+	<side>left</side>
 	<equation>
       <expression>
-		<term>
-          <power>
-			<variable name="a"/>
-			<expression>
+        <term>
+          <function name="cos">
+            <expression>
               <term>
-				<divide>
-                  <variable name="d"/>
-                  <variable name="c"/>
-				</divide>
+                <variable name="y"/>
               </term>
-			</expression>
-          </power>
-		</term>
+            </expression>
+          </function>
+        </term>
       </expression>
 	</equation>
+    <equation>
+      <expression>
+        <term>
+          <power>
+            <variable name="a"/>
+            <expression>
+              <term>
+                <divide>
+                  <variable name="d"/>
+                  <variable name="c"/>
+                </divide>
+              </term>
+            </expression>
+          </power>
+        </term>
+      </expression>
+    </equation>
   </panel>
 </document>
-  

@@ -689,11 +689,63 @@ Box EqnPanel::calculateSize()
 	return m_eqn->getRoot()->getFrame().box;
 }
 
-void EqnPanel::out(XML::Stream& xml)
+const string AlgebraPanel::name = "algebra";
+
+const std::string AlgebraPanel::side_tag    = "side";
+const std::string AlgebraPanel::left_value  = "left";
+const std::string AlgebraPanel::right_value = "right";
+
+bool AlgebraPanel::init = AlgebraPanel::do_init();
+
+bool AlgebraPanel::do_init()
 {
-	xml << XML::HEADER << "panel" << XML::NAME_VALUE << "type" << "equation";
-	if (getActive()) {
-		xml << "active" << "true";
+	MiloPanel::panel_map[AlgebraPanel::name] = createPanel<AlgebraPanel>;
+	MiloPanel::panel_xml_map[AlgebraPanel::name] = createPanelXML<AlgebraPanel>;
+	return true;
+}
+
+void AlgebraPanel::doDraw()
+{
+	m_left->doDraw();
+	m_right->doDraw();
+	Node::Frame left = m_left->getEqn().getRoot()->getFrame();
+	m_left->getGraphics().at(left.box.x0() + left.box.width(),
+							 left.box.y0() + left.base, " = ",
+							 UI::Graphics::Attributes::NONE);
+}
+
+Box AlgebraPanel::calculateSize()
+{
+	Box left_box = m_left->calculateSize();
+	Box right_box = m_right->calculateSize();
+
+	int h_max = max(left_box.height(), right_box.height());
+	m_left->getEqn().getRoot()->calculateOrigin(
+	    *m_gc, 0, (h_max - left_box.height())/2
+	);
+	m_right->getEqn().getRoot()->calculateOrigin(
+		*m_gc, left_box.width() + m_gc->getTextLength("==="), (h_max - right_box.height())/2
+	);
+	return Box(0, 0, left_box.width() + m_gc->getTextLength("===") + right_box.width(), h_max);
+}
+
+void AlgebraPanel::xml_out(XML::Stream& xml)
+{
+	xml << XML::HEADER << side_tag << XML::HEADER_END << XML::ELEMENT;
+	xml << (( m_side == LEFT) ? left_value : right_value) << XML::FOOTER;
+	xml << m_left->getEqn() << m_right->getEqn();
+}
+
+AlgebraPanel::Side AlgebraPanel::readSide(XML::Parser& in)
+{
+	in.next(XML::HEADER, side_tag).next(XML::HEADER_END).next(XML::ELEMENT);
+	if (!in.hasElement()) { in.syntaxError("Missing side element"); }
+	string value = in.getElement();
+	if (value != left_value && value != right_value) {
+		in.syntaxError("bad element value not " + left_value + " or " + right_value);
 	}
-	xml << XML::HEADER_END << m_eqn << XML::FOOTER;
+	Side s = ( value == "left" ) ? LEFT : RIGHT;
+	in.assertNoAttributes();
+	in.next(XML::FOOTER);
+	return s;
 }

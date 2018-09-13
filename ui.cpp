@@ -32,8 +32,9 @@ static MiloApp& app = MiloApp::getGlobal(); ///< Reference to current app
 
 unordered_map<string, menu_handler> MiloApp::menu_map = {
 	{ "undo",   []() { if (app.hasPanel()) { app.getPanel().popUndo(); } } },
+	{ "save",   []() { if (app.hasWindow()) { app.getWindow().save("milo.xml"); } } },
 	{ "redraw", []() { app.redraw_screen(); } },
-	{ "quit",   []() { fRunning = false; } }
+	{ "quit",   []() { fRunning = false; } } 
 };
 
 unordered_map<string, panel_factory> MiloPanel::panel_map;
@@ -124,51 +125,34 @@ string KeyEvent::toString() const
 		return string("Key event: ") + mod_string.at(m_mod) + key_string.at(m_key);
 }
 
-bool MiloPanel::getActive()
-{
-	return getSharedPtr().get() == m_win->getPanelIter()->get();
-}
-
-void MiloPanel::setActive()
-{
-	m_win->setActivePanel(*this);
-}
+const std::string MiloPanel::tag = "panel";
 
 MiloPanel* MiloPanel::make(const string& name,
 						   const string& init,
-						   GraphicsPtr gc,
-						   MiloWindow* win)
+						   GraphicsPtr gc)
 {
 	auto panel_entry = panel_map.find(name);
 	if (panel_entry != panel_map.end()) {
-		return (panel_entry->second)(init, gc, win);
+		return (panel_entry->second)(init, gc);
 	}
 	return nullptr;
 }
 
 MiloPanel* MiloPanel::make(XML::Parser& in,
-						   bool& fActive,
-						   GraphicsPtr gc,
-						   MiloWindow* win)
+						   GraphicsPtr gc)
 {
-	fActive = false;
 	in.next(XML::HEADER, "panel").next(XML::NAME_VALUE).next(XML::HEADER_END);
 
 	string name;
 	if (!in.getAttribute("type", name)) {
 		in.syntaxError("type missing from panel");
 	}
+	in.assertNoAttributes();
 
-	if (string value; in.getAttribute("active", value)) {
-		if (value != "true" && value != "false") {
-			in.syntaxError("bad boolean value");
-		}
-		fActive = (value == "true");
-	}
 	MiloPanel* panel = nullptr;
 	auto panel_entry = panel_xml_map.find(name);
 	if (panel_entry != panel_xml_map.end()) {
-		panel = (panel_entry->second)(in, gc, win);
+		panel = (panel_entry->second)(in, gc);
 	}
 	in.next(XML::FOOTER);
 	return panel;
@@ -191,40 +175,54 @@ void MiloWindow::stepPanel(bool dir)
 
 void MiloWindow::xml_in(XML::Parser& in)
 {
-	in.next(XML::HEADER, "title").next(XML::HEADER_END).next(XML::ELEMENT);
+	int active = 0;
+	in.next(XML::HEADER, title_tag).next(XML::HEADER_END).next(XML::ELEMENT);
 	if (in.hasElement()) {
 		m_title = in.getElement();
 	}
 	else {
 		in.syntaxError("Missing title");
 	}	
-	in.next(XML::FOOTER);
 	in.assertNoAttributes();
+	in.next(XML::FOOTER);
 
-	MiloPanel* active_panel = nullptr;
-	while (in.check(XML::HEADER, "panel")) {
-		bool fActive = false;
-		MiloPanel* p = MiloPanel::make(in, fActive, MiloApp::getGlobal().makeGraphics(), this);
-		m_panels.push_back(p);
-		if (fActive) {
-			active_panel = p;
-		}
-	}
-
-	if (active_panel != nullptr) {
-		setActivePanel(*active_panel);
+	in.next(XML::HEADER, active_tag).next(XML::HEADER_END).next(XML::ELEMENT);
+	if (in.hasElement()) {
+		string value = in.getElement();
+		if (!isInteger(value)) in.syntaxError("not an integer");
+		active = atoi(value.c_str());
 	}
 	else {
-		m_current_panel = m_panels.begin();
+		in.syntaxError("Missing title");
 	}	
+	in.assertNoAttributes();
+	in.next(XML::FOOTER);
+	
+	while (in.check(XML::HEADER, MiloPanel::tag)) {
+		MiloPanel* p = MiloPanel::make(in, MiloApp::getGlobal().makeGraphics());
+		m_panels.push_back(p);
+	}
+	m_current_panel = m_panels.begin() + active;
 }
 
-void MiloWindow::out(XML::Stream& xml)
+XML::Stream& MiloPanel::out(XML::Stream& xml)
 {
-	xml << XML::HEADER << "title" << XML::ELEMENT << m_title << XML::FOOTER;
+	xml << XML::HEADER << tag << XML::NAME_VALUE << type_tag << getType() << XML::HEADER_END;
+	xml_out(xml);
+	xml << XML::FOOTER;
+	return xml;
+}
+
+XML::Stream& MiloWindow::out(XML::Stream& xml)
+{
+	xml << XML::HEADER << title_tag << XML::HEADER_END << XML::ELEMENT << m_title << XML::FOOTER;
+	xml << XML::HEADER << active_tag << XML::HEADER_END;
+	xml << XML::ELEMENT << to_string(m_current_panel - m_panels.begin()) << XML::FOOTER;
 	for ( auto panel : m_panels ) {
 		panel->out(xml);
 	}
+	xml << XML::FOOTER;
+	return xml;
 }
 
 bool MiloApp::isRunning()
