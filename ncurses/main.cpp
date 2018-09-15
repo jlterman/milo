@@ -306,7 +306,11 @@ public:
 class CursesApp : public MiloApp
 {
 public:
-	/** @name Constructors and Destructor */
+	/** Menu xml filename
+	 */
+	static constexpr const char* m_menuXML = "/usr/local/milo/data/menu/menu.xml";
+	
+    /** @name Constructors and Destructor */
 	//@{
 	CursesApp() : MiloApp(), m_menubar(m_menuXML)
 	{
@@ -343,7 +347,7 @@ public:
 	 * Get new graphics object.
 	 * @return New graphics object.
 	 */
-	GraphicsPtr makeGraphics()  { return GraphicsPtr(new CursesGraphics()); }
+	Graphics* makeGraphics()  { return new CursesGraphics(); }
 	//@}
 
 	
@@ -412,17 +416,15 @@ private:
 	 * Create a new default CursesWindow.
 	 * @return new default CursesWindow.
 	 */
-	MiloWindowPtr makeWindow() {
-		return MiloWindowPtr(new CursesWindow());
-	}
+	MiloWindow* makeWindow() { return new CursesWindow(); }
 
 	/**
 	 * Create a new  CursesWindow from xml.
 	 * @param in XML parser object.
 	 * @return new CursesWindow.
 	 */
-	MiloWindowPtr makeWindow(XML::Parser& in, const std::string& fname) {
-		return MiloWindowPtr(new CursesWindow(in, fname));
+	MiloWindow* makeWindow(XML::Parser& in, const std::string& fname) {
+		return new CursesWindow(in, fname);
 	}
 
 	/**
@@ -434,10 +436,6 @@ private:
 	 * Map ncurses key code to a key event.
 	 */
 	static const unordered_map<int, KeyEvent> key_map;
-
-	/** Menu xml filename
-	 */
-	static constexpr const char* m_menuXML = "/usr/local/milo/data/menu/menu.xml";
 };
 
 CursesApp app; ///< Instance of application class
@@ -732,7 +730,7 @@ const unordered_map<int, MouseEvent> CursesApp::mouse_event_map = {
 void CursesWindow::redraw()
 {
 	int h0 = 0, w0 = 0;
-	for ( auto p : m_panels ) {
+	for ( auto& p : m_panels ) {
 		Box b = p->calculateSize();
 		h0 += b.height() + 1;
 		w0 = max(w0, b.width() + 2);
@@ -742,14 +740,14 @@ void CursesWindow::redraw()
 	h0 = 1 + (h_max - 1 - h0)/2;
 	w0 = (w_max - w0)/2;
 	bool m_first = true;
-	for ( auto p : m_panels ) {
+	for ( auto& p : m_panels ) {
 		if (m_first) {
 			m_first = false;
 		} else {
 			app.getGlobalGraphics().horiz_line(w_max, 0, h0);
 		}
-		Box b = p->calculateSize();
-		p->getGraphics().set(w_max, b.height(), w0, h0 + 1);
+		Box b = p->getSize();
+		p->setBox(w_max, b.height(), w0, h0 + 1);
 		h0 += b.height() + 1;
 		p->doDraw();
 	}	
@@ -759,7 +757,7 @@ void CursesWindow::doMouse(MouseEvent& mouse)
 {
 	int x, y;
 	mouse.getCoords(x, y);
-	for ( auto p : m_panels ) {
+	for ( auto& p : m_panels ) {
 		if (p->getGraphics().getBox().inside(x, y)) {
 			p->getGraphics().relativeOrig(x, y);
 			mouse.setCoords(x, y);

@@ -73,7 +73,7 @@ namespace UI {
 		 * @param init Initialization string.
 		 * @param gc   Graphics object.
 		 */
-	    EqnPanel(const std::string& init, GraphicsPtr gc) :
+	    EqnPanel(const std::string& init, Graphics* gc) :
 		    MiloPanel(gc),
 			m_eqn(new Equation(init)) { pushUndo(); }
 
@@ -82,7 +82,7 @@ namespace UI {
 		 * @param eqn Equation for this panel.
 		 * @param gc  Graphics object.
 		 */
-	    EqnPanel(Equation* eqn, GraphicsPtr gc) :
+	    EqnPanel(Equation* eqn, Graphics* gc) :
 		    MiloPanel(gc),
 			m_eqn(eqn) { pushUndo(); }
 
@@ -91,7 +91,7 @@ namespace UI {
 		 * @param in  XML parser object.
 		 * @param gc  Graphics object.
 		 */
-	    EqnPanel(XML::Parser& in, GraphicsPtr gc) :
+	    EqnPanel(XML::Parser& in, Graphics* gc) :
 			MiloPanel(gc),
 			m_eqn(new Equation(in))	{ pushUndo(); }
 
@@ -122,15 +122,17 @@ namespace UI {
 		 */
 		void doDraw();
 
-		/** Calculate size of panel.
+		/** 
+		 * Calculate size of panel.
+		 * @return Calculated size of panel.
 		 */
 		Box calculateSize();
 
-		/**
-		 * Get minimum size of panel.
-		 * @return Box Frame of panel's contents.
+		/** 
+		 * Get last calculated size of equation panel.
+		 * @return Last calculated size of equation panel.
 		 */
-		Box getMinSize() { return m_eqn->getRoot()->getFrame().box;	}
+		Box getSize() { return m_eqn->getRoot()->getFrame().box; }
 		
 		/**
 		 * Push state of panel to undo stack.
@@ -159,6 +161,15 @@ namespace UI {
 		 * @return If true, there is an active input.
 		 */
 		bool blink();
+
+		/**
+		 * Set size and origin of the graphics of this panel
+		 * @param x Horizontal size ofgraphics.
+		 * @param y Vertical size of graphics.
+		 * @param x0 Horizontal origin of graphics.
+		 * @param y0 Vertical origin of graphics.
+		 */
+		void setBox(int x, int y, int x0, int y0)  { m_gc->set(x, y, x0, y0); }
 		
 		/**
 		 * Get coordinates of current active input.
@@ -449,11 +460,13 @@ namespace UI {
 		 * @param gc    Graphics object.
 		 */
 	    AlgebraPanel(const std::string& init,
-					 GraphicsPtr gc) :
+					 Graphics* gc) :
 		    MiloPanel(gc),
 			m_side(LEFT),
-			m_left(new EqnPanel(init.substr(0, init.find('=')), gc)),
-			m_right(new EqnPanel(init.substr(init.rfind('=')), gc))
+			m_left(new EqnPanel(init.substr(0, init.find('=')),
+								MiloApp::getGlobal().makeGraphics())),
+			m_right(new EqnPanel(init.substr(init.rfind('=')),
+								MiloApp::getGlobal().makeGraphics()))
 		{
 			pushUndo();
 		}
@@ -463,11 +476,13 @@ namespace UI {
 		 * @param in  XML parser object.
 		 * @param gc  Graphics object.
 		 */
-	    AlgebraPanel(XML::Parser& in, GraphicsPtr gc) :
+	    AlgebraPanel(XML::Parser& in, Graphics* gc) :
 			MiloPanel(gc),
 			m_side(readSide(in)),
-			m_left(new EqnPanel(new Equation(in), gc)),
-			m_right(new EqnPanel(new Equation(in), gc))
+			m_left(new EqnPanel(new Equation(in),
+								MiloApp::getGlobal().makeGraphics())),
+			m_right(new EqnPanel(new Equation(in),
+								MiloApp::getGlobal().makeGraphics()))
 		{
 			pushUndo();
 		}
@@ -502,9 +517,17 @@ namespace UI {
 		 */
 		void doDraw();
 
-		/** Calculate size of panel.
+		/** 
+		 * Calculate size of panel.
+		 * @return Calculated size of panel.
 		 */
 		Box calculateSize();
+
+		/** 
+		 * Get last calculated size of equation panel.
+		 * @return Last calculated size of equation panel.
+		 */
+		Box getSize() { return m_frame.box; }
 		
 		/**
 		 * Push state of panel to undo stack.
@@ -535,6 +558,15 @@ namespace UI {
 		bool blink() { return getCurrentSide().blink(); }
 
 		/**
+		 * Set size and origin of the graphics of this panel
+		 * @param x Horizontal size ofgraphics.
+		 * @param y Vertical size of graphics.
+		 * @param x0 Horizontal origin of graphics.
+		 * @param y0 Vertical origin of graphics.
+		 */
+		void setBox(int x, int y, int x0, int y0);
+
+		/**
 		 * Get coordinates of current active input.
 		 * @param[out] x Horizontal origin of curosr.
 		 * @param[out] y Vertical origin cursor.
@@ -563,6 +595,7 @@ namespace UI {
 		Side m_side;         ///< Side that is active.
 		EqnPanelPtr m_left;  ///< Equation of left of algebraic equality.
 		EqnPanelPtr m_right; ///< Equation of right of algebraic equality.
+		Node::Frame m_frame; ///< From containing both equations.
 
 		static const std::string side_tag;    ///< Side tag.
 		static const std::string left_value;  ///< Element value for left.

@@ -240,18 +240,18 @@ class AsciiApp : public MiloApp
 
 	void makeTopWindow() {}
 
-	GraphicsPtr makeGraphics() { return GraphicsPtr(0); }
+	Graphics* makeGraphics() { return nullptr; }
 
-	MiloWindowPtr makeWindow() { return MiloWindowPtr(0); }
+	MiloWindow* makeWindow() { return nullptr; }
 
-	MiloWindowPtr makeWindow(XML::Parser&, const std::string&) { return MiloWindowPtr(0); }
+	MiloWindow* makeWindow(XML::Parser&, const std::string&) { return nullptr; }
 };
 
 AsciiApp app;
 MiloApp&  MiloApp::m_current = app; ///< Dummy app object
 
 AsciiGraphics* gc = new AsciiGraphics(cout);  ///< Asciigraphics class object.
-EqnPanel panel("#", GraphicsPtr(gc));         ///< EqnPanel class object.
+EqnPanel panel("#", gc);                      ///< EqnPanel class object.
 
 /**
  * Load parsed equation string into global equation object.

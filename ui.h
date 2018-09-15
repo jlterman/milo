@@ -31,7 +31,6 @@
 #include <string>
 #include <memory>
 #include "util.h"
-#include "smart.h"
 #include "xml.h"
 
 /**
@@ -44,23 +43,6 @@ namespace UI {
 	class MiloApp;
 	class MiloWindow;
 	class MiloPanel;
-
-	/** @name UI namespace Type Declerations  */
-	//@{
-	using GraphicsPtr = SmartPtr<Graphics>;            ///< Smart pointer for Graphics
-	using MiloWindowPtr = SmartPtr<MiloWindow>;        ///< Smart pointer for MiloWindow
-	using MiloWindowVector = SmartVector<MiloWindow>;  ///< Storage of MiloWindow pointers
-	using MiloWindowIter = MiloWindowVector::iterator; ///< Iterator of MiloWindow pointers vector
-	using MiloPanelPtr = SmartPtr<MiloPanel>;          ///< Smart pointer for MiloPanel
-	using MiloPanelVector = SmartVector<MiloPanel>;    ///< Storage of MiloPanel pointers
-	using MiloPanelIter = MiloPanelVector::iterator;   ///< Iterator of MiloPanel pointers vector 
-
-	/**
-	 * Function pointer to handle a menu item.
-	 * Return true, if event changed panel.
-	 */
-	using menu_handler = void (*)(void);
-	//@}
 
 	namespace Keys {
 		/**
@@ -82,7 +64,15 @@ namespace UI {
 		};
 	}
 
+	/** @name UI namespace Type Declerations  */
+	//@{
     using Keyboard = Keys::Key_Values;
+
+	/**
+	 * Function pointer to handle a menu item.
+	 * Return true, if event changed panel.
+	 */
+	using menu_handler = void (*)(void);
 	
 	/**
 	 * All possible mouse events.
@@ -97,6 +87,7 @@ namespace UI {
 	enum Modifiers {
 		NO_MOD, ALT, SHIFT, ALT_SHIFT, CTRL, CRL_ALT, CTRL_SHIFT, CTRL_ALT_SHIFT
 	};
+	//@}
 
 	/**
 	 * Milo UI Mouse Event.
@@ -357,8 +348,11 @@ namespace UI {
 	 * Provides an interface of helper functions that allow nodes to draw themselves
 	 * on the current graphical interface.
 	 */
-	class Graphics	{
+	class Graphics
+	{
 	public:
+		using Ptr = std::unique_ptr<Graphics>;  ///< Unique pointer for Graphics.
+		
 		/** @name Constructor and Virtual Destructor */
 		//@{
 		/**
@@ -563,7 +557,7 @@ namespace UI {
 	 * @param gc Graphics object
 	 * @return Pointer to panel
 	 */
-	template <class T> MiloPanel* createPanel(const std::string& init, GraphicsPtr gc)
+	template <class T> MiloPanel* createPanel(const std::string& init, Graphics* gc)
 	{
 		return new T(init, gc);
 	}
@@ -575,28 +569,32 @@ namespace UI {
 	 * @param gc Graphics object
 	 * @return Pointer to panel
 	 */
-	template <class T> MiloPanel* createPanelXML(XML::Parser& in, GraphicsPtr gc)
+	template <class T> MiloPanel* createPanelXML(XML::Parser& in, Graphics* gc)
 	{
 		return new T(in, gc);
 	}
 
 	/** Function pointer to return panel object with initilization string and Graphics object
 	 */
-	using panel_factory = MiloPanel* (*)(const std::string&, GraphicsPtr);
+	using panel_factory = MiloPanel* (*)(const std::string&, Graphics*);
 
 	/** Function pointer to return panel object with xml parser and Graphics object
 	 */
-	using panel_xml = MiloPanel* (*)(XML::Parser&, GraphicsPtr);
+	using panel_xml = MiloPanel* (*)(XML::Parser&, Graphics*);
 	
 	/** MiloPanel is an abstract base class interface for all milo panels.
 	 *  This will provide hooks into the user interface.
 	 */
-	class MiloPanel : public std::enable_shared_from_this<MiloPanel>
+	class MiloPanel
 	{
 	public:
 		friend class MiloApp;
 
-		static const std::string tag/* = "panel" */; ///< xml tag for panel.
+		using Ptr    = std::unique_ptr<MiloPanel>;  ///< Unique pointer for MiloPanel
+		using Vector = std::vector<MiloPanel::Ptr>; ///< Storage of MiloPanel pointers
+		using Iter   = MiloPanel::Vector::iterator; ///< Iterator of MiloPanel ptr vector
+
+		static constexpr const char* tag = "panel"; ///< xml tag for panel.
 		const std::string type_tag = "type";        ///< xml type for <panel>.
 		const std::string active_tag = "active";    ///< name/value tag.
 		
@@ -605,7 +603,7 @@ namespace UI {
 		/** Constructor for MiloPanel base class.
 		 * @param gc Graphics object
 		 */
-	    MiloPanel(GraphicsPtr gc) : m_gc(gc) {}
+	    MiloPanel(Graphics* gc) : m_gc{gc} {}
 
 		/** Virtual deconstructor for MiloPanel initializing graphics context
 		 */
@@ -637,9 +635,17 @@ namespace UI {
 		 */
 		virtual void doDraw() = 0;
 
-		/** Calculate size of panel.
+		/** 
+		 * Calculate size of panel.
+		 * @return Calculated size of panel.
 		 */
 		virtual Box calculateSize() = 0;
+
+		/** 
+		 * Get last calculated size of equation panel.
+		 * @return Last calculated size of equation panel.
+		 */
+		virtual Box getSize() = 0;
 		
 		/**
 		 * Push state of panel to undo stack.
@@ -670,6 +676,15 @@ namespace UI {
 		virtual bool blink() = 0;
 
 		/**
+		 * Set size and origin of the graphics of this panel
+		 * @param x Horizontal size ofgraphics.
+		 * @param y Vertical size of graphics.
+		 * @param x0 Horizontal origin of graphics.
+		 * @param y0 Vertical origin of graphics.
+		 */
+		virtual void setBox(int x, int y, int x0, int y0) = 0;
+
+		/**
 		 * Get coordinates of current active input.
 		 * @param[out] x Horizontal origin of curosr.
 		 * @param[out] y Vertical origin cursor.
@@ -692,23 +707,6 @@ namespace UI {
 		 * @return XML stream object.
 		 */
 		XML::Stream& out(XML::Stream& xml);
-
-		/**
-		 * Return shared_ptr for this MiloPanel object.
-		 * If none exists, create one.
-		 * @return Shared pointer for this MiloPanel object
-		 */
-		std::shared_ptr<MiloPanel> getSharedPtr()
-		{
-			std::shared_ptr<MiloPanel> sp;
-			try {
-				sp = this->shared_from_this();
-			}
-			catch (std::exception& ex) {
-				sp = std::shared_ptr<MiloPanel>(this);
-			}
-			return sp;
-		}
 		//@}
 		
 		/** 
@@ -718,9 +716,9 @@ namespace UI {
 		 * @param gc Graphics object
 		 * @return Pointer to panel class object
 		 */
-		static MiloPanel* make(const std::string& name,
-							   const std::string& init,
-							   GraphicsPtr gc);
+		static MiloPanel::Ptr make(const std::string& name,
+								   const std::string& init,
+								   Graphics*);
 		
 		/** 
 		 * Get a smart pointer to a panel class object by name with xml.
@@ -729,10 +727,10 @@ namespace UI {
 		 * @param gc Graphics object.
 		 * @return Pointer to panel class object.
 		 */
-		static MiloPanel* make(XML::Parser& in, GraphicsPtr gc);
+		static MiloPanel::Ptr make(XML::Parser& in, Graphics* gc);
 		
 	protected:
-		GraphicsPtr m_gc;  ///< Graphics object for panel.
+		Graphics::Ptr m_gc;  ///< Owned Graphics object for panel.
 
 		/** Map of name to panel create functions.
 		 */
@@ -746,13 +744,17 @@ namespace UI {
 	/**
 	 * Milo Window class that contains a list of panels.
 	 */
-	class MiloWindow : public std::enable_shared_from_this<MiloWindow>
+	class MiloWindow
 	{
 	public:
 		friend class MiloApp;
 
-		const std::string title_tag = "title";    ///< title xml tag.
-		const std::string active_tag = "active";  ///< active xml tag.
+		using Ptr    = std::unique_ptr<MiloWindow>;  ///< Unique pointer for MiloWindow
+		using Vector = std::vector<MiloWindow::Ptr>; ///< Storage of MiloWindow pointers
+		using Iter   = MiloWindow::Vector::iterator; ///< Iterator of MiloWindows ptr vector
+		
+		const std::string title_tag = "title";   ///< title xml tag.
+		const std::string active_tag = "active"; ///< active xml tag.
 
 		/** @name Constructors and Virtual Destructor */
 		//@{
@@ -765,27 +767,13 @@ namespace UI {
 		 */
 	    MiloWindow(const std::string& name,
 				   const std::string& init,
-				   GraphicsPtr gc) :
-		m_panels(MiloPanel::make(name, init, gc)),
-			m_current_panel(m_panels.begin()),
-			m_title("Untitled 001") {}
-
-		/**
-		 * Constructor with new panel.
-		 * @param name Name of panel class.
-		 * @param init Initialization string.
-		 * @param gc   Graphics object.
-		 */
-		MiloWindow(const std::string& name,
-				   const std::string& init,
-				   Graphics* gc) :
-			MiloWindow(name, init, GraphicsPtr(gc)) {}
+				   Graphics* gc);
 
 		/**
 		 * Constructor from XML::Parser.
 		 * @param in XML::Parser object
 		 */
-		MiloWindow(XML::Parser& in, const std::string& fname) { m_filename = fname; xml_in(in); }
+		MiloWindow(XML::Parser& in, const std::string& fname);
 			
 		/**
 		 * Abstract base class needs virtual destructor.
@@ -805,39 +793,40 @@ namespace UI {
 		 * Get active panel iterator.
 		 * @return Active panel.
 		 */
-		MiloPanelIter getPanelIter() { return m_current_panel; }
+		MiloPanel::Iter getPanelIter() { return m_current_panel; }
 
 		/**
 		 * Add new panel to window after current panel.
 		 * @param panel New panel added to window.
 		 */
-		void addPanel(MiloPanelPtr panel) {
-			m_current_panel = AddAfter(m_panels, m_current_panel, panel);
+		void addPanel(MiloPanel* panel) {
+			m_current_panel = AddPtrAfter(m_panels, m_current_panel, panel);
 		}
 
 		/**
 		 * Delete panel from window.
 		 * @param it Iterator to panel to be deleted.
 		 */
-		void deletePanel(MiloPanelIter it) {
+		void deletePanel(MiloPanel::Iter it) {
 			m_current_panel = m_panels.erase(it);
+			if (m_current_panel == m_panels.end()) {
+				m_current_panel = m_panels.end() - 1;
+			}
 		}
 
 		/**
 		 * Delete current panel from window.
 		 */
-		void deletePanel() {
-			m_current_panel = m_panels.erase(m_current_panel);
-		}
+		void deletePanel() { deletePanel(m_current_panel); }
 
 		/**
 		 * Get iterator of panel
 		 * @param panel MiloPanel reference.
 		 * @return Iterator of panel.
 		 */
-		MiloPanelIter getPanelIterator(const MiloPanel& panel) {
+		MiloPanel::Iter getPanelIterator(const MiloPanel& panel) {
 			for ( auto it = m_panels.begin(); it != m_panels.end(); ++it ) {
-				if (panel.shared_from_this() == (*it)->shared_from_this()) {
+				if (&panel == it->get()) {
 					return it;
 				}
 			}
@@ -846,10 +835,10 @@ namespace UI {
 
 		/**
 		 * Get iterator of panel
-		 * @param panel MiloPanelPtr value.
+		 * @param panel MiloPanel::Ptr value.
 		 * @return Iterator of panel.
 		 */
-		MiloPanelIter getPanelIterator(const MiloPanelPtr panel) {
+		MiloPanel::Iter getPanelIterator(const MiloPanel::Ptr panel) {
 			for ( auto it = m_panels.begin(); it != m_panels.end(); ++it ) {
 				if (panel.get() == it->get()) {
 					return it;
@@ -905,36 +894,19 @@ namespace UI {
 		 * Return iterator of first panel.
 		 * @return Iterator of first panel.
 		 */
-		MiloPanelIter begin() { return m_panels.begin(); }
+		MiloPanel::Iter begin() { return m_panels.begin(); }
 
 		/**
 		 * Return iterator of end panel iterator.
 		 * @return End panel iterator.
 		 */
-		MiloPanelIter end() { return m_panels.end(); }
-
-		/**
-		 * Return shared_ptr for this MiloWindow object.
-		 * If none exists, create one.
-		 * @return Shared pointer for this MiloWindow object
-		 */
-		std::shared_ptr<MiloWindow> getSharedPtr()
-		{
-			std::shared_ptr<MiloWindow> sp;
-			try {
-				sp = this->shared_from_this();
-			}
-			catch (std::exception& ex) {
-				sp = std::shared_ptr<MiloWindow>(this);
-			}
-			return sp;
-		}
+		MiloPanel::Iter end() { return m_panels.end(); }
 		//@}
 	protected:
-		MiloPanelVector m_panels;      ///< List of panels for this window.
-		MiloPanelIter m_current_panel; ///< Current active panel.
-		std::string m_title;           ///< Title of window.
-		std::string m_filename;        ///< Filename of window's xml.
+		MiloPanel::Vector m_panels;      ///< List of panels for this window.
+		MiloPanel::Iter m_current_panel; ///< Current active panel.
+		std::string m_title;             ///< Title of window.
+		std::string m_filename;          ///< Filename of window's xml.
 	};
 
 	/**
@@ -954,7 +926,7 @@ namespace UI {
 		 * Get new graphics object.
 		 * @return New graphics object.
 		 */
-		virtual GraphicsPtr makeGraphics() = 0;
+		virtual Graphics* makeGraphics() = 0;
 		//@}
 
 		/** @name Public helper member functions. */
@@ -986,8 +958,8 @@ namespace UI {
 		 * Add new window to application after current window.
 		 * @param win New window added to application
 		 */
-		void addWindow(MiloWindowPtr win) {
-			m_current_window = AddAfter(m_windows, m_current_window, win);
+		void addWindow(MiloWindow* win) {
+			m_current_window = AddPtrAfter(m_windows, m_current_window, win);
 			makeTopWindow();
 		}
 
@@ -1015,16 +987,17 @@ namespace UI {
 		/**
 		 * Close current window from application.
 		 */
-		void closeWindow() {
-			m_current_window = m_windows.erase(m_current_window);
-		}
+		void closeWindow() { closeWindow(m_current_window); }
 
 		/**
 		 * Close window from application.
 		 * @param it Iterator to window to be deleted.
 		 */
-		void closeWindow(MiloWindowIter it) {
+		void closeWindow(MiloWindow::Iter it) {
 			m_current_window = m_windows.erase(it);
+			if (m_current_window == m_windows.end()) {
+				m_current_window = m_windows.end() - 1;
+			}
 		}
 
 		/**
@@ -1044,9 +1017,9 @@ namespace UI {
 		 * @param win MiloWindow reference.
 		 * @return Iterator of window.
 		 */
-		MiloWindowIter getWindowIterator(const MiloWindow& win) {
+		MiloWindow::Iter getWindowIterator(const MiloWindow& win) {
 			for ( auto it = m_windows.begin(); it != m_windows.end(); ++it ) {
-				if (win.shared_from_this() == (*it)->shared_from_this()) {
+				if (&win == it->get()) {
 					return it;
 				}
 			}
@@ -1084,13 +1057,13 @@ namespace UI {
 		 * Return iterator of first window.
 		 * @return Iterator of first window.
 		 */
-		MiloWindowIter begin() { return m_windows.begin(); }
+		MiloWindow::Iter begin() { return m_windows.begin(); }
 
 		/**
 		 * Return iterator of end window iterator.
 		 * @return End window iterator.
 		 */
-		MiloWindowIter end() { return m_windows.end(); }
+		MiloWindow::Iter end() { return m_windows.end(); }
 		//@}
 
 		/**
@@ -1112,14 +1085,7 @@ namespace UI {
 		 * Protected constructor for singleton base class.
 		 * @param win Default window
 		 */
-	    MiloApp(MiloWindowPtr win) :
-		    m_windows({win}), m_current_window(m_windows.begin()) {}
-
-		/**
-		 * Protected constructor for singleton base class.
-		 * @param win Default window
-		 */
-	    MiloApp(MiloWindow* win) : MiloApp(MiloWindowPtr(win)) {}
+	    MiloApp(MiloWindow* win);
 
 		/**
 		 * Abstract base class needs virtual destructor.
@@ -1127,8 +1093,8 @@ namespace UI {
 		~MiloApp() {}
 		//@}
 		
-		MiloWindowVector m_windows;        ///< List of windows for this application.
-		MiloWindowIter   m_current_window; ///< Current active window.
+		MiloWindow::Vector m_windows;        ///< List of windows for this application.
+		MiloWindow::Iter   m_current_window; ///< Current active window.
 
 		static MiloApp& m_current; ///< Reference to current application singleton
 
@@ -1141,13 +1107,13 @@ namespace UI {
 
 		/** Create default window.
 		 */
-		virtual MiloWindowPtr makeWindow() = 0;
+		virtual MiloWindow* makeWindow() = 0;
 
 		/**
 		 * Create window from xml.
 		 * @param in XML parser object.
 		 */
-		virtual MiloWindowPtr makeWindow(XML::Parser& in, const std::string& fname) = 0;
+		virtual MiloWindow* makeWindow(XML::Parser& in, const std::string& fname) = 0;
 		//@}
 		
 		/**

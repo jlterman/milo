@@ -158,6 +158,31 @@ auto AddAfter(std::vector<T>& v, decltype(v.begin()) it, const T& elem)->decltyp
 }
 
 /**
+ * Insert an elememnt after the element pointed to by the given iterator
+ * for a vector consisting of std::unique_ptr<T>.
+ * @param v Vector storing type unique_ptr<T>.
+ * @param it Iterator pointing to insert position.
+ * @param e Pointer to element of type T*.
+ * @return Iterator to inserted element.
+ */
+template <class T>
+auto AddPtrAfter(std::vector< std::unique_ptr<T> >& v,
+				 decltype(v.begin()) it,
+				 T* elem) -> decltype(v.begin())
+{
+	std::unique_ptr<T> ptr(elem);
+	if (v.empty()) {
+		v.push_back(std::move(ptr));
+		return v.begin();
+	}
+	if (it == v.end()) {
+		return v.insert(v.begin(), std::move(ptr));
+	}
+	++it;
+	return v.insert(it, std::move(ptr));
+}
+
+/**
  * Search for a value in map.
  * @param kv_map Map to be searched.
  * @param value  Value to look for

@@ -125,21 +125,20 @@ string KeyEvent::toString() const
 		return string("Key event: ") + mod_string.at(m_mod) + key_string.at(m_key);
 }
 
-const std::string MiloPanel::tag = "panel";
-
-MiloPanel* MiloPanel::make(const string& name,
-						   const string& init,
-						   GraphicsPtr gc)
+MiloPanel::Ptr MiloPanel::make(const string& name,
+							   const string& init,
+							   Graphics* gc)
 {
 	auto panel_entry = panel_map.find(name);
+	MiloPanel* panel = nullptr;
 	if (panel_entry != panel_map.end()) {
-		return (panel_entry->second)(init, gc);
+		panel = (panel_entry->second)(init, gc);
 	}
-	return nullptr;
+	return Ptr(panel);
 }
 
-MiloPanel* MiloPanel::make(XML::Parser& in,
-						   GraphicsPtr gc)
+MiloPanel::Ptr MiloPanel::make(XML::Parser& in,
+							   Graphics* gc)
 {
 	in.next(XML::HEADER, "panel").next(XML::NAME_VALUE).next(XML::HEADER_END);
 
@@ -155,7 +154,22 @@ MiloPanel* MiloPanel::make(XML::Parser& in,
 		panel = (panel_entry->second)(in, gc);
 	}
 	in.next(XML::FOOTER);
-	return panel;
+	return Ptr(panel);
+}
+
+MiloWindow::MiloWindow(const std::string& name,
+					   const std::string& init,
+					   Graphics* gc) :
+	m_title("Untitled 001")
+{
+	m_panels.push_back(std::move(MiloPanel::make(name, init, gc)));
+	m_current_panel = m_panels.begin();
+}
+
+MiloWindow::MiloWindow(XML::Parser& in, const std::string& fname)
+{
+	m_filename = fname;
+	xml_in(in);
 }
 
 void MiloWindow::stepPanel(bool dir)
@@ -199,8 +213,8 @@ void MiloWindow::xml_in(XML::Parser& in)
 	in.next(XML::FOOTER);
 	
 	while (in.check(XML::HEADER, MiloPanel::tag)) {
-		MiloPanel* p = MiloPanel::make(in, MiloApp::getGlobal().makeGraphics());
-		m_panels.push_back(p);
+		auto p = MiloPanel::make(in, MiloApp::getGlobal().makeGraphics());
+		m_panels.push_back(std::move(p));
 	}
 	m_current_panel = m_panels.begin() + active;
 }
@@ -218,11 +232,17 @@ XML::Stream& MiloWindow::out(XML::Stream& xml)
 	xml << XML::HEADER << title_tag << XML::HEADER_END << XML::ELEMENT << m_title << XML::FOOTER;
 	xml << XML::HEADER << active_tag << XML::HEADER_END;
 	xml << XML::ELEMENT << to_string(m_current_panel - m_panels.begin()) << XML::FOOTER;
-	for ( auto panel : m_panels ) {
+	for ( auto& panel : m_panels ) {
 		panel->out(xml);
 	}
 	xml << XML::FOOTER;
 	return xml;
+}
+
+MiloApp::MiloApp(MiloWindow* win)
+{
+	m_windows.push_back(std::move(MiloWindow::Ptr(win)));
+	m_current_window = m_windows.begin();
 }
 
 bool MiloApp::isRunning()

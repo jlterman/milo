@@ -339,9 +339,13 @@ static const map<char, string> char_map = {
 
 http://stackoverflow.com/questions/29020638/which-term-to-use-to-have-both-256-colors-and-mouse-move-events-in-python-curse
 
+"infocmp xterm" dumps termcap output that tic can handle.
+"infocmp xterm xterm-1003" shows differences for mouse tracking.
+
+xterm-milo is xterm-256color + "infocmp xterm xterm-1003" differences
 #include <ncurses.h>
 
-enum { NONE, PRESSED, RELEASED, CLICKED, DOUBLE_CLICKED, TRIPLE_CLICKED };
+enum { NONE, PRESSED, RELEASED, CLICKED, DOUBLE_CLICKED, TRIPLE_CLICKED, POSITION };
 
 const char* state_str[] = {
 	"NONE",
@@ -349,14 +353,15 @@ const char* state_str[] = {
 	"RELEASED",
 	"CLICKED ",
 	"DOUBLE  ",
-	"TRIPLE  "
+	"TRIPLE  ",
+	"POSITION"
 };
 
 #define b(x) (x ? 't' : 'f')
 
 int main(int argc, char *argv[])
 {
-	initscr(); clear(); raw(); noecho(); cbreak(); mousemask(ALL_MOUSE_EVENTS, NULL);
+	initscr(); clear(); raw(); noecho(); cbreak(); mousemask(ALL_MOUSE_EVENTS | REPORT_MOUSE_POSITION, NULL);
 	mouseinterval(300); keypad(stdscr, TRUE);
 
 	MEVENT event;
@@ -364,53 +369,63 @@ int main(int argc, char *argv[])
 	unsigned int c = getch();
 	int line = 0;
 	while (c != 3) {
-		mvprintw(20, 1, "Key found: %d", c);
+		mvprintw(20, 1, "Key found: %x              ", c);
 		if (c == KEY_MOUSE && getmouse(&event) == OK) {
+			mvprintw(21, 1, "Mouse found: %x                 ", event.bstate);
+			if ( event.bstate == 0x18000000 ) {
+				mvprintw(23, 1, "Mouse moved: %d, %d   ", event.x, event.y);
+				continue;
+			}
+			else {
+				mvprintw(23, 1, "                      ", event.x, event.y);
+			}
 			if (event.bstate & BUTTON1_PRESSED) {
 				button = 1; state = PRESSED;
 			}
 			else if (event.bstate & BUTTON1_RELEASED) {
 				button = 1; state = RELEASED;
 			}
-			if (event.bstate & BUTTON1_CLICKED) {
+			else if (event.bstate & BUTTON1_CLICKED) {
 				button = 1; state = CLICKED;
 			}
-			if (event.bstate & BUTTON1_DOUBLE_CLICKED) {
+			else if (event.bstate & BUTTON1_DOUBLE_CLICKED) {
 				button = 1; state = DOUBLE_CLICKED;
 			}
-			if (event.bstate & BUTTON1_TRIPLE_CLICKED) {
+			else if (event.bstate & BUTTON1_TRIPLE_CLICKED) {
 				button = 1; state = TRIPLE_CLICKED;
 			}
-			if (event.bstate & BUTTON2_PRESSED) {
+			else if (event.bstate & BUTTON2_PRESSED) {
 				button = 2; state = PRESSED;
 			}
 			else if (event.bstate & BUTTON2_RELEASED) {
 				button = 2; state = RELEASED;
 			}
-			if (event.bstate & BUTTON2_CLICKED) {
+			else if (event.bstate & BUTTON2_CLICKED) {
 				button = 2; state = CLICKED;
 			}
-			if (event.bstate & BUTTON2_DOUBLE_CLICKED) {
+			else if (event.bstate & BUTTON2_DOUBLE_CLICKED) {
 				button = 2; state = DOUBLE_CLICKED;
 			}
-			if (event.bstate & BUTTON2_TRIPLE_CLICKED) {
+			else if (event.bstate & BUTTON2_TRIPLE_CLICKED) {
 				button = 2; state = TRIPLE_CLICKED;
 			}
-			if (event.bstate & BUTTON3_PRESSED) {
+			else if (event.bstate & BUTTON3_PRESSED) {
 				button = 3; state = PRESSED;
 			}
 			else if (event.bstate & BUTTON3_RELEASED) {
 				button = 3; state = RELEASED;
 			}
-			if (event.bstate & BUTTON3_CLICKED) {
+			else if (event.bstate & BUTTON3_CLICKED) {
 				button = 3; state = CLICKED;
 			}
-			if (event.bstate & BUTTON3_DOUBLE_CLICKED) {
+			else if (event.bstate & BUTTON3_DOUBLE_CLICKED) {
 				button = 3; state = DOUBLE_CLICKED;
 			}
-			if (event.bstate & BUTTON3_TRIPLE_CLICKED) {
+			else if (event.bstate & BUTTON3_TRIPLE_CLICKED) {
 				button = 3; state = TRIPLE_CLICKED;
 			}
+			else
+				continue;
 			shift = event.bstate & BUTTON_SHIFT;
 			ctrl  = event.bstate & BUTTON_CTRL;
 			alt   = event.bstate & BUTTON_ALT;
@@ -845,4 +860,54 @@ int main()
 {
 	foo f(2);
 	std::cout << "double of " << f.get() << ": " << f.run("double") << std::endl;
+}
+
+=================================
+#include <iostream>
+#include <memory>
+#include <string>
+#include <vector>
+
+template <class T>
+class SmartPtr
+{
+public:
+	SmartPtr() : m_p(nullptr) {}
+	SmartPtr(T* p) : m_p(p) {}
+
+	SmartPtr(const SmartPtr&& sp) : m_p(std::move(sp.m_p)) {}
+
+	SmartPtr& operator=(SmartPtr&& sp) { m_p = std::move(sp.m_p); }
+
+	T& operator*() { return *(m_p.get()); }
+	T* operator->() { return m_p.get(); }
+	SmartPtr& operator=(T* p) { m_p.reset(p); return *this; }
+
+	const T& operator*() const { return *(m_p.get()); }
+	const T* operator->() const { return m_p.get(); }
+
+	operator T*() { return m_p.get(); }
+	operator const T*() const { return m_p.get(); }
+
+private:
+	std::unique_ptr<T> m_p;
+};
+
+void const_test(const SmartPtr<int>& sp)
+{
+	std::cout << *sp << std::endl;
+}
+
+int main()
+{
+	SmartPtr<int> sp = new int(3);
+	int* p = sp;
+	std::cout << *p << std::endl;
+	std::cout << *sp << std::endl;
+	sp = new int(5);
+	if (sp) const_test(sp);
+	SmartPtr<int> sp2;
+	if (!sp2) std::cout << "sp2 is null\n";
+	if (sp != p) std::cout << "sp != sp2\n";
+
 }

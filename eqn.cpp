@@ -17,7 +17,7 @@
 
 /**
  * @file eqn.cpp
- * This file contains the implementation of EqnPanel.
+ * This file contains the implementation of the panels that use class Equation.
  */
 
 #include "panel.h"
@@ -709,24 +709,48 @@ void AlgebraPanel::doDraw()
 	m_left->doDraw();
 	m_right->doDraw();
 	Node::Frame left = m_left->getEqn().getRoot()->getFrame();
-	m_left->getGraphics().at(left.box.x0() + left.box.width(),
-							 left.box.y0() + left.base, " = ",
-							 UI::Graphics::Attributes::NONE);
+    m_gc->at(left.box.x0() + left.box.width() + m_gc->getTextLength("="),
+			 m_frame.base, "=",
+			 UI::Graphics::Attributes::NONE);
+}
+
+void AlgebraPanel::setBox(int x, int y, int x0, int y0)
+{
+	m_gc->set(x, y, x0, y0);
+	
+	auto leftFrame = m_left->getEqn().getRoot()->getFrame();
+	auto rightFrame = m_right->getEqn().getRoot()->getFrame();
+
+	m_left->getGraphics().set(leftFrame.box.width(),
+							  leftFrame.box.height(),
+							  x0,
+							  y0 + m_frame.base - leftFrame.base);
+	
+	m_right->getGraphics().set(rightFrame.box.width(),
+							   rightFrame.box.height(),
+							   x0 + leftFrame.box.width() + m_gc->getTextLength("==="),
+							   y0 + m_frame.base - rightFrame.base);
+							   
 }
 
 Box AlgebraPanel::calculateSize()
 {
-	Box left_box = m_left->calculateSize();
-	Box right_box = m_right->calculateSize();
+	m_left->calculateSize();
+	m_right->calculateSize();
 
-	int h_max = max(left_box.height(), right_box.height());
-	m_left->getEqn().getRoot()->calculateOrigin(
-	    *m_gc, 0, (h_max - left_box.height())/2
-	);
-	m_right->getEqn().getRoot()->calculateOrigin(
-		*m_gc, left_box.width() + m_gc->getTextLength("==="), (h_max - right_box.height())/2
-	);
-	return Box(0, 0, left_box.width() + m_gc->getTextLength("===") + right_box.width(), h_max);
+	auto leftFrame = m_left->getEqn().getRoot()->getFrame();
+	auto rightFrame = m_right->getEqn().getRoot()->getFrame();
+
+	int y_max = max(leftFrame.box.height() -  leftFrame.base,
+					rightFrame.box.height() - rightFrame.base);
+
+	int b_max = max(leftFrame.base, rightFrame.base);
+
+	int x = leftFrame.box.width() + m_gc->getTextLength("===") + rightFrame.box.width();
+
+	m_frame = { { x, b_max + y_max, 0, 0 }, b_max };
+
+	return m_frame.box;
 }
 
 void AlgebraPanel::xml_out(XML::Stream& xml)
