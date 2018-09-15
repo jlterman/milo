@@ -219,7 +219,17 @@ bool Menu::handleMouse(const MouseEvent& mouse)
 	{
 		return false;
 	}
-	auto item = m_items.begin() + (mouse_y - m_y0) - 1;
+	int nItem = mouse_y - m_y0 - 1;
+	if (nItem < 0 || (size_t) nItem >= m_items.size())
+	{
+		m_highlight = m_items.end();
+		if (mouse == MouseEvent(Mouse::POSITION, 0, Modifiers::NO_MOD)) {
+			return true;
+		}
+		return false;
+	}
+
+	auto item = m_items.begin() + nItem;
 	if (!(*item)->getActive()) {
 		return true;
 	}
@@ -240,11 +250,14 @@ bool MenuBar::handleMouse(const MouseEvent& mouse)
 {
 	int x_mouse, y_mouse;
 	mouse.getCoords(x_mouse, y_mouse);
+	if (!m_root && mouse.getMouse() == Mouse::POSITION) {
+		return false;
+	}
 	if (y_mouse == 0 &&
 		(mouse == MouseEvent(Mouse::POSITION, 0, Modifiers::NO_MOD) ||
 		 mouse == MouseEvent(Mouse::CLICKED,  1, Modifiers::NO_MOD)))
 	{
-		if (m_root) {
+		if (m_root && mouse.getMouse() == Mouse::CLICKED) {
 			m_root->handleKey(Keys::ESC);
 			m_root = 0;
 		}
@@ -308,7 +321,7 @@ void MenuBaseItem::draw_menu(bool fHighlight, const int y0, const int x0, const 
 	}
 	if (fHighlight) {
 		attroff(A_REVERSE);
-		mvaddstr(y0, x++, "\u258c");
+		mvaddstr(y0, x++, "\u258B");
 	} else {
 		mvaddch(y0, x, ACS_VLINE);
 	}

@@ -1531,30 +1531,27 @@ public:
 	/**
 	 * Query root node for deepest node at coordinates x, y in given graphics context.
 	 * Call findNode method of root node. If input node found, delete it and search again.
-	 * @param gc Graphics context.
 	 * @param x  Horizontal coordinate.
 	 * @param y  Vertical coordinate.
 	 * @return Node found at x,y coordinates. Null if none found.
 	 */
-	Node* findNode(UI::Graphics& gc, int x, int y);
+	Node* findNode(int x, int y) { return m_root->findNode(x, y); }
 
 	/**
 	 * Query root node for shallowest factor node at inside rectangle box in given graphics context.
 	 * Call findNode(UI::Graphics&, Box&) method of root node.
-	 * @param gc Graphics context.
 	 * @param b Bounding box
 	 * @return Node found inside bounding box b. Null if none found.
 	 */
-	Node* findNode(UI::Graphics& gc, Box b);
+	Node* findNode(Box b) { return m_root->findNode(b); }
 
 	/**
 	 * Select region starting from Node object start to last node still in bounding
 	 * rectangle b.
-	 * @param gc Graphics context.
 	 * @param start Starting node.
 	 * @param b Bounding box.
 	 */
-	void selectBox(UI::Graphics& gc, Node* start, Box b);
+	void selectBox(Node* start, Box b);
 
 	/**
 	 * Erase current selection and replace with new node.

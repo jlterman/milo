@@ -414,7 +414,7 @@ bool EqnPanel::do_mouse_pressed(const MouseEvent& mouse)
 	mouse.getCoords(m_start_mouse_x, m_start_mouse_y);
 	LOG_TRACE_MSG("mouse press x: " + to_string(m_start_mouse_x) +
 				            ", y: " + to_string(m_start_mouse_y));
-	m_start_select = m_eqn->findNode(*m_gc, m_start_mouse_x, m_start_mouse_y);
+	m_start_select = m_eqn->findNode(m_start_mouse_x, m_start_mouse_y);
 	if (m_start_select == nullptr) {
 		return false;
 	}
@@ -441,7 +441,7 @@ bool EqnPanel::do_mouse_clicked(const MouseEvent& mouse)
 	int mouse_x, mouse_y;
 	mouse.getCoords(mouse_x, mouse_y);
 	LOG_TRACE_MSG("mouse clicked x: " + to_string(mouse_x) + ", y: " + to_string(mouse_y));
-	Node* node = m_eqn->findNode(*m_gc, mouse_x, mouse_y);
+	Node* node = m_eqn->findNode(mouse_x, mouse_y);
 	if (node == nullptr) return false;
 	LOG_TRACE_MSG("node found: " + node->toString());
 	m_eqn->clearSelect();
@@ -455,7 +455,7 @@ bool EqnPanel::do_mouse_double(const MouseEvent& mouse)
 	int mouse_x, mouse_y;
 	mouse.getCoords(mouse_x, mouse_y);
 	LOG_TRACE_MSG("mouse double clicked x: " + to_string(mouse_x) + ", y: " + to_string(mouse_y));
-	Node* node = m_eqn->findNode(*m_gc, mouse_x, mouse_y);
+	Node* node = m_eqn->findNode(mouse_x, mouse_y);
 	if (node == nullptr || node == m_eqn->getCurrentInput()) return false;
 	LOG_TRACE_MSG("node found: " + node->toString());
 	if (node->getType() == Input::type) {
@@ -471,31 +471,31 @@ bool EqnPanel::do_mouse_double(const MouseEvent& mouse)
 
 bool EqnPanel::do_mouse_position(const MouseEvent& mouse)
 {
+	if (m_start_mouse_x < 0 && m_start_mouse_y < 0) {
+		return false;
+	}
+
 	Box box = { 0, 0, 0, 0 };
-	if (m_start_mouse_x > 0 && m_start_mouse_y > 0) {
-		int event_x = -1, event_y = -1;
-		mouse.getCoords(event_x, event_y);
-		box = { abs(m_start_mouse_x - event_x),
-				abs(m_start_mouse_y - event_y),
-				min(m_start_mouse_x,  event_x),
-				min(m_start_mouse_y,  event_y)
-		};
-		LOG_TRACE_MSG("mouse position current box: " + box.toString());
-	}
-	else {
-		mouse.getCoords(m_start_mouse_x, m_start_mouse_y);
-	}
+	int event_x = -1, event_y = -1;
+	mouse.getCoords(event_x, event_y);
+	box = { abs(m_start_mouse_x - event_x),
+			abs(m_start_mouse_y - event_y),
+			min(m_start_mouse_x,  event_x),
+			min(m_start_mouse_y,  event_y)
+	};
+	LOG_TRACE_MSG("mouse position current box: " + box.toString());
+
 	if (m_start_select != nullptr && box.area() > 1 ) {
-		Node* new_select = m_eqn->findNode(*m_gc, box);
+		Node* new_select = m_eqn->findNode(box);
 		LOG_TRACE_MSG("node found: " + ((new_select == nullptr) ? "None" : new_select->toString()));
 		if (new_select != nullptr && new_select->getDepth() < m_start_select->getDepth()) {
 			m_start_select = new_select;
 		}
-		m_eqn->selectBox(*m_gc, m_start_select, box);
+		m_eqn->selectBox(m_start_select, box);
 		m_eqn->draw(*m_gc);
 	}
 	else if (m_start_select == nullptr && box.area() > 0) {
-		m_start_select = m_eqn->findNode(*m_gc, box);
+		m_start_select = m_eqn->findNode(box);
 		LOG_TRACE_MSG("node found: " + ((m_start_select == nullptr) ?
 										"None" :
 										m_start_select->toString()));

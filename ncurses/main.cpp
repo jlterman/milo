@@ -314,7 +314,7 @@ public:
 	//@{
 	CursesApp() : MiloApp(), m_menubar(m_menuXML)
 	{
-		setenv("TERM", "xterm-milo", true);
+		setenv("TERM", "xterm-1003", true);
 		setlocale(LC_ALL,"");
 		initscr(); raw(); noecho();
 #ifndef DEBUG
@@ -761,6 +761,7 @@ void CursesWindow::doMouse(MouseEvent& mouse)
 		if (p->getGraphics().getBox().inside(x, y)) {
 			p->getGraphics().relativeOrig(x, y);
 			mouse.setCoords(x, y);
+			m_current_panel = getPanelIterator(*p);
 			p->doMouse(mouse);
 		}
 	}

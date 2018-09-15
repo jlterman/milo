@@ -834,20 +834,6 @@ namespace UI {
 		}
 
 		/**
-		 * Get iterator of panel
-		 * @param panel MiloPanel::Ptr value.
-		 * @return Iterator of panel.
-		 */
-		MiloPanel::Iter getPanelIterator(const MiloPanel::Ptr panel) {
-			for ( auto it = m_panels.begin(); it != m_panels.end(); ++it ) {
-				if (panel.get() == it->get()) {
-					return it;
-				}
-			}
-			return m_panels.end();;
-		}
-
-		/**
 		 * Set panel to be current active panel.
 		 * @param panel MiloPanel reference.
 		 */

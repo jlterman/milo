@@ -361,21 +361,8 @@ void Equation::setSelectFromNode(Node* node)
 	}
 }
 
-Node* Equation::findNode(UI::Graphics& gc, int x, int y)
+void Equation::selectBox(Node* start, Box b)
 {
-	gc.relativeOrig(x, y);
-	return m_root->findNode(x, y);
-}
-
-Node* Equation::findNode(UI::Graphics& gc, Box b)
-{
-	gc.relativeOrig(b.x0(), b.y0());
-	return m_root->findNode(b);
-}
-
-void Equation::selectBox(UI::Graphics& gc, Node* start, Box b)
-{
-	gc.relativeOrig(b.x0(), b.y0());
 	if (!start->getParent() || start->getParent()->getType() != Term::type) {
 		setSelect(start);
 		return;
