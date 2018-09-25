@@ -778,9 +778,6 @@ MouseEvent CursesApp::getMouseEvent(int code)
 		if (mouse_event_entry != mouse_event_map.end()) {
 			MouseEvent mouseEvent = mouse_event_entry->second;
 			mouseEvent.setCoords(mouse_event.x, mouse_event.y);
-			
-			LOG_TRACE_MSG("mouse event: " + to_hexstring(code) + ", (x,y) = " +
-						  to_string(mouse_event.x) + ", " + to_string(mouse_event.y));
 			return mouseEvent;
 		}
 	}

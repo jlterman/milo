@@ -34,6 +34,10 @@
 class MenuBaseItem
 {
 public:
+	using Ptr    = std::unique_ptr<MenuBaseItem>;  ///< Unique pointer for MenuBaseItem
+	using Vector = std::vector<MenuBaseItem::Ptr>; ///< Storage of MenuBaseItem pointer.
+	using Iter   = MenuBaseItem::Vector::iterator; ///< Iterator of MenuBaseItem ptr vector
+	
 	/** @name Constructor and Virtual Destructor */
 	//@{
 	MenuBaseItem(const StringMap& tags) :
@@ -111,7 +115,6 @@ private:
 	int m_width;              ///< menu width
 };
 
-using MenuBasePtr = std::shared_ptr<MenuBaseItem>; ///< Shared menu pointer for all menu classes
 class MenuBar;
 
 /**
@@ -120,6 +123,10 @@ class MenuBar;
 class Menu : public MenuBaseItem
 {
 public:
+	using Ptr    = std::unique_ptr<Menu>;  ///< Unique pointer for MenuBaseItem
+	using Vector = std::vector<Menu::Ptr>; ///< Storage of MenuBaseItem pointer.
+	using Iter   = Menu::Vector::iterator; ///< Iterator of MenuBaseItem ptr vector
+	
 	/** @name Constructor and Virtual Destructor */
 	//@{
 	Menu(const StringMap& tags) :
@@ -189,7 +196,7 @@ public:
 	 * Add menu item to menu
 	 * @param m Menu item to add menu
 	 */
-	void addItem(MenuBaseItem* m) { m_items.push_back(MenuBasePtr(m)); }
+	void addItem(MenuBaseItem* m) { m_items.push_back(MenuBaseItem::Ptr(m)); }
 
 	/**
 	 * Get parent menu
@@ -216,13 +223,13 @@ public:
 	
 	friend class MenuBar;
 private:
-	bool m_active;                             ///< True if active
-	const std::string m_title;                 ///< Title of menu
-	std::vector<MenuBasePtr> m_items;          ///< List of menu items
-	Menu* m_parent;                            ///< Parent menu. Menu bar if null.
-	int m_xbar;                                ///< Position on menubar if needed.
-	int m_wbar;                                ///< Width on menubar if needed.
-	std::vector<MenuBasePtr>::iterator m_highlight; ///< Index of item highlighted.
+	bool m_active;                  ///< True if active
+	const std::string m_title;      ///< Title of menu
+	MenuBaseItem::Vector m_items;   ///< List of menu items
+	Menu* m_parent;                 ///< Parent menu. Menu bar if null.
+	int m_xbar;                     ///< Position on menubar if needed.
+	int m_wbar;                     ///< Width on menubar if needed.
+	MenuBaseItem::Iter m_highlight; ///< Index of item highlighted.
 	int m_x0;     ///< Horiz origin of menu
 	int m_y0;     ///< Vertical origin of menu
 	int m_width;  ///< Width of where menu
@@ -230,8 +237,6 @@ private:
 
 	static Menu* m_current;      ///< current active menu
 };
-
-using MenuPtr = std::shared_ptr<Menu>; ///< shared pointer for class Menu
 
 /**
  * Menu item class
@@ -374,9 +379,9 @@ public:
 
 	/**
 	 * Returns if menus are active
-	 * @return m_root not null
+	 * @return m_root not end iterator
 	 */
-	bool active() { return m_root != 0; }
+	bool active() { return m_root != m_menus.end(); }
 
 	/**
 	 * Handle mouse event for menus.
@@ -426,9 +431,9 @@ public:
 	//@}
 	
 private:
-    MenuPtr m_root;                ///< current menu on bar open
+	Menu::Vector m_menus;          ///< vector of menus in menu bar
+	Menu::Iter m_root;             ///< current menu on bar open
 	int m_level;                   ///< Keep track of menu level
-	std::vector<MenuPtr> m_menus;  ///< vector of menus in menu bar
 	std::stack<Menu*> m_menu_heap; ///< Stack of menus being created
 
 	/**

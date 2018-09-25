@@ -67,12 +67,13 @@ void MenuBar::define_menu_item(const StringMap& attributes)
 	m_menu_heap.top()->addItem(new MenuItem(attributes));
 }
 
-MenuBar::MenuBar(const string& xml) : m_root(0), m_level(0)
+MenuBar::MenuBar(const string& xml) : m_level(0)
 {
 	ifstream is(xml);
 	XML::Parser in(is, "menubar");
 	while (in.check(XML::HEADER, "menu")) parse_menu(in);
 	in.next(XML::FOOTER);
+	m_root = m_menus.end();
 }
 
 void MenuBar::add(Menu* menu)
@@ -89,15 +90,15 @@ void MenuBar::add(Menu* menu)
 
 void MenuBar::draw()
 {
-	for ( auto m : m_menus ) {
+	for ( auto& m : m_menus ) {
 		m->getWidth();
 	}
 	int x_width = -1;
 	getmaxyx(stdscr, x_width, x_width);
 	int x = -1;
 	while (x < x_width) { mvaddch(0, x++, ' '); }
-	for ( auto m : m_menus ) {
-		m->drawInBar(m->m_xbar, m == m_root);
+	for ( auto m = m_menus.begin(); m != m_menus.end(); ++m ) {
+		(*m)->drawInBar((*m)->m_xbar, m == m_root);
 	}
 	if (Menu::m_current) {
 		Menu::m_current->refresh_window();
@@ -106,57 +107,57 @@ void MenuBar::draw()
 
 bool MenuBar::select(int mouse_x)
 {
-	m_root = 0;
-	for ( auto m : m_menus ) {
-		if (mouse_x >= m->m_xbar && mouse_x < m->m_xbar + m->m_wbar) {
+	m_root = m_menus.end();
+	for ( auto m = m_menus.begin(); m != m_menus.end(); ++m ) {
+		if (mouse_x >= (*m)->m_xbar && mouse_x < (*m)->m_xbar + (*m)->m_wbar) {
 			m_root = m;
-			m->select();
+			(*m)->select();
 			break;
 		}
 	}
-	return m_root != 0;
+	return m_root != m_menus.end();
 }
 
 bool MenuBar::handleKey(int code)
 {
 	if (Menu::m_current->handleKey(code)) {
 		if (Menu::m_current == nullptr) {
-			m_root = 0;
+			m_root = m_menus.end();
 		}
 		return true;
 	}
 	else {
 		switch(code) {
 		    case KEY_SLEFT: {
-				m_root->handleKey(Keys::ESC);
-				if (m_root == *m_menus.begin()) {
-					m_root = *(m_menus.end() - 1);
+				(*m_root)->handleKey(Keys::ESC);
+				if (m_root == m_menus.begin()) {
+					m_root = m_menus.end() - 1;
 				}
 				else {
 					for ( auto m = m_menus.begin() + 1; m != m_menus.end(); ++m ) {
-						if ( m_root == *m ) {
-							m_root = *(--m);
+						if ( m_root == m ) {
+							m_root = --m;
 							break;
 						}
 					}
 				}
-				m_root->select();
+				(*m_root)->select();
 				break;
 		    }
 		    case KEY_SRIGHT: {
-				m_root->handleKey(Keys::ESC);
-				if (m_root == *(m_menus.end() - 1)) {
-					m_root = *m_menus.begin();
+				(*m_root)->handleKey(Keys::ESC);
+				if (m_root == m_menus.end() - 1) {
+					m_root = m_menus.begin();
 				}
 				else {
 					for ( auto m = m_menus.begin(); m != m_menus.end(); ++m ) {
-						if ( m_root == *m ) {
-							m_root = *(++m);
+						if ( m_root == m ) {
+							m_root = ++m;
 							break;
 						}
 					}
 				}
-				m_root->select();
+				(*m_root)->select();
 				break;
 		    }
 		}
@@ -250,30 +251,30 @@ bool MenuBar::handleMouse(const MouseEvent& mouse)
 {
 	int x_mouse, y_mouse;
 	mouse.getCoords(x_mouse, y_mouse);
-	if (!m_root && mouse.getMouse() == Mouse::POSITION) {
+	if (m_root == m_menus.end() && mouse.getMouse() == Mouse::POSITION) {
 		return false;
 	}
 	if (y_mouse == 0 &&
 		(mouse == MouseEvent(Mouse::POSITION, 0, Modifiers::NO_MOD) ||
 		 mouse == MouseEvent(Mouse::CLICKED,  1, Modifiers::NO_MOD)))
 	{
-		if (m_root && mouse.getMouse() == Mouse::CLICKED) {
-			m_root->handleKey(Keys::ESC);
-			m_root = 0;
+		if (m_root != m_menus.end() && mouse.getMouse() == Mouse::CLICKED) {
+			(*m_root)->handleKey(Keys::ESC);
+			m_root = m_menus.end();
 		}
-		for ( auto menu : m_menus ) {
-			if (x_mouse > menu->m_xbar &&
-				x_mouse < menu->m_xbar + menu->m_wbar)
+		for ( auto menu = m_menus.begin(); menu != m_menus.end(); ++menu ) {
+			if (x_mouse > (*menu)->m_xbar &&
+				x_mouse < (*menu)->m_xbar + (*menu)->m_wbar)
 			{
 				m_root = menu;
-				menu->select();
+				(*menu)->select();
 			    return true;
 			}
 		}
 		return false;
 	}
-	if (m_root) {
-		return m_root->handleMouse(mouse);
+	if (m_root != m_menus.end()) {
+		return (*m_root)->handleMouse(mouse);
 	}
 	return false;
 }
@@ -336,7 +337,7 @@ void Menu::select()
 		m_y0 = distance(m_parent->m_items.begin(),
 						find(m_parent->m_items.begin(),
 							 m_parent->m_items.end(),
-							 MenuBasePtr(this))) + 1;
+							 MenuBaseItem::Ptr(this))) + 1;
 	}
 	else {
 		m_x0 = m_xbar;
@@ -351,7 +352,7 @@ void Menu::select()
 		}
 	}
 	m_width = -1;
-	for ( auto m : m_items ) {
+	for ( auto& m : m_items ) {
 		m_width = max(m_width, m->getWidth());
 	}
 	m_width += 2;
