@@ -549,38 +549,6 @@ namespace UI {
 		Box m_frame;   ///< Frame of this panel.
 		Box m_select;  ///< Currently selected area.
 	};
-
-	/**
-	 * Template function to create a panel of a particular type
-	 *
-	 * @param init String to initialize panel
-	 * @param gc Graphics object
-	 * @return Pointer to panel
-	 */
-	template <class T> MiloPanel* createPanel(const std::string& init, Graphics* gc)
-	{
-		return new T(init, gc);
-	}
-
-	/**
-	 * Template function to create a panel of a particular type from XML
-	 *
-	 * @param in XML parser object.
-	 * @param gc Graphics object
-	 * @return Pointer to panel
-	 */
-	template <class T> MiloPanel* createPanelXML(XML::Parser& in, Graphics* gc)
-	{
-		return new T(in, gc);
-	}
-
-	/** Function pointer to return panel object with initilization string and Graphics object
-	 */
-	using panel_factory = MiloPanel* (*)(const std::string&, Graphics*);
-
-	/** Function pointer to return panel object with xml parser and Graphics object
-	 */
-	using panel_xml = MiloPanel* (*)(XML::Parser&, Graphics*);
 	
 	/** MiloPanel is an abstract base class interface for all milo panels.
 	 *  This will provide hooks into the user interface.
@@ -589,6 +557,40 @@ namespace UI {
 	{
 	public:
 		friend class MiloApp;
+
+		/**
+		 * Template function to create a panel of a particular type
+		 *
+		 * @param init String to initialize panel
+		 * @param gc Graphics object
+		 * @return Pointer to panel
+		 */
+		template <class T>
+		static MiloPanel* create(const std::string& init, Graphics* gc)
+		{
+			return new T(init, gc);
+		}
+
+		/**
+		 * Template function to create a panel of a particular type from XML
+		 *
+		 * @param in XML parser object.
+		 * @param gc Graphics object
+		 * @return Pointer to panel
+		 */
+		template <class T>
+		static MiloPanel* createXML(XML::Parser& in, Graphics* gc)
+		{
+			return new T(in, gc);
+		}
+
+		/** Function pointer to return panel object with initilization string and Graphics object
+		 */
+		using factory = MiloPanel* (*)(const std::string&, Graphics*);
+
+		/** Function pointer to return panel object with xml parser and Graphics object
+		 */
+		using factory_xml = MiloPanel* (*)(XML::Parser&, Graphics*);
 
 		using Ptr    = std::unique_ptr<MiloPanel>;  ///< Unique pointer for MiloPanel
 		using Vector = std::vector<MiloPanel::Ptr>; ///< Storage of MiloPanel pointers
@@ -734,11 +736,11 @@ namespace UI {
 
 		/** Map of name to panel create functions.
 		 */
-		static std::unordered_map<std::string, panel_factory> panel_map;
+		static std::unordered_map<std::string, factory> panel_map;
 
 		/** Map of name to panel create functions with xml.
 		 */
-		static std::unordered_map<std::string, panel_xml> panel_xml_map;
+		static std::unordered_map<std::string, factory_xml> panel_xml_map;
 	};
 
 	/**

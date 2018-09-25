@@ -37,9 +37,9 @@ unordered_map<string, menu_handler> MiloApp::menu_map = {
 	{ "quit",   []() { fRunning = false; } } 
 };
 
-unordered_map<string, panel_factory> MiloPanel::panel_map;
+unordered_map<string, MiloPanel::factory> MiloPanel::panel_map;
 
-unordered_map<string, panel_xml> MiloPanel::panel_xml_map;
+unordered_map<string, MiloPanel::factory_xml> MiloPanel::panel_xml_map;
 
 static const unordered_map<enum Mouse, string> mouse_string = {
 	{ POSITION, "POSITION" }, { PRESSED, "PRESSED" }, { RELEASED, "RELEASED" },

@@ -23,7 +23,7 @@ milo_ncurses: $(OBJECTS) FORCE
 milo_test: milo_test.o $(OBJECTS)
 	$(CXX) $(CPPARGS) $(OBJECTS) milo_test.o -o milo_test
 
-milo_test.o: milo_test.cpp ui.h
+milo_test.o: milo_test.cpp ui.h panel.h
 	$(CXX) $(CPPARGS) milo_test.cpp -c
 
 parser.o: parser.cpp milo.h util.h nodes.h
@@ -41,10 +41,10 @@ symbol.o: symbol.cpp milo.h util.h nodes.h
 xml.o: xml.cpp xml.h util.h
 	$(CXX) $(CPPARGS) xml.cpp -c
 
-ui.o: ui.cpp ui.h milo.h util.h
+ui.o: ui.cpp ui.h milo.h util.h xml.h
 	$(CXX) $(CPPARGS) ui.cpp -c
 
-eqn.o: eqn.cpp ui.h milo.h util.h
+eqn.o: eqn.cpp ui.h milo.h util.h panel.h
 	$(CXX) $(CPPARGS) eqn.cpp -c
 
 test: test.o

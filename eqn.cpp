@@ -32,8 +32,8 @@ bool EqnPanel::init = EqnPanel::do_init();
 
 bool EqnPanel::do_init()
 {
-	MiloPanel::panel_map[EqnPanel::name] = createPanel<EqnPanel>;
-	MiloPanel::panel_xml_map[EqnPanel::name] = createPanelXML<EqnPanel>;
+	MiloPanel::panel_map[EqnPanel::name] = MiloPanel::create<EqnPanel>;
+	MiloPanel::panel_xml_map[EqnPanel::name] = MiloPanel::createXML<EqnPanel>;
 	return true;
 }
 
@@ -699,8 +699,8 @@ bool AlgebraPanel::init = AlgebraPanel::do_init();
 
 bool AlgebraPanel::do_init()
 {
-	MiloPanel::panel_map[AlgebraPanel::name] = createPanel<AlgebraPanel>;
-	MiloPanel::panel_xml_map[AlgebraPanel::name] = createPanelXML<AlgebraPanel>;
+	MiloPanel::panel_map[AlgebraPanel::name] = MiloPanel::create<AlgebraPanel>;
+	MiloPanel::panel_xml_map[AlgebraPanel::name] = MiloPanel::createXML<AlgebraPanel>;
 	return true;
 }
 

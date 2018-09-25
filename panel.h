@@ -35,15 +35,14 @@
  * This is the user interface for milo for porting to paticular interfaces.
  */
 namespace UI {
-	class EqnPanel;
-	using EqnPanelPtr = SmartPtr<EqnPanel>; ///< Smart pointer for EqnPanel
-
 	/**
 	 * Panel class for Equation class.
 	 */
 	class EqnPanel : public MiloPanel
 	{
 	public:
+		using Ptr = std::unique_ptr<EqnPanel>; ///< Unique pointer for EqnPanel
+		
 		/** @name EqnPanel function pointer declerations. */
 		//@{
 		/**
@@ -592,10 +591,10 @@ namespace UI {
 
 		static const std::string name; ///< Name of this panel
 	private:
-		Side m_side;         ///< Side that is active.
-		EqnPanelPtr m_left;  ///< Equation of left of algebraic equality.
-		EqnPanelPtr m_right; ///< Equation of right of algebraic equality.
-		Node::Frame m_frame; ///< From containing both equations.
+		Side m_side;           ///< Side that is active.
+		EqnPanel::Ptr m_left;  ///< Equation of left of algebraic equality.
+		EqnPanel::Ptr m_right; ///< Equation of right of algebraic equality.
+		Node::Frame m_frame;   ///< From containing both equations.
 
 		static const std::string side_tag;    ///< Side tag.
 		static const std::string left_value;  ///< Element value for left.
