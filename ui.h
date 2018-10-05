@@ -609,6 +609,12 @@ namespace UI {
 		 * @return Last calculated size.
 		 */
 		virtual Box getSize() = 0;
+
+		/**
+		 * Get base line relative to top of box.
+		 * @return Base line.
+		 */
+		virtual int getBase() = 0;
 		
 		/**
 		 * Push state to undo stack.

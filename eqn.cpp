@@ -696,7 +696,7 @@ void EqnPanel::setBox(int x, int y, int x0, int y0)
 	m_gc->set(x, y, x0, y0);
 
 	Box b = getSize();
-	m_eqnBox->setOrigin(x0 + (x - b.width())/2, y0 + (y - b.height())/2);
+	m_eqnBox.setOrigin(x0 + (x - b.width())/2, y0 + (y - b.height())/2);
 }
 
 const string AlgebraPanel::name = "algebra";
@@ -707,6 +707,24 @@ const std::string AlgebraPanel::right_value = "right";
 
 bool AlgebraPanel::init = AlgebraPanel::do_init();
 
+AlgebraPanel::AlgebraPanel(const string& init) :
+	MiloPanel(),
+	m_side(LEFT),
+	m_left(init.substr(0, init.find('='))),
+	m_right(init.substr(init.find('=') + 1))
+{
+	pushUndo();
+}
+
+AlgebraPanel::AlgebraPanel(XML::Parser& in) :
+	MiloPanel(),
+	m_side(readSide(in)),
+	m_left(in),
+	m_right(in)
+{
+	pushUndo();
+}
+
 bool AlgebraPanel::do_init()
 {
 	MiloPanel::panel_map[AlgebraPanel::name] = MiloPanel::create<AlgebraPanel>;
@@ -716,44 +734,36 @@ bool AlgebraPanel::do_init()
 
 void AlgebraPanel::doDraw()
 {
-	m_left->doDraw();
-	m_right->doDraw();
-	Box left = m_left->getGraphicsBox();
-    m_gc->at(left.x0() + left.width() + m_gc->getTextLength("="),
-			 left.y0() + m_left->getEqn().getRoot()->getFrame().base,
-			 "=",
-			 UI::Graphics::Attributes::NONE);
+	m_left.doDraw();
+	m_equal.doDraw();
+	m_right.doDraw();
 }
 
 void AlgebraPanel::setBox(int x, int y, int x0, int y0)
 {
 	m_gc->set(x, y, x0, y0);
 	
-	auto leftFrame = m_left->getEqn().getRoot()->getFrame();
-	auto rightFrame = m_right->getEqn().getRoot()->getFrame();
-
 	x0 += (x - m_frame.box.width())/2;
 	y0 += (y - m_frame.box.height())/2;
 
-	m_left->setOrigin(x0, y0 + m_frame.base - leftFrame.base);
-	m_right->setOrigin(x0 + leftFrame.box.width() + m_gc->getTextLength("==="),
-					   y0 + m_frame.base - rightFrame.base);
+	m_left.setOrigin(x0, y0 + m_frame.base - m_left.getBase());
+	m_equal.setOrigin(x0 + m_left.getSize().width(), y0 + m_frame.base - m_equal.getBase());
+	m_right.setOrigin(x0 + m_left.getSize().width() + m_equal.getSize().width(),
+					  y0 + m_frame.base - m_right.getBase());
 }
 
 Box AlgebraPanel::calculateSize()
 {
-	m_left->calculateSize();
-	m_right->calculateSize();
+	m_left.calculateSize();
+	m_equal.calculateSize();
+	m_right.calculateSize();
 
-	auto leftFrame = m_left->getEqn().getRoot()->getFrame();
-	auto rightFrame = m_right->getEqn().getRoot()->getFrame();
+	int y_max = max(m_left.getSize().height() -  m_left.getBase(),
+					m_right.getSize().height() - m_right.getBase());
 
-	int y_max = max(leftFrame.box.height() -  leftFrame.base,
-					rightFrame.box.height() - rightFrame.base);
+	int b_max = max(m_left.getBase(), m_right.getBase());
 
-	int b_max = max(leftFrame.base, rightFrame.base);
-
-	int x = leftFrame.box.width() + m_gc->getTextLength("===") + rightFrame.box.width();
+	int x = m_left.getSize().width() + m_equal.getSize().width() + m_right.getSize().width();
 
 	m_frame = { { x, b_max + y_max, 0, 0 }, b_max };
 
@@ -764,7 +774,7 @@ void AlgebraPanel::xml_out(XML::Stream& xml)
 {
 	xml << XML::HEADER << side_tag << XML::HEADER_END << XML::ELEMENT;
 	xml << (( m_side == LEFT) ? left_value : right_value) << XML::FOOTER;
-	xml << m_left->getEqn() << m_right->getEqn();
+	xml << m_left.getEqn() << m_right.getEqn();
 }
 
 AlgebraPanel::Side AlgebraPanel::readSide(XML::Parser& in)

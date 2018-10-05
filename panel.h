@@ -123,6 +123,12 @@ namespace UI {
 		 * @return Last calculated size of equation panel.
 		 */
 		Box getSize() { return m_eqn->getRoot()->getFrame().box; }
+
+		/**
+		 * Get base line relative to top of box.
+		 * @return Base line.
+		 */
+		int getBase() { return  m_eqn->getRoot()->getFrame().base; }
 		
 		/**
 		 * Push state of panel to undo stack.
@@ -424,7 +430,7 @@ namespace UI {
 		 */
 	    EqnPanel(const std::string& init) :
 		    MiloPanel(),
-			m_eqnBox(new EqnBox(init)) {}
+			m_eqnBox(init) {}
 
 		/** 
 		 * Constructor for EqnPanel passing equation directly.
@@ -432,7 +438,7 @@ namespace UI {
 		 */
 	    EqnPanel(Equation* eqn) :
 		    MiloPanel(),
-			m_eqnBox(new EqnBox(eqn)) {}
+			m_eqnBox(eqn) {}
 
 		/** 
 		 * Constructor for EqnPanel getting equation from XML paraser
@@ -440,7 +446,7 @@ namespace UI {
 		 */
 	    EqnPanel(XML::Parser& in) :
 			MiloPanel(),
-			m_eqnBox(new EqnBox(in)) {}
+			m_eqnBox(in) {}
 
 		~EqnPanel() {} ///< Virtual desctructor.
 		//@}
@@ -451,65 +457,71 @@ namespace UI {
 		 * Handle key event.
 		 * @param key Key event.
 		 */
-		void doKey(const UI::KeyEvent& key) { m_eqnBox->doKey(key); }
+		void doKey(const UI::KeyEvent& key) { m_eqnBox.doKey(key); }
 
 		/**
 		 * Handle mouse event.
 		 * @param mouse Mouse event.
 		 */
-		void doMouse(const UI::MouseEvent& mouse) { m_eqnBox->doMouse(mouse); }
+		void doMouse(const UI::MouseEvent& mouse) { m_eqnBox.doMouse(mouse); }
 
 		/**
 		 * Execute specific function based on its name. Used for menu handling.
 		 * @param menuFunctionName Name of menu function to be executed.
 		 * @return True if menuFunctionName found.
 		 */
-		bool doMenu(const std::string& menuFunctionName) { return m_eqnBox->doMenu(menuFunctionName); }
+		bool doMenu(const std::string& menuFunctionName) { return m_eqnBox.doMenu(menuFunctionName); }
 		
 		/** Draw contents on window.
 		 */
-		void doDraw() { m_eqnBox->doDraw(); }
+		void doDraw() { m_eqnBox.doDraw(); }
 
 		/** 
 		 * Calculate size needed for doDraw(). .
 		 * @return Calculated size for drawing.
 		 */
-		Box calculateSize() { return m_eqnBox->calculateSize(); }
+		Box calculateSize() { return m_eqnBox.calculateSize(); }
 
 		/** 
 		 * Get last calculated size.
 		 * @return Last calculated size.
 		 */
-		Box getSize() { return m_eqnBox->getSize(); }
+		Box getSize() { return m_eqnBox.getSize(); }
+
+		/**
+		 * Get base line relative to top of box.
+		 * @return Base line.
+		 */
+		int getBase() { return m_eqnBox.getBase(); }
 		
 		/**
 		 * Push state to undo stack.
 		 */
-		void pushUndo() { m_eqnBox->pushUndo(); }
+		void pushUndo() { m_eqnBox.pushUndo(); }
 		
 		/**
 		 * Restore state from top of undo stack.
 		 */
-		void popUndo() { m_eqnBox->popUndo(); }
+		void popUndo() { m_eqnBox.popUndo(); }
 
 		/**
 		 * Output contents as xml to XML stream.
 		 * @param XML stream class object.
 		 */
-		void xml_out(XML::Stream& xml) { m_eqnBox->xml_out(xml); }
+		void xml_out(XML::Stream& xml) { m_eqnBox.xml_out(xml); }
 
 		/**
 		 * Check where there is an active input.
 		 * @return If true, there is an active input.
 		 */
-		bool blink() { return m_eqnBox->blink(); }
+		bool blink() { return m_eqnBox.blink(); }
 
 		/**
 		 * Get coordinates of current active input.
 		 * @param[out] x Horizontal origin of curosr.
 		 * @param[out] y Vertical origin cursor.
 		 */
-		void getCursorOrig(int& x, int& y) { m_eqnBox->getCursorOrig(x, y); }
+		void getCursorOrig(int& x, int& y) { m_eqnBox.getCursorOrig(x, y); }
 		//@}		
 		
 		/** @name Overridden Pure Virtual Public Member Functions from MiloPanel */
@@ -532,9 +544,9 @@ namespace UI {
 
 		static const std::string name; ///< Name of this panel
 	private:
-		EqnBox::Ptr m_eqnBox; ///< Equation Event Box handled by EqnPanel.
+		EqnBox m_eqnBox;  ///< Equation Event Box handled by EqnPanel.
 
-		static bool init;     ///< Should be true after static initilization.
+		static bool init; ///< Should be true after static initilization.
 
 		/**
 		 * Static initialization for class.
@@ -547,6 +559,89 @@ namespace UI {
 	class AlgebraPanel : public MiloPanel
 	{
 	public:
+		/** EventBox subclass to draw equal between equations.
+		 */
+		class EqualBox : public EventBox
+		{
+		public:
+			/** Constructor for EqualBox class
+			 */
+		    EqualBox() : EventBox() {}
+
+			/** @name Pure Virtual Public Member Functions */
+			//@{		
+			/**
+			 * Handle key event.
+			 * @param key Key event.
+			 */
+			void doKey(const UI::KeyEvent&) {}
+			
+			/**
+			 * Handle mouse event.
+			 * @param mouse Mouse event.
+			 */
+			void doMouse(const UI::MouseEvent&) {}
+			
+			/**
+			 * Execute specific function based on its name. Used for menu handling.
+			 * @param menuFunctionName Name of menu function to be executed.
+			 * @return True if menuFunctionName found.
+			 */
+			bool doMenu(const std::string&) { return false; }
+			
+			/** Draw contents on window.
+			 */
+			void doDraw() { m_gc->at(m_gc->getTextLength("="), 0, '=', Graphics::NONE); }
+			
+			/** 
+			 * Calculate size needed for doDraw(). .
+			 * @return Calculated size for drawing.
+			 */
+			Box calculateSize() { m_gc->set(getSize()); return getSize(); }
+			
+			/** 
+			 * Get last calculated size.
+			 * @return Last calculated size.
+			 */
+			Box getSize() { return Box(m_gc->getTextLength("==="), m_gc->getTextHeight(), 0, 0); }
+			
+			/**
+			 * Get base line relative to top of box.
+			 * @return Base line.
+			 */
+			int getBase() { return 0; }
+			
+			/**
+			 * Push state to undo stack.
+			 */
+			void pushUndo() {}
+			
+			/**
+			 * Restore state from top of undo stack.
+			 */
+			void popUndo() {}
+			
+			/**
+			 * Output contents as xml to XML stream.
+			 * @param XML stream class object.
+			 */
+			void xml_out(XML::Stream&) {}
+			
+			/**
+			 * Check where there is an active input.
+			 * @return If true, there is an active input.
+			 */
+			bool blink() { return false; }
+			
+			/**
+			 * Get coordinates of current active input.
+			 * @param[out] x Horizontal origin of curosr.
+			 * @param[out] y Vertical origin cursor.
+			 */
+			void getCursorOrig(int&, int&) {}
+		//@}
+		};
+		
 		/** Left or right side.
 		 */
 		enum Side { LEFT, RIGHT };
@@ -558,27 +653,13 @@ namespace UI {
 		 * single initialization string.
 		 * @param init Initialization string for equation1+'='+equation2.
 		 */
-	    AlgebraPanel(const std::string& init) :
-		    MiloPanel(),
-			m_side(LEFT),
-			m_left(new EqnBox(init.substr(0, init.find('=')))),
-			m_right(new EqnBox(init.substr(init.rfind('='))))
-		{
-			pushUndo();
-		}
+	    AlgebraPanel(const std::string& init);
 
 		/** 
 		 * Constructor for AlgebraPanel getting equation from XML paraser
 		 * @param in  XML parser object.
 		 */
-	    AlgebraPanel(XML::Parser& in) :
-			MiloPanel(),
-			m_side(readSide(in)),
-			m_left(new EqnBox(new Equation(in))),
-			m_right(new EqnBox(new Equation(in)))
-		{
-			pushUndo();
-		}
+	    AlgebraPanel(XML::Parser& in);
 
 		~AlgebraPanel() {} ///< Virtual desctructor.
 		//@}
@@ -621,6 +702,12 @@ namespace UI {
 		 * @return Last calculated size of equation panel.
 		 */
 		Box getSize() { return m_frame.box; }
+
+		/**
+		 * Get base line relative to top of box.
+		 * @return Base line.
+		 */
+		int getBase() { return 0; }
 		
 		/**
 		 * Push state of panel to undo stack.
@@ -673,7 +760,7 @@ namespace UI {
 		 * Get current side of equation.
 		 * @return Current side.
 		 */
-		EqnBox& getCurrentSide() { return (m_side == LEFT) ? *m_left : *m_right; }
+		EqnBox& getCurrentSide() { return (m_side == LEFT) ? m_left : m_right; }
 
 		/**
 		 * Read side from XML::Parser.
@@ -685,9 +772,10 @@ namespace UI {
 
 		static const std::string name; ///< Name of this panel
 	private:
-		Side m_side;         ///< Side that is active.
-		EqnBox::Ptr m_left;  ///< Equation of left of algebraic equality.
-		EqnBox::Ptr m_right; ///< Equation of right of algebraic equality.
+		Side     m_side;    ///< Side that is active.
+		EqnBox   m_left;    ///< Equation of left of algebraic equality.
+		EqnBox   m_right;   ///< Equation of right of algebraic equality.
+		EqualBox m_equal;   ///< Equal sign between the two equations.
 		Node::Frame m_frame; ///< Form containing both equations.
 
 		static const std::string side_tag;    ///< Side tag.
