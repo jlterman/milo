@@ -125,20 +125,22 @@ string KeyEvent::toString() const
 		return string("Key event: ") + mod_string.at(m_mod) + key_string.at(m_key);
 }
 
+EventBox::EventBox() : m_gc(MiloApp::getGlobal().makeGraphics())
+{
+}
+
 MiloPanel::Ptr MiloPanel::make(const string& name,
-							   const string& init,
-							   Graphics* gc)
+							   const string& init)
 {
 	auto panel_entry = panel_map.find(name);
 	MiloPanel* panel = nullptr;
 	if (panel_entry != panel_map.end()) {
-		panel = (panel_entry->second)(init, gc);
+		panel = (panel_entry->second)(init);
 	}
 	return Ptr(panel);
 }
 
-MiloPanel::Ptr MiloPanel::make(XML::Parser& in,
-							   Graphics* gc)
+MiloPanel::Ptr MiloPanel::make(XML::Parser& in)
 {
 	in.next(XML::HEADER, "panel").next(XML::NAME_VALUE).next(XML::HEADER_END);
 
@@ -151,24 +153,23 @@ MiloPanel::Ptr MiloPanel::make(XML::Parser& in,
 	MiloPanel* panel = nullptr;
 	auto panel_entry = panel_xml_map.find(name);
 	if (panel_entry != panel_xml_map.end()) {
-		panel = (panel_entry->second)(in, gc);
+		panel = (panel_entry->second)(in);
 	}
 	in.next(XML::FOOTER);
 	return Ptr(panel);
 }
 
 MiloWindow::MiloWindow(const std::string& name,
-					   const std::string& init,
-					   Graphics* gc) :
+					   const std::string& init) :
 	m_title("Untitled 001")
 {
-	m_panels.push_back(std::move(MiloPanel::make(name, init, gc)));
+	m_panels.push_back(std::move(MiloPanel::make(name, init)));
 	m_current_panel = m_panels.begin();
 }
 
-MiloWindow::MiloWindow(XML::Parser& in, const std::string& fname)
+MiloWindow::MiloWindow(XML::Parser& in, const std::string& fname) :
+	m_title(fname.substr(0, fname.find("."))), m_filename(fname)
 {
-	m_filename = fname;
 	xml_in(in);
 }
 
@@ -213,7 +214,7 @@ void MiloWindow::xml_in(XML::Parser& in)
 	in.next(XML::FOOTER);
 	
 	while (in.check(XML::HEADER, MiloPanel::tag)) {
-		auto p = MiloPanel::make(in, MiloApp::getGlobal().makeGraphics());
+		auto p = MiloPanel::make(in);
 		m_panels.push_back(std::move(p));
 	}
 	m_current_panel = m_panels.begin() + active;

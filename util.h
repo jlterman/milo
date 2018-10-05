@@ -310,7 +310,7 @@ public:
 	 * Convert state of this class to string
 	 * @return Return string representing this object
 	 */
-	std::string toString()
+	std::string toString() const
 	{
 		std::string s = "width: " + std::to_string(width()) + ", height: " + std::to_string(height()) +
 			            ", x0: " + std::to_string(x0()) + ", y0: " + std::to_string(y0());
@@ -321,7 +321,7 @@ public:
 	 * Return area of rectangle.
 	 * @return Area of rectangle.
 	 */
-	T area() { return width()*height(); }
+	T area() const { return width()*height(); }
 	
 	/**
 	 * Check if point is inside Rectangle.

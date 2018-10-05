@@ -159,17 +159,6 @@ public:
 	void clear_screen() { clear(); }
 
 	/**
-	 * Set size of this graphics window (origin is always 0,0).
-	 * @param x Horizontal size of graphics window.
-	 * @param y Vertical size of graphics window.
-	 */
-	void set(int x, int y, int, int) { 
-		int row, col;
-		getmaxyx(stdscr, row, col);
-		Graphics::set(x, y, (col - x)/2, (row - y)/2);
-	}
-
-	/**
 	 * Draw a horizontal line starting at x0,y0 length x_size.
 	 * @param x_size Horizontal size of both line.
 	 * @param x0 Horizontal origin of line.
@@ -222,7 +211,7 @@ public:
 	}
 
 	/**
-	 * Return character from key press. Put up a blinking cursor at given coordinates.
+	 * Return character from key press. Put up a blinking cursor at given global sceen coordinates.
 	 * Erase cursor after key press.
 	 * @param y Vertical coordinate.
 	 * @param x Horizontal coordinate.
@@ -238,13 +227,13 @@ public:
 			return getch();
 		}
 		curs_set(2);
-		mvaddch(y + m_frame.y0(), x + m_frame.x0(), ' '); 
-		move(y + m_frame.y0(), x + m_frame.x0());
+		mvaddch(y, x, ' ');
+		move(y, x);
 		int ch = getch();
 #ifndef DEBUG
 		curs_set(0);
 #endif
-		mvaddch(y + m_frame.y0(), x + m_frame.x0(), '?'); 
+		mvaddch(y, x, '?'); 
 		return ch;
 	}
 	//@}
@@ -282,7 +271,7 @@ private:
 class CursesWindow : public MiloWindow
 {
 public:
-	CursesWindow() : MiloWindow("equation", "#", new CursesGraphics()) {}
+	CursesWindow() : MiloWindow("equation", "#") {}
 
 	CursesWindow(XML::Parser& in, const std::string& fname) : MiloWindow(in, fname) {}
 
@@ -737,18 +726,23 @@ void CursesWindow::redraw()
 	}
 	int h_max, w_max;
 	getmaxyx(stdscr, h_max, w_max);
-	h0 = 1 + (h_max - 1 - h0)/2;
-	w0 = (w_max - w0)/2;
+	if (h_max - 1 > h0) {
+		h0 = (h_max - 1)/m_panels.size();
+	}
+	else {
+		h0 = -1;
+	}
+	int y0 = 1;
 	bool m_first = true;
 	for ( auto& p : m_panels ) {
 		if (m_first) {
 			m_first = false;
 		} else {
-			app.getGlobalGraphics().horiz_line(w_max, 0, h0);
+			app.getGlobalGraphics().horiz_line(w_max, 0, y0);
 		}
 		Box b = p->getSize();
-		p->setBox(w_max, b.height(), w0, h0 + 1);
-		h0 += b.height() + 1;
+		p->setBox(w_max, max(h0, b.height()), 0, y0 + 1);
+		y0 += max(h0, b.height()) + 1;
 		p->doDraw();
 	}	
 }
@@ -758,8 +752,8 @@ void CursesWindow::doMouse(MouseEvent& mouse)
 	int x, y;
 	mouse.getCoords(x, y);
 	for ( auto& p : m_panels ) {
-		if (p->getGraphics().getBox().inside(x, y)) {
-			p->getGraphics().relativeOrig(x, y);
+		if (p->getSize().inside(x, y)) {
+			p->getGraphics().localOrig(x, y);
 			mouse.setCoords(x, y);
 			m_current_panel = getPanelIterator(*p);
 			p->doMouse(mouse);

@@ -236,22 +236,25 @@ void AsciiGraphics::differential(int x0, int y0, char variable)
 
 class AsciiApp : public MiloApp
 {
+public:
 	void redraw_screen() {}
 
 	void makeTopWindow() {}
 
-	Graphics* makeGraphics() { return nullptr; }
+	Graphics* makeGraphics() { return gc; }
 
 	MiloWindow* makeWindow() { return nullptr; }
 
 	MiloWindow* makeWindow(XML::Parser&, const std::string&) { return nullptr; }
+
+	static AsciiGraphics* gc;
 };
 
 AsciiApp app;
-MiloApp&  MiloApp::m_current = app; ///< Dummy app object
+MiloApp&  MiloApp::m_current = app;                     ///< Dummy app object
+AsciiGraphics* AsciiApp::gc = new AsciiGraphics(cout);  ///< Asciigraphics class object.
 
-AsciiGraphics* gc = new AsciiGraphics(cout);  ///< Asciigraphics class object.
-EqnPanel panel("#", gc);                      ///< EqnPanel class object.
+EqnBox panel("#");                                      ///< EqnPanel class object.
 
 /**
  * Load parsed equation string into global equation object.
@@ -294,8 +297,8 @@ static void test(const string&)
 	eqn.xml_out(xml);
 	cout << xml << endl;
 	cout << "---------" << endl;
-	eqn.draw(*gc);
-	gc->out();
+	eqn.draw(*AsciiApp::gc);
+	AsciiApp::gc->out();
 	cout << "---------" << endl;
 	istringstream in(xml);
 	Equation new_eqn(in);
@@ -318,8 +321,8 @@ static void art(const string&)
 {
 	Equation& eqn = panel.getEqn();
 
-	eqn.draw(*gc);
-	gc->out();
+	eqn.draw(*AsciiApp::gc);
+	AsciiApp::gc->out();
 }
 
 /** Normalize current equation.
@@ -344,7 +347,7 @@ static void keys(const string& keys)
 	string::size_type sep;
 	do {
 		sep = input.find(",");
-		gc->clear_screen();
+		AsciiApp::gc->clear_screen();
 		panel.doKey(KeyEvent(input.substr(0, sep)));
 		if (sep != string::npos) {
 			input.erase(0, sep+1);
@@ -362,7 +365,7 @@ static void geometry(const string& params)
 	auto sep = params.find(",");
 	int x = stoi(params.substr(0, sep));
 	int y = stoi(params.substr(sep+1));
-	gc->set(x, y, 0, 0);
+	AsciiApp::gc->set(x, y, 0, 0);
 }
 
 /** Output help to standard output.

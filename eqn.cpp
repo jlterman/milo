@@ -26,18 +26,7 @@
 using namespace std;
 using namespace UI;
 
-const string EqnPanel::name = "equation";
-
-bool EqnPanel::init = EqnPanel::do_init();
-
-bool EqnPanel::do_init()
-{
-	MiloPanel::panel_map[EqnPanel::name] = MiloPanel::create<EqnPanel>;
-	MiloPanel::panel_xml_map[EqnPanel::name] = MiloPanel::createXML<EqnPanel>;
-	return true;
-}
-
-bool EqnPanel::do_alphaNumber(const KeyEvent& event)
+bool EqnBox::do_alphaNumber(const KeyEvent& event)
 {
 	LOG_TRACE_MSG(event.toString());
 	if (m_eqn->getSelectStart() != nullptr) {
@@ -51,7 +40,7 @@ bool EqnPanel::do_alphaNumber(const KeyEvent& event)
 	return true;
 }
 
-bool EqnPanel::do_backspace(const KeyEvent& event)
+bool EqnBox::do_backspace(const KeyEvent& event)
 {
 	LOG_TRACE_MSG(event.toString());
 	if (m_eqn->getSelectStart() != nullptr) {
@@ -82,7 +71,7 @@ bool EqnPanel::do_backspace(const KeyEvent& event)
 	return true;
 }
 
-bool EqnPanel::do_left(const KeyEvent& event)
+bool EqnBox::do_left(const KeyEvent& event)
 {
 	LOG_TRACE_MSG(event.toString());
 	Input* in = m_eqn->getCurrentInput();
@@ -113,7 +102,7 @@ bool EqnPanel::do_left(const KeyEvent& event)
 	return true;
 }
 
-bool EqnPanel::do_right(const KeyEvent& event)
+bool EqnBox::do_right(const KeyEvent& event)
 {
 	LOG_TRACE_MSG(event.toString());
 	Input* in = m_eqn->getCurrentInput();
@@ -147,7 +136,7 @@ bool EqnPanel::do_right(const KeyEvent& event)
 	return true;
 }
 
-bool EqnPanel::do_shift_left(const KeyEvent& event)
+bool EqnBox::do_shift_left(const KeyEvent& event)
 {
 	LOG_TRACE_MSG(event.toString());
 	if (m_eqn->getSelectStart() != nullptr) {
@@ -171,7 +160,7 @@ bool EqnPanel::do_shift_left(const KeyEvent& event)
 	return true;
 }
 
-bool EqnPanel::do_shift_right(const KeyEvent& event)
+bool EqnBox::do_shift_right(const KeyEvent& event)
 {
 	LOG_TRACE_MSG(event.toString());
 	if (m_eqn->getSelectStart() != nullptr) {
@@ -195,7 +184,7 @@ bool EqnPanel::do_shift_right(const KeyEvent& event)
 	return true;
 }
 
-bool EqnPanel::do_up(const KeyEvent& event)
+bool EqnBox::do_up(const KeyEvent& event)
 {
 	LOG_TRACE_MSG(event.toString());
 	Input* in = m_eqn->getCurrentInput();
@@ -219,7 +208,7 @@ bool EqnPanel::do_up(const KeyEvent& event)
 	return true;
 }
 
-bool EqnPanel::do_down(const KeyEvent& event)
+bool EqnBox::do_down(const KeyEvent& event)
 {
 	LOG_TRACE_MSG(event.toString());
 	Input* in = m_eqn->getCurrentInput();
@@ -244,7 +233,7 @@ bool EqnPanel::do_down(const KeyEvent& event)
 	return true;
 }
 
-bool EqnPanel::do_shift_up(const KeyEvent& event)
+bool EqnBox::do_shift_up(const KeyEvent& event)
 {
 	LOG_TRACE_MSG(event.toString());
 	if (m_eqn->getSelectStart() != nullptr) {
@@ -267,7 +256,7 @@ bool EqnPanel::do_shift_up(const KeyEvent& event)
 	return true;
 }
 
-bool EqnPanel::do_shift_down(const KeyEvent& event)
+bool EqnBox::do_shift_down(const KeyEvent& event)
 {
 	LOG_TRACE_MSG(event.toString());
 	if (m_eqn->getSelectStart() != nullptr) {
@@ -290,7 +279,7 @@ bool EqnPanel::do_shift_down(const KeyEvent& event)
 	return true;
 }
 
-bool EqnPanel::do_enter(const KeyEvent& event)
+bool EqnBox::do_enter(const KeyEvent& event)
 {
 	LOG_TRACE_MSG(event.toString());
 	Input* in = m_eqn->getCurrentInput();
@@ -310,14 +299,14 @@ bool EqnPanel::do_enter(const KeyEvent& event)
 	return true;
 }
 
-bool EqnPanel::do_tab(const KeyEvent& event)
+bool EqnBox::do_tab(const KeyEvent& event)
 {
 	LOG_TRACE_MSG(event.toString());
 	m_eqn->nextInput(event.shiftMod());
 	return true;
 }
 
-bool EqnPanel::do_plus_minus(const KeyEvent& event)
+bool EqnBox::do_plus_minus(const KeyEvent& event)
 {
 	LOG_TRACE_MSG(event.toString());
 	Input* in = m_eqn->getCurrentInput();
@@ -334,7 +323,7 @@ bool EqnPanel::do_plus_minus(const KeyEvent& event)
 	return true;
 }
 
-bool EqnPanel::do_divide(const KeyEvent& event)
+bool EqnBox::do_divide(const KeyEvent& event)
 {
 	LOG_TRACE_MSG(event.toString());
 	Input* in = m_eqn->getCurrentInput();
@@ -343,7 +332,7 @@ bool EqnPanel::do_divide(const KeyEvent& event)
 	return Node::createNodeByName("divide", getEqn());
 }
 
-bool EqnPanel::do_power(const KeyEvent& event)
+bool EqnBox::do_power(const KeyEvent& event)
 {
 	LOG_TRACE_MSG(event.toString());
 	Input* in = m_eqn->getCurrentInput();
@@ -352,7 +341,7 @@ bool EqnPanel::do_power(const KeyEvent& event)
 	return Node::createNodeByName("power", getEqn());
 }
 
-bool EqnPanel::do_left_parenthesis(const KeyEvent& event)
+bool EqnBox::do_left_parenthesis(const KeyEvent& event)
 {
 	LOG_TRACE_MSG(event.toString());
 	Input* in = m_eqn->getCurrentInput();
@@ -363,7 +352,7 @@ bool EqnPanel::do_left_parenthesis(const KeyEvent& event)
 	return true;
 }
 
-bool EqnPanel::do_space(const KeyEvent& event)
+bool EqnBox::do_space(const KeyEvent& event)
 {
 	LOG_TRACE_MSG(event.toString());
 	Input* in = m_eqn->getCurrentInput();
@@ -409,7 +398,7 @@ bool EqnPanel::do_space(const KeyEvent& event)
 	return true;
 }
 
-bool EqnPanel::do_mouse_pressed(const MouseEvent& mouse)
+bool EqnBox::do_mouse_pressed(const MouseEvent& mouse)
 {
 	mouse.getCoords(m_start_mouse_x, m_start_mouse_y);
 	LOG_TRACE_MSG("mouse press x: " + to_string(m_start_mouse_x) +
@@ -424,7 +413,7 @@ bool EqnPanel::do_mouse_pressed(const MouseEvent& mouse)
 	return false;
 }
 
-bool EqnPanel::do_mouse_released(const MouseEvent&)
+bool EqnBox::do_mouse_released(const MouseEvent&)
 {
 	LOG_TRACE_MSG("mouse release");
 	m_start_mouse_x = m_start_mouse_y = -1;
@@ -436,7 +425,7 @@ bool EqnPanel::do_mouse_released(const MouseEvent&)
 	return true;
 }
 
-bool EqnPanel::do_mouse_clicked(const MouseEvent& mouse)
+bool EqnBox::do_mouse_clicked(const MouseEvent& mouse)
 {
 	int mouse_x, mouse_y;
 	mouse.getCoords(mouse_x, mouse_y);
@@ -450,7 +439,7 @@ bool EqnPanel::do_mouse_clicked(const MouseEvent& mouse)
 	return true;	
 }
 
-bool EqnPanel::do_mouse_double(const MouseEvent& mouse)
+bool EqnBox::do_mouse_double(const MouseEvent& mouse)
 {
 	int mouse_x, mouse_y;
 	mouse.getCoords(mouse_x, mouse_y);
@@ -469,7 +458,7 @@ bool EqnPanel::do_mouse_double(const MouseEvent& mouse)
 	return true;
 }
 
-bool EqnPanel::do_mouse_position(const MouseEvent& mouse)
+bool EqnBox::do_mouse_position(const MouseEvent& mouse)
 {
 	if (m_start_mouse_x < 0 && m_start_mouse_y < 0) {
 		return false;
@@ -506,39 +495,39 @@ bool EqnPanel::do_mouse_position(const MouseEvent& mouse)
 	}
 	return false;
 }
-const unordered_map<MouseEvent, EqnPanel::mouse_handler> EqnPanel::mouse_event_map = {
-	{ MouseEvent(Mouse::RELEASED, 1), [](EqnPanel& p, const MouseEvent& m) { return p.do_mouse_released(m); } },
-	{ MouseEvent(Mouse::PRESSED,  1), [](EqnPanel& p, const MouseEvent& m) { return p.do_mouse_pressed(m); } },
-	{ MouseEvent(Mouse::CLICKED,  1), [](EqnPanel& p, const MouseEvent& m) { return p.do_mouse_clicked(m); } },
-	{ MouseEvent(Mouse::DOUBLE,   1), [](EqnPanel& p, const MouseEvent& m) { return p.do_mouse_double(m); } },
-    { MouseEvent(Mouse::POSITION, 0), [](EqnPanel& p, const MouseEvent& m) { return p.do_mouse_position(m); } }
+const unordered_map<MouseEvent, EqnBox::mouse_handler> EqnBox::mouse_event_map = {
+	{ MouseEvent(Mouse::RELEASED, 1), [](EqnBox& p, const MouseEvent& m) { return p.do_mouse_released(m); } },
+	{ MouseEvent(Mouse::PRESSED,  1), [](EqnBox& p, const MouseEvent& m) { return p.do_mouse_pressed(m); } },
+	{ MouseEvent(Mouse::CLICKED,  1), [](EqnBox& p, const MouseEvent& m) { return p.do_mouse_clicked(m); } },
+	{ MouseEvent(Mouse::DOUBLE,   1), [](EqnBox& p, const MouseEvent& m) { return p.do_mouse_double(m); } },
+    { MouseEvent(Mouse::POSITION, 0), [](EqnBox& p, const MouseEvent& m) { return p.do_mouse_position(m); } }
 };
 
-bool EqnPanel::emit_key(EqnPanel& panel, const KeyEvent& key)
+bool EqnBox::emit_key(EqnBox& eqn, const KeyEvent& key)
 {
-	return panel.do_alphaNumber(key);
+	return eqn.do_alphaNumber(key);
 }
 
-const unordered_map<KeyEvent, EqnPanel::key_handler> EqnPanel::key_event_map = {
-	{ KeyEvent(Keys::LEFT,  Modifiers::SHIFT), [](EqnPanel& p, const KeyEvent& k) { return p.do_shift_left(k); } },
-	{ KeyEvent(Keys::RIGHT, Modifiers::SHIFT), [](EqnPanel& p, const KeyEvent& k) { return p.do_shift_right(k); } },
-	{ KeyEvent(Keys::UP,    Modifiers::SHIFT), [](EqnPanel& p, const KeyEvent& k) { return p.do_shift_up(k); } },
-	{ KeyEvent(Keys::DOWN,  Modifiers::SHIFT), [](EqnPanel& p, const KeyEvent& k) { return p.do_shift_down(k); } },
-	{ KeyEvent(Keys::TAB,   Modifiers::SHIFT), [](EqnPanel& p, const KeyEvent& k) { return p.do_tab(k); } },
+const unordered_map<KeyEvent, EqnBox::key_handler> EqnBox::key_event_map = {
+	{ KeyEvent(Keys::LEFT,  Modifiers::SHIFT), [](EqnBox& p, const KeyEvent& k) { return p.do_shift_left(k); } },
+	{ KeyEvent(Keys::RIGHT, Modifiers::SHIFT), [](EqnBox& p, const KeyEvent& k) { return p.do_shift_right(k); } },
+	{ KeyEvent(Keys::UP,    Modifiers::SHIFT), [](EqnBox& p, const KeyEvent& k) { return p.do_shift_up(k); } },
+	{ KeyEvent(Keys::DOWN,  Modifiers::SHIFT), [](EqnBox& p, const KeyEvent& k) { return p.do_shift_down(k); } },
+	{ KeyEvent(Keys::TAB,   Modifiers::SHIFT), [](EqnBox& p, const KeyEvent& k) { return p.do_tab(k); } },
 	
-	{ KeyEvent(Keys::PLUS),   [](EqnPanel& p, const KeyEvent& k) { return p.do_plus_minus(k); } },
-	{ KeyEvent(Keys::MINUS),  [](EqnPanel& p, const KeyEvent& k) { return p.do_plus_minus(k); } },
-	{ KeyEvent(Keys::DIVIDE), [](EqnPanel& p, const KeyEvent& k) { return p.do_divide(k); } },
-	{ KeyEvent(Keys::POWER),  [](EqnPanel& p, const KeyEvent& k) { return p.do_power(k); } },
-	{ KeyEvent(Keys::L_PAR),  [](EqnPanel& p, const KeyEvent& k) { return p.do_left_parenthesis(k); } },
-	{ KeyEvent(Keys::SPACE),  [](EqnPanel& p, const KeyEvent& k) { return p.do_space(k); } },
-	{ KeyEvent(Keys::LEFT),   [](EqnPanel& p, const KeyEvent& k) { return p.do_left(k); } },
-	{ KeyEvent(Keys::RIGHT),  [](EqnPanel& p, const KeyEvent& k) { return p.do_right(k); } },
-	{ KeyEvent(Keys::UP),     [](EqnPanel& p, const KeyEvent& k) { return p.do_up(k); } },
-	{ KeyEvent(Keys::DOWN),   [](EqnPanel& p, const KeyEvent& k) { return p.do_down(k); } },
-	{ KeyEvent(Keys::TAB),    [](EqnPanel& p, const KeyEvent& k) { return p.do_tab(k); } },
-	{ KeyEvent(Keys::ENTER),  [](EqnPanel& p, const KeyEvent& k) { return p.do_enter(k); } },
-	{ KeyEvent(Keys::BSPACE), [](EqnPanel& p, const KeyEvent& k) { return p.do_backspace(k); } },
+	{ KeyEvent(Keys::PLUS),   [](EqnBox& p, const KeyEvent& k) { return p.do_plus_minus(k); } },
+	{ KeyEvent(Keys::MINUS),  [](EqnBox& p, const KeyEvent& k) { return p.do_plus_minus(k); } },
+	{ KeyEvent(Keys::DIVIDE), [](EqnBox& p, const KeyEvent& k) { return p.do_divide(k); } },
+	{ KeyEvent(Keys::POWER),  [](EqnBox& p, const KeyEvent& k) { return p.do_power(k); } },
+	{ KeyEvent(Keys::L_PAR),  [](EqnBox& p, const KeyEvent& k) { return p.do_left_parenthesis(k); } },
+	{ KeyEvent(Keys::SPACE),  [](EqnBox& p, const KeyEvent& k) { return p.do_space(k); } },
+	{ KeyEvent(Keys::LEFT),   [](EqnBox& p, const KeyEvent& k) { return p.do_left(k); } },
+	{ KeyEvent(Keys::RIGHT),  [](EqnBox& p, const KeyEvent& k) { return p.do_right(k); } },
+	{ KeyEvent(Keys::UP),     [](EqnBox& p, const KeyEvent& k) { return p.do_up(k); } },
+	{ KeyEvent(Keys::DOWN),   [](EqnBox& p, const KeyEvent& k) { return p.do_down(k); } },
+	{ KeyEvent(Keys::TAB),    [](EqnBox& p, const KeyEvent& k) { return p.do_tab(k); } },
+	{ KeyEvent(Keys::ENTER),  [](EqnBox& p, const KeyEvent& k) { return p.do_enter(k); } },
+	{ KeyEvent(Keys::BSPACE), [](EqnBox& p, const KeyEvent& k) { return p.do_backspace(k); } },
 	{ KeyEvent(Keys::DOT),    emit_key },
 	
 	{ KeyEvent(Keys::K0), emit_key },
@@ -604,7 +593,7 @@ const unordered_map<KeyEvent, EqnPanel::key_handler> EqnPanel::key_event_map = {
 	{ KeyEvent(Keys::z), emit_key },
 };
 
-void EqnPanel::doKey(const KeyEvent& key)
+void EqnBox::doKey(const KeyEvent& key)
 {
 	bool fChange = false;
 	auto key_entry = key_event_map.find(key);
@@ -617,7 +606,7 @@ void EqnPanel::doKey(const KeyEvent& key)
 	}
 }
 
-void EqnPanel::doMouse(const MouseEvent& mouse)
+void EqnBox::doMouse(const MouseEvent& mouse)
 {
 	bool fChange = false;
 	auto mouse_entry = mouse_event_map.find(mouse);
@@ -630,12 +619,12 @@ void EqnPanel::doMouse(const MouseEvent& mouse)
 	}
 }
 
-const unordered_map<string, EqnPanel::menu_handler> EqnPanel::menu_map = {
-	{ string("simplify"),  [](EqnPanel& p) { return p.getEqn().simplify(); } },
-	{ string("normalize"), [](EqnPanel& p) { p.getEqn().normalize(); return true; } },
+const unordered_map<string, EqnBox::menu_handler> EqnBox::menu_map = {
+	{ string("simplify"),  [](EqnBox& p) { return p.getEqn().simplify(); } },
+	{ string("normalize"), [](EqnBox& p) { p.getEqn().normalize(); return true; } },
 };
 
-bool EqnPanel::doMenu(const string& menuFunctionName)
+bool EqnBox::doMenu(const string& menuFunctionName)
 {
 	bool fChange = false;
 	auto menu_entry = menu_map.find(menuFunctionName);
@@ -650,13 +639,13 @@ bool EqnPanel::doMenu(const string& menuFunctionName)
 	return false;
 }
 
-void EqnPanel::pushUndo()
+void EqnBox::pushUndo()
 {
 	m_eqns.save(m_eqn);
 	m_eqn = EqnPtr(m_eqns.top());
 }
 
-void EqnPanel::popUndo()
+void EqnBox::popUndo()
 {
 	EqnPtr undo_eqn = m_eqns.undo();
 	if (undo_eqn) {
@@ -666,27 +655,48 @@ void EqnPanel::popUndo()
 	}
 }
 
-bool EqnPanel::blink()
+bool EqnBox::blink()
 {
 	return m_eqn->blink();
 }
 
-void EqnPanel::getCursorOrig(int& x, int& y)
+void EqnBox::getCursorOrig(int& x, int& y)
 {
 	m_eqn->getCursorOrig(x, y);
+	m_gc->globalOrig(x, y);
 }
 
-void EqnPanel::doDraw()
+void EqnBox::doDraw()
 {
 	m_eqn->setSelect(*m_gc);
 	m_eqn->getRoot()->draw(*m_gc);
 }
 
-Box EqnPanel::calculateSize()
+Box EqnBox::calculateSize()
 {
 	m_eqn->getRoot()->calculateSize(*m_gc);
 	m_eqn->getRoot()->calculateOrigin(*m_gc, 0, 0);
-	return m_eqn->getRoot()->getFrame().box;
+	m_gc->set(getSize());
+	return getSize();
+}
+
+const string EqnPanel::name = "equation";
+
+bool EqnPanel::init = EqnPanel::do_init();
+
+bool EqnPanel::do_init()
+{
+	MiloPanel::panel_map[EqnPanel::name] = MiloPanel::create<EqnPanel>;
+	MiloPanel::panel_xml_map[EqnPanel::name] = MiloPanel::createXML<EqnPanel>;
+	return true;
+}
+
+void EqnPanel::setBox(int x, int y, int x0, int y0)
+{
+	m_gc->set(x, y, x0, y0);
+
+	Box b = getSize();
+	m_eqnBox->setOrigin(x0 + (x - b.width())/2, y0 + (y - b.height())/2);
 }
 
 const string AlgebraPanel::name = "algebra";
@@ -708,9 +718,10 @@ void AlgebraPanel::doDraw()
 {
 	m_left->doDraw();
 	m_right->doDraw();
-	Node::Frame left = m_left->getEqn().getRoot()->getFrame();
-    m_gc->at(left.box.x0() + left.box.width() + m_gc->getTextLength("="),
-			 m_frame.base, "=",
+	Box left = m_left->getGraphicsBox();
+    m_gc->at(left.x0() + left.width() + m_gc->getTextLength("="),
+			 left.y0() + m_left->getEqn().getRoot()->getFrame().base,
+			 "=",
 			 UI::Graphics::Attributes::NONE);
 }
 
@@ -721,16 +732,12 @@ void AlgebraPanel::setBox(int x, int y, int x0, int y0)
 	auto leftFrame = m_left->getEqn().getRoot()->getFrame();
 	auto rightFrame = m_right->getEqn().getRoot()->getFrame();
 
-	m_left->getGraphics().set(leftFrame.box.width(),
-							  leftFrame.box.height(),
-							  x0,
-							  y0 + m_frame.base - leftFrame.base);
-	
-	m_right->getGraphics().set(rightFrame.box.width(),
-							   rightFrame.box.height(),
-							   x0 + leftFrame.box.width() + m_gc->getTextLength("==="),
-							   y0 + m_frame.base - rightFrame.base);
-							   
+	x0 += (x - m_frame.box.width())/2;
+	y0 += (y - m_frame.box.height())/2;
+
+	m_left->setOrigin(x0, y0 + m_frame.base - leftFrame.base);
+	m_right->setOrigin(x0 + leftFrame.box.width() + m_gc->getTextLength("==="),
+					   y0 + m_frame.base - rightFrame.base);
 }
 
 Box AlgebraPanel::calculateSize()

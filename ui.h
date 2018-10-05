@@ -500,7 +500,7 @@ namespace UI {
 		 * Get size of graphics area..
 		 * @return Box containing drawing area.
 		 */
-		Box getBox() { return m_frame; }
+		Box getBox() const { return m_frame; }
 
 		/**
 		 * Set size and origin of this graphics window.
@@ -538,22 +538,137 @@ namespace UI {
 		}
 		
 		/**
-		 * Change the coordinates x,y to be relative to the graphic's window origin.
+		 * Change the coordinates x,y to be relative to the graphic context frame
 		 * @param[in,out] x Horizontal coordinate to be shifted.
 		 * @param[in,out] y Vertical coordinate to be shifted.
 		 */
-		void relativeOrig(int& x, int& y) { x -= m_frame.x0(); y -= m_frame.y0(); }
+		void localOrig(int& x, int& y) const { x -= m_frame.x0(); y -= m_frame.y0(); }
+		
+		/**
+		 * Change the coordinates x,y to be relative to the window 
+		 * containing the graphic context;
+		 * @param[in,out] x Horizontal coordinate to be shifted.
+		 * @param[in,out] y Vertical coordinate to be shifted.
+		 */
+		void globalOrig(int& x, int& y) const { x += m_frame.x0(); y += m_frame.y0(); }
 		//@}
 
 	protected:
 		Box m_frame;   ///< Frame of this panel.
 		Box m_select;  ///< Currently selected area.
 	};
-	
-	/** MiloPanel is an abstract base class interface for all milo panels.
-	 *  This will provide hooks into the user interface.
+
+	/**
+	 * EventBox is an pure abstract base class interface that
+	 * provides hooks into the UI for event handling and drawing.
 	 */
-	class MiloPanel
+	class EventBox
+	{
+	public:
+		using Ptr    = std::unique_ptr<EventBox>;  ///< Unique pointer for EventBox
+		using Vector = std::vector<EventBox::Ptr>; ///< Storage of EventBox pointers
+		using Iter   = EventBox::Vector::iterator; ///< Iterator of EventBox ptr vector
+
+		/** Constructor for EventBox base class.
+		 */
+	    EventBox();
+
+		/** @name Pure Virtual Public Member Functions */
+		//@{		
+		/**
+		 * Handle key event.
+		 * @param key Key event.
+		 */
+		virtual void doKey(const UI::KeyEvent& key) = 0;
+
+		/**
+		 * Handle mouse event.
+		 * @param mouse Mouse event.
+		 */
+		virtual void doMouse(const UI::MouseEvent& mouse) = 0;
+
+		/**
+		 * Execute specific function based on its name. Used for menu handling.
+		 * @param menuFunctionName Name of menu function to be executed.
+		 * @return True if menuFunctionName found.
+		 */
+		virtual bool doMenu(const std::string& menuFunctionName) = 0;
+		
+		/** Draw contents on window.
+		 */
+		virtual void doDraw() = 0;
+
+		/** 
+		 * Calculate size needed for doDraw(). .
+		 * @return Calculated size for drawing.
+		 */
+		virtual Box calculateSize() = 0;
+
+		/** 
+		 * Get last calculated size.
+		 * @return Last calculated size.
+		 */
+		virtual Box getSize() = 0;
+		
+		/**
+		 * Push state to undo stack.
+		 */
+		virtual void pushUndo() = 0;
+		
+		/**
+		 * Restore state from top of undo stack.
+		 */
+		virtual void popUndo() = 0;
+
+		/**
+		 * Output contents as xml to XML stream.
+		 * @param XML stream class object.
+		 */
+		virtual void xml_out(XML::Stream& xml) = 0;
+
+		/**
+		 * Check where there is an active input.
+		 * @return If true, there is an active input.
+		 */
+		virtual bool blink() = 0;
+
+		/**
+		 * Get coordinates of current active input.
+		 * @param[out] x Horizontal origin of curosr.
+		 * @param[out] y Vertical origin cursor.
+		 */
+		virtual void getCursorOrig(int& x, int& y) = 0;
+		//@}
+
+		/** @name Public helper member functions */
+		//@{
+		/**
+		 * Set origin of this Event Box
+		 * @param x0 Horizontal origin of graphics window.
+		 * @param y0 Vertical origin of graphics window.
+		 */
+		void setOrigin(int x0, int y0) {
+			Box b = m_gc->getBox();
+			b.x0() = x0; b.y0() = y0;
+			m_gc->set(b);
+		}
+
+		/**
+		 * Get graphics box
+		 * @return Rectangle containing origin and size of graphics
+		 */
+		Box getGraphicsBox() {
+			return m_gc->getBox();
+		}
+		//@}
+
+	protected:
+		Graphics::Ptr m_gc;  ///< Owned Graphics object for event box.
+	};
+	
+	/** MiloPanel is an abstract base class for all milo panels.
+	 */
+	class MiloPanel : public EventBox
 	{
 	public:
 		friend class MiloApp;
@@ -562,35 +677,33 @@ namespace UI {
 		 * Template function to create a panel of a particular type
 		 *
 		 * @param init String to initialize panel
-		 * @param gc Graphics object
 		 * @return Pointer to panel
 		 */
 		template <class T>
-		static MiloPanel* create(const std::string& init, Graphics* gc)
+		static MiloPanel* create(const std::string& init)
 		{
-			return new T(init, gc);
+			return new T(init);
 		}
 
 		/**
 		 * Template function to create a panel of a particular type from XML
 		 *
 		 * @param in XML parser object.
-		 * @param gc Graphics object
 		 * @return Pointer to panel
 		 */
 		template <class T>
-		static MiloPanel* createXML(XML::Parser& in, Graphics* gc)
+		static MiloPanel* createXML(XML::Parser& in)
 		{
-			return new T(in, gc);
+			return new T(in);
 		}
 
 		/** Function pointer to return panel object with initilization string and Graphics object
 		 */
-		using factory = MiloPanel* (*)(const std::string&, Graphics*);
+		using factory = MiloPanel* (*)(const std::string&);
 
 		/** Function pointer to return panel object with xml parser and Graphics object
 		 */
-		using factory_xml = MiloPanel* (*)(XML::Parser&, Graphics*);
+		using factory_xml = MiloPanel* (*)(XML::Parser&);
 
 		using Ptr    = std::unique_ptr<MiloPanel>;  ///< Unique pointer for MiloPanel
 		using Vector = std::vector<MiloPanel::Ptr>; ///< Storage of MiloPanel pointers
@@ -603,80 +716,16 @@ namespace UI {
 		/** @name Constructors and Virtual Destructor */
 		//@{
 		/** Constructor for MiloPanel base class.
-		 * @param gc Graphics object
 		 */
-	    MiloPanel(Graphics* gc) : m_gc{gc} {}
+	    MiloPanel() : EventBox() {}
 
 		/** Virtual deconstructor for MiloPanel initializing graphics context
 		 */
         virtual ~MiloPanel() {}
 		//@}
 
-		/** @name Virtual Public Member Functions */
-		//@{		
-		/**
-		 * Handle key event for panel
-		 * @param key Key event
-		 */
-		virtual void doKey(const UI::KeyEvent& key) = 0;
-
-		/**
-		 * Handle mouse event for panel
-		 * @param mouse Mouse event
-		 */
-		virtual void doMouse(const UI::MouseEvent& mouse) = 0;
-
-		/**
-		 * Execute panel specific function based on its name. Used for menu handling.
-		 * @param menuFunctionName Name of menu function to be executed.
-		 * @return True if menuFunctionName found.
-		 */
-		virtual bool doMenu(const std::string& menuFunctionName) = 0;
-		
-		/** Handle redraw event
-		 */
-		virtual void doDraw() = 0;
-
-		/** 
-		 * Calculate size of panel.
-		 * @return Calculated size of panel.
-		 */
-		virtual Box calculateSize() = 0;
-
-		/** 
-		 * Get last calculated size of equation panel.
-		 * @return Last calculated size of equation panel.
-		 */
-		virtual Box getSize() = 0;
-		
-		/**
-		 * Push state of panel to undo stack.
-		 */
-		virtual void pushUndo() = 0;
-		
-		/**
-		 * Restore state of panel on top of undo stack.
-		 */
-		virtual void popUndo() = 0;
-
-		/**
-		 * Output panel contents as xml to XML stream.
-		 * @param XML stream class object.
-		 */
-		virtual void xml_out(XML::Stream& xml) = 0;
-
-		/**
-		 * Get type name of panel.
-		 * @return String containing type of panel for xml tag.
-		 */
-		virtual const std::string& getType() = 0;
-
-		/**
-		 * Check where there is an active input in this panel.
-		 * @return If true, there is an active input.
-		 */
-		virtual bool blink() = 0;
-
+		/** @name Pure Virtual Public Member Functions */
+		//@{
 		/**
 		 * Set size and origin of the graphics of this panel
 		 * @param x Horizontal size ofgraphics.
@@ -687,13 +736,12 @@ namespace UI {
 		virtual void setBox(int x, int y, int x0, int y0) = 0;
 
 		/**
-		 * Get coordinates of current active input.
-		 * @param[out] x Horizontal origin of curosr.
-		 * @param[out] y Vertical origin cursor.
+		 * Get type name of panel.
+		 * @return String containing type of panel for xml tag.
 		 */
-		virtual void getCursorOrig(int& x, int& y) = 0;
+		virtual const std::string& getType() = 0;
 		//@}
-
+		
 		/** @name Public helper member functions */
 		//@{
 
@@ -715,25 +763,20 @@ namespace UI {
 		 * Get a smart pointer to a panel class object by name.
 		 * @param name Name of panel class object to create
 		 * @param init Initilization xml string
-		 * @param gc Graphics object
 		 * @return Pointer to panel class object
 		 */
 		static MiloPanel::Ptr make(const std::string& name,
-								   const std::string& init,
-								   Graphics*);
+								   const std::string& init);
 		
 		/** 
 		 * Get a smart pointer to a panel class object by name with xml.
 		 * @param in XML parser to load panel.
 		 * @param[out] fActive True, if this is active panel
-		 * @param gc Graphics object.
 		 * @return Pointer to panel class object.
 		 */
-		static MiloPanel::Ptr make(XML::Parser& in, Graphics* gc);
+		static MiloPanel::Ptr make(XML::Parser& in);
 		
 	protected:
-		Graphics::Ptr m_gc;  ///< Owned Graphics object for panel.
-
 		/** Map of name to panel create functions.
 		 */
 		static std::unordered_map<std::string, factory> panel_map;
@@ -765,11 +808,9 @@ namespace UI {
 		 * Constructor with new panel.
 		 * @param name Name of panel class.
 		 * @param init Initialization string.
-		 * @param gc   Graphics object.
 		 */
 	    MiloWindow(const std::string& name,
-				   const std::string& init,
-				   Graphics* gc);
+				   const std::string& init);
 
 		/**
 		 * Constructor from XML::Parser.

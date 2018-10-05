@@ -36,68 +36,59 @@
  */
 namespace UI {
 	/**
-	 * Panel class for Equation class.
+	 * Event Box class for Equation class.
 	 */
-	class EqnPanel : public MiloPanel
+	class EqnBox : public EventBox
 	{
 	public:
-		using Ptr = std::unique_ptr<EqnPanel>; ///< Unique pointer for EqnPanel
+		using Ptr = std::unique_ptr<EqnBox>; ///< Unique pointer for EqnBox
 		
-		/** @name EqnPanel function pointer declerations. */
+		/** @name EqnBox function pointer declerations. */
 		//@{
 		/**
 		 * Function pointer to handle key event. Pointer to event passed as argument.
 		 * Return true, if event changed equation.
 		 */
-		using key_handler = bool (*)(EqnPanel&, const KeyEvent&);
+		using key_handler = bool (*)(EqnBox&, const KeyEvent&);
 		
 		/**
 		 * Function pointer to handle mouse event. Pointer to event passed as argument.
 		 * Return true, if event changed equation.
 		 */
-		using mouse_handler = bool (*)(EqnPanel&, const MouseEvent&);
+		using mouse_handler = bool (*)(EqnBox&, const MouseEvent&);
 		
 		/**
 		 * Function pointer to handle mouse event.
 		 * Return true, if event changed equation.
 		 */
-		using menu_handler = bool (*)(EqnPanel&);
+		using menu_handler = bool (*)(EqnBox&);
 		//@}
 
 		/** @name Constructors and Virtual Desctructor */
 		//@{
 		/** 
-		 * Constructor for EqnPanel initializing Equation with
+		 * Constructor for EqnBox initializing Equation with
 		 * single initialization string.
 		 * @param init Initialization string.
-		 * @param gc   Graphics object.
 		 */
-	    EqnPanel(const std::string& init, Graphics* gc) :
-		    MiloPanel(gc),
-			m_eqn(new Equation(init)) { pushUndo(); }
+	    EqnBox(const std::string& init) : EventBox(), m_eqn(new Equation(init))	{ pushUndo(); }
 
 		/** 
-		 * Constructor for EqnPanel passing equation directly.
+		 * Constructor for EqnBox passing equation directly.
 		 * @param eqn Equation for this panel.
-		 * @param gc  Graphics object.
 		 */
-	    EqnPanel(Equation* eqn, Graphics* gc) :
-		    MiloPanel(gc),
-			m_eqn(eqn) { pushUndo(); }
+	    EqnBox(Equation* eqn) :	EventBox(), m_eqn(eqn) { pushUndo(); }
 
 		/** 
-		 * Constructor for EqnPanel getting equation from XML paraser
+		 * Constructor for EqnBox getting equation from XML paraser
 		 * @param in  XML parser object.
-		 * @param gc  Graphics object.
 		 */
-	    EqnPanel(XML::Parser& in, Graphics* gc) :
-			MiloPanel(gc),
-			m_eqn(new Equation(in))	{ pushUndo(); }
+	    EqnBox(XML::Parser& in) : EventBox(), m_eqn(new Equation(in)) { pushUndo(); }
 
-		~EqnPanel() {} ///< Virtual desctructor.
+		~EqnBox() {} ///< Virtual desctructor.
 		//@}
 		
-		/** @name Virtual Public Member Functions */
+		/** @name Overriden Pure Virtual Public Member Functions from Event Box */
 		//@{
 		/**
 		 * Handle key event for panel
@@ -148,27 +139,12 @@ namespace UI {
 		 * @param XML stream class object.
 		 */
 		void xml_out(XML::Stream& xml) { xml << *m_eqn; }
-
-		/**
-		 * Get type name of panel.
-		 * @return String containing type of panel for xml tag.
-		 */
-		const std::string& getType() { return EqnPanel::name; }
 		
 		/**
 		 * Check where there is an active input in this equation object.
 		 * @return If true, there is an active input.
 		 */
 		bool blink();
-
-		/**
-		 * Set size and origin of the graphics of this panel
-		 * @param x Horizontal size ofgraphics.
-		 * @param y Vertical size of graphics.
-		 * @param x0 Horizontal origin of graphics.
-		 * @param y0 Vertical origin of graphics.
-		 */
-		void setBox(int x, int y, int x0, int y0)  { m_gc->set(x, y, x0, y0); }
 		
 		/**
 		 * Get coordinates of current active input.
@@ -207,29 +183,22 @@ namespace UI {
 		}
 		//@}
 
-		static const std::string name; ///< Name of this panel
 	private:
-		EqnPtr      m_eqn;              ///< Shared pointer to current equation.
-		EqnUndoList m_eqns;             ///< Equation undo stack
+		EqnPtr        m_eqn;            ///< Shared pointer to current equation.
+		EqnUndoList   m_eqns;           ///< Equation undo stack
 		Node* m_start_select = nullptr; ///< If not null, node is selected.
-		int m_start_mouse_x = -1;       ///< Horiz coord of start of mouse drag.
-		int m_start_mouse_y = -1;       ///< Vertical coord of start of mouse drag
-		static bool init;               ///< Should be true after static initilization.
+		int m_start_mouse_x  = -1;      ///< Horiz coord of start of mouse drag.
+		int m_start_mouse_y  = -1;      ///< Vertical coord of start of mouse drag
 
 		/** @name Static member functions */
 		//@{
 		/**
-		 * Static initialization for class.
-		 */
-		static bool do_init();
-
-		/**
 		 * Static function to emit a key event to a panel.
-		 * @param panel EqnPanel to handle key event.
+		 * @param eqn EqnBox to handle key event.
 		 * @param key Key event.
 		 * @return True if key event was handled.
 		 */
-		static bool emit_key(EqnPanel& panel, const KeyEvent& key);
+		static bool emit_key(EqnBox& eqn, const KeyEvent& key);
 		//@}
 
 		/** @name Static member objects */
@@ -441,6 +410,138 @@ namespace UI {
 		//@}
 	};
 
+	/** EqnPanel is a panel class for EqnBox
+	 */
+	class EqnPanel : public MiloPanel
+	{
+	public:
+		/** @name Constructors and Virtual Desctructor */
+		//@{
+		/** 
+		 * Constructor for EqnPanel initializing Equation with
+		 * single initialization string.
+		 * @param init Initialization string.
+		 */
+	    EqnPanel(const std::string& init) :
+		    MiloPanel(),
+			m_eqnBox(new EqnBox(init)) {}
+
+		/** 
+		 * Constructor for EqnPanel passing equation directly.
+		 * @param eqn Equation for this panel.
+		 */
+	    EqnPanel(Equation* eqn) :
+		    MiloPanel(),
+			m_eqnBox(new EqnBox(eqn)) {}
+
+		/** 
+		 * Constructor for EqnPanel getting equation from XML paraser
+		 * @param in  XML parser object.
+		 */
+	    EqnPanel(XML::Parser& in) :
+			MiloPanel(),
+			m_eqnBox(new EqnBox(in)) {}
+
+		~EqnPanel() {} ///< Virtual desctructor.
+		//@}
+
+		/** @name Overridden Pure Virtual Public Member Functions from EventBox */
+		//@{		
+		/**
+		 * Handle key event.
+		 * @param key Key event.
+		 */
+		void doKey(const UI::KeyEvent& key) { m_eqnBox->doKey(key); }
+
+		/**
+		 * Handle mouse event.
+		 * @param mouse Mouse event.
+		 */
+		void doMouse(const UI::MouseEvent& mouse) { m_eqnBox->doMouse(mouse); }
+
+		/**
+		 * Execute specific function based on its name. Used for menu handling.
+		 * @param menuFunctionName Name of menu function to be executed.
+		 * @return True if menuFunctionName found.
+		 */
+		bool doMenu(const std::string& menuFunctionName) { return m_eqnBox->doMenu(menuFunctionName); }
+		
+		/** Draw contents on window.
+		 */
+		void doDraw() { m_eqnBox->doDraw(); }
+
+		/** 
+		 * Calculate size needed for doDraw(). .
+		 * @return Calculated size for drawing.
+		 */
+		Box calculateSize() { return m_eqnBox->calculateSize(); }
+
+		/** 
+		 * Get last calculated size.
+		 * @return Last calculated size.
+		 */
+		Box getSize() { return m_eqnBox->getSize(); }
+		
+		/**
+		 * Push state to undo stack.
+		 */
+		void pushUndo() { m_eqnBox->pushUndo(); }
+		
+		/**
+		 * Restore state from top of undo stack.
+		 */
+		void popUndo() { m_eqnBox->popUndo(); }
+
+		/**
+		 * Output contents as xml to XML stream.
+		 * @param XML stream class object.
+		 */
+		void xml_out(XML::Stream& xml) { m_eqnBox->xml_out(xml); }
+
+		/**
+		 * Check where there is an active input.
+		 * @return If true, there is an active input.
+		 */
+		bool blink() { return m_eqnBox->blink(); }
+
+		/**
+		 * Get coordinates of current active input.
+		 * @param[out] x Horizontal origin of curosr.
+		 * @param[out] y Vertical origin cursor.
+		 */
+		void getCursorOrig(int& x, int& y) { m_eqnBox->getCursorOrig(x, y); }
+		//@}		
+		
+		/** @name Overridden Pure Virtual Public Member Functions from MiloPanel */
+		//@{
+		/**
+		 * Get type name of panel.
+		 * @return String containing type of panel for xml tag.
+		 */
+		const std::string& getType() { return EqnPanel::name; }
+
+		/**
+		 * Set size and origin of the graphics of this panel
+		 * @param x Horizontal size of graphics.
+		 * @param y Vertical size of graphics.
+		 * @param x0 Horizontal origin of graphics.
+		 * @param y0 Vertical origin of graphics.
+		 */
+		void setBox(int x, int y, int x0, int y0);
+		//@}
+
+		static const std::string name; ///< Name of this panel
+	private:
+		EqnBox::Ptr m_eqnBox; ///< Equation Event Box handled by EqnPanel.
+
+		static bool init;     ///< Should be true after static initilization.
+
+		/**
+		 * Static initialization for class.
+		 */
+		static bool do_init();
+	};
+
 	/** MiloPanel derived class for two equations in alegebraic relatiohship.
 	 */
 	class AlgebraPanel : public MiloPanel
@@ -456,16 +557,12 @@ namespace UI {
 		 * Constructor for AlgebraPanel initializing Equation with
 		 * single initialization string.
 		 * @param init Initialization string for equation1+'='+equation2.
-		 * @param gc    Graphics object.
 		 */
-	    AlgebraPanel(const std::string& init,
-					 Graphics* gc) :
-		    MiloPanel(gc),
+	    AlgebraPanel(const std::string& init) :
+		    MiloPanel(),
 			m_side(LEFT),
-			m_left(new EqnPanel(init.substr(0, init.find('=')),
-								MiloApp::getGlobal().makeGraphics())),
-			m_right(new EqnPanel(init.substr(init.rfind('=')),
-								MiloApp::getGlobal().makeGraphics()))
+			m_left(new EqnBox(init.substr(0, init.find('=')))),
+			m_right(new EqnBox(init.substr(init.rfind('='))))
 		{
 			pushUndo();
 		}
@@ -473,15 +570,12 @@ namespace UI {
 		/** 
 		 * Constructor for AlgebraPanel getting equation from XML paraser
 		 * @param in  XML parser object.
-		 * @param gc  Graphics object.
 		 */
-	    AlgebraPanel(XML::Parser& in, Graphics* gc) :
-			MiloPanel(gc),
+	    AlgebraPanel(XML::Parser& in) :
+			MiloPanel(),
 			m_side(readSide(in)),
-			m_left(new EqnPanel(new Equation(in),
-								MiloApp::getGlobal().makeGraphics())),
-			m_right(new EqnPanel(new Equation(in),
-								MiloApp::getGlobal().makeGraphics()))
+			m_left(new EqnBox(new Equation(in))),
+			m_right(new EqnBox(new Equation(in)))
 		{
 			pushUndo();
 		}
@@ -579,7 +673,7 @@ namespace UI {
 		 * Get current side of equation.
 		 * @return Current side.
 		 */
-		EqnPanel& getCurrentSide() { return (m_side == LEFT) ? *m_left : *m_right; }
+		EqnBox& getCurrentSide() { return (m_side == LEFT) ? *m_left : *m_right; }
 
 		/**
 		 * Read side from XML::Parser.
@@ -591,10 +685,10 @@ namespace UI {
 
 		static const std::string name; ///< Name of this panel
 	private:
-		Side m_side;           ///< Side that is active.
-		EqnPanel::Ptr m_left;  ///< Equation of left of algebraic equality.
-		EqnPanel::Ptr m_right; ///< Equation of right of algebraic equality.
-		Node::Frame m_frame;   ///< From containing both equations.
+		Side m_side;         ///< Side that is active.
+		EqnBox::Ptr m_left;  ///< Equation of left of algebraic equality.
+		EqnBox::Ptr m_right; ///< Equation of right of algebraic equality.
+		Node::Frame m_frame; ///< Form containing both equations.
 
 		static const std::string side_tag;    ///< Side tag.
 		static const std::string left_value;  ///< Element value for left.
