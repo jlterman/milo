@@ -271,7 +271,8 @@ static void parse(const string& eqn_str)
  */
 static void xml_in(const string& fname)
 {
-	ifstream in(fname);
+	ifstream is(fname);
+	XML::Parser in(is);
 	panel.newEqn(in);
 }
 

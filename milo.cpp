@@ -249,6 +249,7 @@ void Equation::eraseSelection(Node* node)
 
 void Equation::nextInput(bool fShift) 
 {
+	if (m_inputs.size() == 0) return;
 	if (m_input_index >= 0 && m_inputs.size() == 1) return;
 
 	if (!fShift && m_input_index < 0) {
@@ -626,28 +627,6 @@ void FactorIterator::swap(FactorIterator& a, FactorIterator& b)
 
 	b.m_pTerm->factors[b.m_factor_index] = tmp;
 	b.m_node = tmp;
-}
-
-void EqnUndoList::save(EqnPtr eqn)
-{ 
-	string store;
-	eqn->xml_out(store);
-	LOG_TRACE_MSG("saved eqn xml:\n" + store);
-	m_eqns.push_back(store);
-}
-
-EqnPtr EqnUndoList::undo()
-{
-	if (m_eqns.size() <= 1) return EqnPtr(0);
-	m_eqns.pop_back();
-	return top();
-}
-
-EqnPtr EqnUndoList::top()
-{
-	if (m_eqns.empty()) return EqnPtr(0);
-	istringstream in(m_eqns.back());
-	return EqnPtr(new Equation(in));
 }
 
 namespace Log

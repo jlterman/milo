@@ -401,6 +401,7 @@ bool EqnBox::do_space(const KeyEvent& event)
 bool EqnBox::do_mouse_pressed(const MouseEvent& mouse)
 {
 	mouse.getCoords(m_start_mouse_x, m_start_mouse_y);
+	m_gc->localOrig(m_start_mouse_x, m_start_mouse_y);
 	LOG_TRACE_MSG("mouse press x: " + to_string(m_start_mouse_x) +
 				            ", y: " + to_string(m_start_mouse_y));
 	m_start_select = m_eqn->findNode(m_start_mouse_x, m_start_mouse_y);
@@ -416,7 +417,7 @@ bool EqnBox::do_mouse_pressed(const MouseEvent& mouse)
 bool EqnBox::do_mouse_released(const MouseEvent&)
 {
 	LOG_TRACE_MSG("mouse release");
-	m_start_mouse_x = m_start_mouse_y = -1;
+	m_start_mouse_x = m_start_mouse_y = INT_MAX;
 	if (m_start_select != nullptr && m_start_select->getSelect() == Node::Select::ALL)
 	{
 		m_eqn->selectNodeOrInput(m_start_select);
@@ -427,13 +428,16 @@ bool EqnBox::do_mouse_released(const MouseEvent&)
 
 bool EqnBox::do_mouse_clicked(const MouseEvent& mouse)
 {
+	m_eqn->clearSelect();
+	m_start_mouse_x = m_start_mouse_y = INT_MAX;
+
 	int mouse_x, mouse_y;
 	mouse.getCoords(mouse_x, mouse_y);
+	m_gc->localOrig(mouse_x, mouse_y);
 	LOG_TRACE_MSG("mouse clicked x: " + to_string(mouse_x) + ", y: " + to_string(mouse_y));
 	Node* node = m_eqn->findNode(mouse_x, mouse_y);
 	if (node == nullptr) return false;
 	LOG_TRACE_MSG("node found: " + node->toString());
-	m_eqn->clearSelect();
 	m_eqn->selectNodeOrInput(node);
 	m_eqn->draw(*m_gc);
 	return true;	
@@ -443,6 +447,7 @@ bool EqnBox::do_mouse_double(const MouseEvent& mouse)
 {
 	int mouse_x, mouse_y;
 	mouse.getCoords(mouse_x, mouse_y);
+	m_gc->localOrig(mouse_x, mouse_y);
 	LOG_TRACE_MSG("mouse double clicked x: " + to_string(mouse_x) + ", y: " + to_string(mouse_y));
 	Node* node = m_eqn->findNode(mouse_x, mouse_y);
 	if (node == nullptr || node == m_eqn->getCurrentInput()) return false;
@@ -460,13 +465,15 @@ bool EqnBox::do_mouse_double(const MouseEvent& mouse)
 
 bool EqnBox::do_mouse_position(const MouseEvent& mouse)
 {
-	if (m_start_mouse_x < 0 && m_start_mouse_y < 0) {
+	if (m_start_mouse_x == INT_MAX || m_start_mouse_y == INT_MAX) {
 		return false;
 	}
 
 	Box box = { 0, 0, 0, 0 };
-	int event_x = -1, event_y = -1;
+	int event_x = INT_MAX, event_y = INT_MAX;
 	mouse.getCoords(event_x, event_y);
+	m_gc->localOrig(event_x, event_y);
+
 	box = { abs(m_start_mouse_x - event_x),
 			abs(m_start_mouse_y - event_y),
 			min(m_start_mouse_x,  event_x),
@@ -595,27 +602,19 @@ const unordered_map<KeyEvent, EqnBox::key_handler> EqnBox::key_event_map = {
 
 void EqnBox::doKey(const KeyEvent& key)
 {
-	bool fChange = false;
+	m_fChange = false;
 	auto key_entry = key_event_map.find(key);
 	if (key_entry != key_event_map.end()) {
-		fChange = (key_entry->second)(*this, key);
-	}
-	if (fChange) {
-		calculateSize();
-		pushUndo();
+		m_fChange = (key_entry->second)(*this, key);
 	}
 }
 
 void EqnBox::doMouse(const MouseEvent& mouse)
 {
-	bool fChange = false;
+	m_fChange = false;
 	auto mouse_entry = mouse_event_map.find(mouse);
 	if (mouse_entry != mouse_event_map.end()) {
-		fChange = (mouse_entry->second)(*this, mouse);
-	}
-	if (fChange) {
-		calculateSize();
-		pushUndo();
+		m_fChange = (mouse_entry->second)(*this, mouse);
 	}
 }
 
@@ -626,33 +625,13 @@ const unordered_map<string, EqnBox::menu_handler> EqnBox::menu_map = {
 
 bool EqnBox::doMenu(const string& menuFunctionName)
 {
-	bool fChange = false;
+    m_fChange = false;
 	auto menu_entry = menu_map.find(menuFunctionName);
 	if (menu_entry != menu_map.end()) {
-		fChange = (menu_entry->second)(*this);
-		if (fChange) {
-			calculateSize();
-			pushUndo();
-		}
+		m_fChange = (menu_entry->second)(*this);
 		return true;
 	}
 	return false;
-}
-
-void EqnBox::pushUndo()
-{
-	m_eqns.save(m_eqn);
-	m_eqn = EqnPtr(m_eqns.top());
-}
-
-void EqnBox::popUndo()
-{
-	EqnPtr undo_eqn = m_eqns.undo();
-	if (undo_eqn) {
-		m_eqn = undo_eqn;
-		LOG_TRACE_MSG("undo to " + m_eqn->toString());
-		m_eqn->draw(*m_gc);
-	}
 }
 
 bool EqnBox::blink()
@@ -691,6 +670,34 @@ bool EqnPanel::do_init()
 	return true;
 }
 
+void EqnPanel::doKey(const UI::KeyEvent& key)
+{
+	m_eqnBox.doKey(key);
+	if (m_eqnBox.hasChanged()) {
+		calculateSize();
+		pushUndo();
+	}
+}
+
+void EqnPanel::doMouse(const UI::MouseEvent& mouse)
+{
+	m_eqnBox.doMouse(mouse);
+	if (m_eqnBox.hasChanged()) {
+		calculateSize();
+		pushUndo();
+	}
+}
+
+bool EqnPanel::doPanelMenu(const std::string& menuFunctionName)
+{
+	return m_eqnBox.doMenu(menuFunctionName);
+}
+
+void EqnPanel::copy(XML::Parser& in)
+{
+	m_eqnBox.newEqn(in);
+}
+
 void EqnPanel::setBox(int x, int y, int x0, int y0)
 {
 	m_gc->set(x, y, x0, y0);
@@ -723,6 +730,51 @@ AlgebraPanel::AlgebraPanel(XML::Parser& in) :
 	m_right(in)
 {
 	pushUndo();
+}
+
+void AlgebraPanel::doKey(const UI::KeyEvent& key)
+{
+	getCurrentSide().doKey(key);
+	if (getCurrentSide().hasChanged()) {
+		calculateSize();
+		pushUndo();
+	}
+}
+
+void AlgebraPanel::doMouse(const UI::MouseEvent& mouse)
+{
+	int mouse_x, mouse_y;
+	mouse.getCoords(mouse_x, mouse_y);
+	if (mouse_x < m_left.getGraphicsBox().x0() +
+		          m_left.getGraphicsBox().width()) {
+		m_side = LEFT;
+	} else {
+		m_side = RIGHT;
+	}
+	getCurrentSide().doMouse(mouse);
+	if (getCurrentSide().hasChanged()) {
+		calculateSize();
+		pushUndo();
+	}
+}
+
+bool AlgebraPanel::doPanelMenu(const std::string& menuFunctionName)
+{
+	if (getCurrentSide().doMenu(menuFunctionName)) {
+		if (getCurrentSide().hasChanged()) {
+			calculateSize();
+			pushUndo();
+		}
+		return true;
+	}
+	return false;
+}
+
+void AlgebraPanel::copy(XML::Parser& in)
+{
+	m_side = readSide(in);
+	m_left.newEqn(in);
+	m_right.newEqn(in);
 }
 
 bool AlgebraPanel::do_init()

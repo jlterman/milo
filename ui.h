@@ -27,7 +27,6 @@
 
 #include <fstream>
 #include <unordered_map>
-#include <fstream>
 #include <string>
 #include <memory>
 #include "util.h"
@@ -615,22 +614,6 @@ namespace UI {
 		 * @return Base line.
 		 */
 		virtual int getBase() = 0;
-		
-		/**
-		 * Push state to undo stack.
-		 */
-		virtual void pushUndo() = 0;
-		
-		/**
-		 * Restore state from top of undo stack.
-		 */
-		virtual void popUndo() = 0;
-
-		/**
-		 * Output contents as xml to XML stream.
-		 * @param XML stream class object.
-		 */
-		virtual void xml_out(XML::Stream& xml) = 0;
 
 		/**
 		 * Check where there is an active input.
@@ -666,10 +649,17 @@ namespace UI {
 		Box getGraphicsBox() {
 			return m_gc->getBox();
 		}
+
+		/**
+		 * Check if event box has changed.
+		 * @return True if event box changed.
+		 */
+		bool hasChanged() { return m_fChange; }
 		//@}
 
 	protected:
 		Graphics::Ptr m_gc;  ///< Owned Graphics object for event box.
+		bool m_fChange;      ///< True if state of event box has changed.
 	};
 	
 	/** MiloPanel is an abstract base class for all milo panels.
@@ -719,6 +709,12 @@ namespace UI {
 		const std::string type_tag = "type";        ///< xml type for <panel>.
 		const std::string active_tag = "active";    ///< name/value tag.
 		
+		/**
+		 * Function pointer to handle menu event.
+		 * Return true, if event changed panel.
+		 */
+		using menu_handler = void (*)(MiloPanel&);
+
 		/** @name Constructors and Virtual Destructor */
 		//@{
 		/** Constructor for MiloPanel base class.
@@ -732,6 +728,25 @@ namespace UI {
 
 		/** @name Pure Virtual Public Member Functions */
 		//@{
+		/** 
+		 * Copy panel sate from XML paraser
+		 * @param in XML parser object.
+		 */
+	    virtual void copy(XML::Parser& in) = 0;
+
+		/**
+		 * Output contents as xml to XML stream.
+		 * @param XML stream class object.
+		 */
+		virtual void xml_out(XML::Stream& xml) = 0;
+
+		/**
+		 * Execute specific function based on its name. Used for menu handling.
+		 * @param menuFunctionName Name of menu function to be executed.
+		 * @return True if menuFunctionName found.
+		 */
+		virtual bool doPanelMenu(const std::string& menuFunctionName) = 0;
+
 		/**
 		 * Set size and origin of the graphics of this panel
 		 * @param x Horizontal size ofgraphics.
@@ -750,6 +765,45 @@ namespace UI {
 		
 		/** @name Public helper member functions */
 		//@{
+		/**
+		 * Get box containing graphics context for this panel.
+		 * @return Box enclosing graphics context.
+		 */
+		Box getBox() { return m_gc->getBox(); }
+		
+		/**
+		 * Serialize contents of panel to a string.
+		 * @param str String to store contents.
+		 */
+		void xml_out(std::string& str);
+
+		/**
+		 * Copy panel state from string containing serialized contents.
+		 * @param str Serialized new contents for panel.
+		 */
+		void copy(const std::string& str);
+		
+		/**
+		 * Push state to undo stack.
+		 */
+		void pushUndo();
+		
+		/**
+		 * Restore state from top of undo stack.
+		 */
+		void doUndo();
+
+		/** 
+		 * Undo a previous undo.
+		 */
+		void doRedo();
+
+		/**
+		 * Execute specific function based on its name. Used for menu handling.
+		 * @param menuFunctionName Name of menu function to be executed.
+		 * @return True if menuFunctionName found.
+		 */
+		bool doMenu(const std::string& menuFunctionName);
 
 		/**
 		 * Get graphics context.
@@ -790,6 +844,14 @@ namespace UI {
 		/** Map of name to panel create functions with xml.
 		 */
 		static std::unordered_map<std::string, factory_xml> panel_xml_map;
+
+	private:
+		StringVector m_undo; ///< Stack of undo history.
+		int m_current = -1;  ///< Current place in undo history.
+
+		/** Handle menu items for all panels.
+		 */
+		static std::unordered_map<std::string, menu_handler> menu_map;
 	};
 
 	/**

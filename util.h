@@ -385,8 +385,39 @@ private:
 /** @name Global Type Declerations  */
 //@{
 using Box = Rectangle<int>;                                     ///< Specialization of integer rectangle.
-using StringMap = std::unordered_map<std::string, std::string>; ///< hash map for string => string
+using StringMap = std::unordered_map<std::string, std::string>; ///< hash map for string => string.
+using StringVector = std::vector<std::string>;                  ///< Vector of strings.
+using StringVectorIter = StringVector::iterator;                ///< Iterator for vector of strings.
 //@}
+
+/**
+ * Split string into a vector by a character c.
+ * @param c Character that is a delminater.
+ * @param text Text to be split.
+ * @return Vector containing split strings.
+ */
+template <class T>
+std::vector<std::basic_string<T>> split(const T c, std::basic_string<T> text)
+{
+	std::vector<std::basic_string<T>> v;
+	size_t old_n = 0, n = 0;
+	do {
+		n = text.find(c, old_n);
+		v.push_back(text.substr(old_n, n - old_n));
+		old_n = n + 1;
+	}
+	while ( n != std::basic_string<T>::npos);
+	return v;
+}
+
+/**
+ * Specialization for a c-type string for split.
+ */
+template <class T>
+std::vector<std::basic_string<T>> split(const T c, const T* text)
+{
+	return split(c, std::basic_string<T>(text));
+}
 
 /**
  * Calculate final hash from given list of values

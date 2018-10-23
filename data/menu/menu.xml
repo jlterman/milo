@@ -6,6 +6,7 @@
   </menu>
   <menu type="menu" name="Edit" active="true">
 	<menu type="item" name="Undo" active="true" action="undo" key="CTRL-Z"/>
+	<menu type="item" name="Redo" active="true" action="redo" key="CTRL-Y"/>
 	<menu type="line"/>
 	<menu type="item" name="Cut" active="true" action="cut" key="CTRL-X"/>
 	<menu type="item" name="Copy" active="true" action="copy" key="CTRL-C"/>

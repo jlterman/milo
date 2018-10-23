@@ -1824,36 +1824,4 @@ private:
 
 	static int input_sn; ///< Serial number of last created Input node.
 };
-
-/**
- * Holds a list of pointers to equation objects to support a undo mechanisim.
- */
-class EqnUndoList
-{
-public:
-	/**
-	 * Default constructor.
-	 */
-	EqnUndoList() {}
-
-	/**
-	 * Add pointer to Equation object to list.
-	 */
-	void save(EqnPtr eqn);
-
-	/**
-	 * Pop pointer to last equation object.
-	 * @return Last equation saved.
-	 */
-	EqnPtr undo();
-
-	/**
-	 * Get pointer to last equation saved.
-	 * @return Last equation saved.
-	 */
-	EqnPtr top();
-
-private:
-	std::vector<std::string> m_eqns; ///< List of pointer to equation objects in undo history.
-};
 #endif // __MILO_H

@@ -58,7 +58,7 @@ namespace UI {
 		using mouse_handler = bool (*)(EqnBox&, const MouseEvent&);
 		
 		/**
-		 * Function pointer to handle mouse event.
+		 * Function pointer to handle menu event.
 		 * Return true, if event changed equation.
 		 */
 		using menu_handler = bool (*)(EqnBox&);
@@ -71,19 +71,19 @@ namespace UI {
 		 * single initialization string.
 		 * @param init Initialization string.
 		 */
-	    EqnBox(const std::string& init) : EventBox(), m_eqn(new Equation(init))	{ pushUndo(); }
+	    EqnBox(const std::string& init) : EventBox(), m_eqn(new Equation(init))	{}
 
 		/** 
 		 * Constructor for EqnBox passing equation directly.
 		 * @param eqn Equation for this panel.
 		 */
-	    EqnBox(Equation* eqn) :	EventBox(), m_eqn(eqn) { pushUndo(); }
+	    EqnBox(Equation* eqn) :	EventBox(), m_eqn(eqn) {}
 
 		/** 
 		 * Constructor for EqnBox getting equation from XML paraser
 		 * @param in  XML parser object.
 		 */
-	    EqnBox(XML::Parser& in) : EventBox(), m_eqn(new Equation(in)) { pushUndo(); }
+	    EqnBox(XML::Parser& in) : EventBox(), m_eqn(new Equation(in)) {}
 
 		~EqnBox() {} ///< Virtual desctructor.
 		//@}
@@ -131,22 +131,6 @@ namespace UI {
 		int getBase() { return  m_eqn->getRoot()->getFrame().base; }
 		
 		/**
-		 * Push state of panel to undo stack.
-		 */
-		void pushUndo();
-		
-		/**
-		 * Restore state of panel on top of undo stack.
-		 */
-		void popUndo();
-
-		/**
-		 * Output panel contents as xml to XML stream.
-		 * @param XML stream class object.
-		 */
-		void xml_out(XML::Stream& xml) { xml << *m_eqn; }
-		
-		/**
 		 * Check where there is an active input in this equation object.
 		 * @return If true, there is an active input.
 		 */
@@ -183,18 +167,17 @@ namespace UI {
 		 * @param is Input stream containing xml.
 		 * @return Refrence to new equation
 		 */
-		Equation& newEqn(std::istream& is) {
-			m_eqn.reset(new Equation(is));
+		Equation& newEqn(XML::Parser& in) {
+			m_eqn.reset(new Equation(in));
 			return *m_eqn;
 		}
 		//@}
 
 	private:
 		EqnPtr        m_eqn;            ///< Shared pointer to current equation.
-		EqnUndoList   m_eqns;           ///< Equation undo stack
 		Node* m_start_select = nullptr; ///< If not null, node is selected.
-		int m_start_mouse_x  = -1;      ///< Horiz coord of start of mouse drag.
-		int m_start_mouse_y  = -1;      ///< Vertical coord of start of mouse drag
+		int m_start_mouse_x  = INT_MAX; ///< Horiz coord of start of mouse drag.
+		int m_start_mouse_y  = INT_MAX; ///< Vertical coord of start of mouse drag
 
 		/** @name Static member functions */
 		//@{
@@ -430,7 +413,9 @@ namespace UI {
 		 */
 	    EqnPanel(const std::string& init) :
 		    MiloPanel(),
-			m_eqnBox(init) {}
+			m_eqnBox(init) {
+				pushUndo();
+			}
 
 		/** 
 		 * Constructor for EqnPanel passing equation directly.
@@ -438,7 +423,9 @@ namespace UI {
 		 */
 	    EqnPanel(Equation* eqn) :
 		    MiloPanel(),
-			m_eqnBox(eqn) {}
+			m_eqnBox(eqn) {
+				pushUndo();
+			}
 
 		/** 
 		 * Constructor for EqnPanel getting equation from XML paraser
@@ -446,7 +433,9 @@ namespace UI {
 		 */
 	    EqnPanel(XML::Parser& in) :
 			MiloPanel(),
-			m_eqnBox(in) {}
+			m_eqnBox(in) {
+				pushUndo();
+			}
 
 		~EqnPanel() {} ///< Virtual desctructor.
 		//@}
@@ -457,20 +446,20 @@ namespace UI {
 		 * Handle key event.
 		 * @param key Key event.
 		 */
-		void doKey(const UI::KeyEvent& key) { m_eqnBox.doKey(key); }
+		void doKey(const UI::KeyEvent& key);
 
 		/**
 		 * Handle mouse event.
 		 * @param mouse Mouse event.
 		 */
-		void doMouse(const UI::MouseEvent& mouse) { m_eqnBox.doMouse(mouse); }
+		void doMouse(const UI::MouseEvent& mouse);
 
 		/**
 		 * Execute specific function based on its name. Used for menu handling.
 		 * @param menuFunctionName Name of menu function to be executed.
 		 * @return True if menuFunctionName found.
 		 */
-		bool doMenu(const std::string& menuFunctionName) { return m_eqnBox.doMenu(menuFunctionName); }
+		bool doPanelMenu(const std::string& menuFunctionName);
 		
 		/** Draw contents on window.
 		 */
@@ -493,22 +482,18 @@ namespace UI {
 		 * @return Base line.
 		 */
 		int getBase() { return m_eqnBox.getBase(); }
-		
-		/**
-		 * Push state to undo stack.
-		 */
-		void pushUndo() { m_eqnBox.pushUndo(); }
-		
-		/**
-		 * Restore state from top of undo stack.
-		 */
-		void popUndo() { m_eqnBox.popUndo(); }
 
 		/**
 		 * Output contents as xml to XML stream.
 		 * @param XML stream class object.
 		 */
-		void xml_out(XML::Stream& xml) { m_eqnBox.xml_out(xml); }
+		void xml_out(XML::Stream& xml) { m_eqnBox.getEqn().out(xml); }
+
+		/**
+		 * Copy panel state from string containing serialized contents.
+		 * @param str Serialized new contents for panel.
+		 */
+		void copy(XML::Parser& in);
 
 		/**
 		 * Check where there is an active input.
@@ -612,22 +597,6 @@ namespace UI {
 			int getBase() { return 0; }
 			
 			/**
-			 * Push state to undo stack.
-			 */
-			void pushUndo() {}
-			
-			/**
-			 * Restore state from top of undo stack.
-			 */
-			void popUndo() {}
-			
-			/**
-			 * Output contents as xml to XML stream.
-			 * @param XML stream class object.
-			 */
-			void xml_out(XML::Stream&) {}
-			
-			/**
 			 * Check where there is an active input.
 			 * @return If true, there is an active input.
 			 */
@@ -670,22 +639,20 @@ namespace UI {
 		 * Handle key event for panel
 		 * @param key Key event
 		 */
-		void doKey(const UI::KeyEvent& key) { getCurrentSide().doKey(key); }
+		void doKey(const UI::KeyEvent& key);
 
 		/**
 		 * Handle mouse event for panel
 		 * @param mouse Mouse event
 		 */
-		void doMouse(const UI::MouseEvent& mouse) { getCurrentSide().doMouse(mouse); }
+		void doMouse(const UI::MouseEvent& mouse);
 
 		/**
 		 * Execute panel specific function based on its name. Used for menu handling.
 		 * @param menuFunctionName Name of menu function to be executed.
 		 * @return True if menuFunctionName found.
 		 */
-		bool doMenu(const std::string& menuFunctionName) {
-			return getCurrentSide().doMenu(menuFunctionName);
-		}
+		bool doPanelMenu(const std::string& menuFunctionName);
 		
 		/** Handle redraw event
 		 */
@@ -708,22 +675,18 @@ namespace UI {
 		 * @return Base line.
 		 */
 		int getBase() { return 0; }
-		
-		/**
-		 * Push state of panel to undo stack.
-		 */
-		void pushUndo() { getCurrentSide().pushUndo(); }
-		
-		/**
-		 * Restore state of panel on top of undo stack.
-		 */
-		void popUndo() { getCurrentSide().popUndo(); }
 
 		/**
 		 * Output panel contents as xml to XML stream.
 		 * @param XML stream class object.
 		 */
 		void xml_out(XML::Stream& xml);
+
+		/**
+		 * Copy panel state from string containing serialized contents.
+		 * @param str Serialized new contents for panel.
+		 */
+		void copy(XML::Parser& in);
 
 		/**
 		 * Get type name of panel.

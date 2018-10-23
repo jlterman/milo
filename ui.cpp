@@ -31,10 +31,14 @@ static bool fRunning = true;                ///< When false, quit program.
 static MiloApp& app = MiloApp::getGlobal(); ///< Reference to current app
 
 unordered_map<string, menu_handler> MiloApp::menu_map = {
-	{ "undo",   []() { if (app.hasPanel()) { app.getPanel().popUndo(); } } },
 	{ "save",   []() { if (app.hasWindow()) { app.getWindow().save("milo.xml"); } } },
 	{ "redraw", []() { app.redraw_screen(); } },
 	{ "quit",   []() { fRunning = false; } } 
+};
+
+unordered_map<string, MiloPanel::menu_handler> MiloPanel::menu_map = {
+	{ "undo", [](MiloPanel& p) { p.doUndo(); } },
+	{ "redo", [](MiloPanel& p) { p.doRedo(); } }
 };
 
 unordered_map<string, MiloPanel::factory> MiloPanel::panel_map;
@@ -312,4 +316,66 @@ void MenuXML::parse_menu(XML::Parser& in)
 	}
 	else
 		throw logic_error("unknown type: " + value);
+}
+
+void MiloPanel::xml_out(string& str)
+{
+    ostringstream os;
+	XML::Stream xml(os);
+    xml_out(xml);
+    str = os.str();	
+}
+
+void MiloPanel::copy(const string& str)
+{
+	istringstream is(str);
+	XML::Parser in(is);
+	copy(in);
+}
+		
+void MiloPanel::pushUndo()
+{
+	string this_panel;
+	xml_out(this_panel);
+	if (m_current > -1) {
+		m_undo.erase(m_undo.begin() + m_current + 1, m_undo.end());
+		m_current = -1;
+	}
+	m_undo.push_back(this_panel);
+}
+		
+void MiloPanel::doUndo()
+{
+	if (m_undo.size() <= 1) {
+		return;
+	}
+	if (m_current == -1) {
+		m_current = m_undo.size() - 1;
+	}
+	--m_current;
+	copy(m_undo[m_current]);
+}
+
+void MiloPanel::doRedo()
+{
+	if (m_current == -1) {
+		return;
+	}
+	++m_current;
+	copy(m_undo[m_current]);
+	if (m_current == int(m_undo.size()) - 1) {
+		m_current = -1;
+	}
+}
+
+bool MiloPanel::doMenu(const string& menuFunctionName)
+{
+	auto menu_entry = menu_map.find(menuFunctionName);
+	if (menu_entry != menu_map.end()) {
+		(menu_entry->second)(*this);
+		return true;
+	}
+	else {
+		return doPanelMenu(menuFunctionName);
+	}
 }
