@@ -752,8 +752,7 @@ void CursesWindow::doMouse(MouseEvent& mouse)
 	int x, y;
 	mouse.getCoords(x, y);
 	for ( auto& p : m_panels ) {
-		if (p->getSize().inside(x, y)) {
-			p->getGraphics().localOrig(x, y);
+		if (p->getBox().inside(x, y)) {
 			mouse.setCoords(x, y);
 			m_current_panel = getPanelIterator(*p);
 			p->doMouse(mouse);
@@ -805,8 +804,13 @@ void CursesApp::do_loop()
 		}
 
 		if (hasPanel()) {
-			getPanel().getCursorOrig(xCursor, yCursor);
-			code = getGraphics().getChar(yCursor, xCursor - 1, getPanel().blink());
+			if (getPanel().blink()) {
+				getPanel().getCursorOrig(xCursor, yCursor);
+				code = getGraphics().getChar(yCursor, xCursor - 1, true);
+			}
+			else {
+				code = getGraphics().getChar(0, 0, false);
+			}
 		}
 		else {
 			continue;
