@@ -1,0 +1,20 @@
+--parse a^(b/c) --find 1,0 --xml-out
+<document>
+  <equation>
+    <expression>
+      <term>
+        <power>
+          <variable name="a"/>
+          <expression>
+            <term>
+              <divide>
+                <variable select="ALL" name="b"/>
+                <variable name="c"/>
+              </divide>
+            </term>
+          </expression>
+        </power>
+      </term>
+    </expression>
+  </equation>
+</document>

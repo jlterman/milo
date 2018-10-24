@@ -369,6 +369,31 @@ static void geometry(const string& params)
 	AsciiApp::gc->set(x, y, 0, 0);
 }
 
+/** Find node at given coordinate.
+ */
+static void find(const string& params)
+{
+	panel.calculateSize();
+	StringVector coords = split(',', params);
+	if (coords.size() == 2) {
+		int x = stoi(coords[0]);
+		int y = stoi(coords[1]);
+		Node* node = panel.getEqn().findNode(x, y);
+		panel.getEqn().setSelect(node);
+	}
+	else if (coords.size() == 4) {
+		int x = stoi(coords[0]);
+		int y = stoi(coords[1]);
+		int x0 = stoi(coords[2]);
+		int y0 = stoi(coords[3]);
+		Box b(x, y, x0, y0);
+		panel.getEqn().findNode(b);
+	}
+	else {
+		throw logic_error("--find does not expect " + to_string(coords.size()) + " arguments");
+	}
+}
+
 /** Output help to standard output.
  */
 static void help(const string&);
@@ -390,6 +415,7 @@ const unordered_map<string, func_ptr> test_funcs = {
 	{ "simplify",  simplify  },
 	{ "keys:",     keys      },
 	{ "geom:",     geometry  },
+	{ "find:",     find      },
 	{ "help",      help      }
 };
 
