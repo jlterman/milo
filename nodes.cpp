@@ -208,14 +208,6 @@ void Differential::drawNode(UI::Graphics& gc) const
 	m_function->draw(gc);
 }
 
-Node* Differential::findNode(const Box& b)
-{
-	if (getFrame().box.inside(b))
-		return this;
-	else
-		return m_function->findNode(b);
-}
-
 const Constant::const_map Constant::constants = {
 	{ 'e', Complex(exp(1.0), 0) },
 	{ 'P', Complex(4*atan(1.0), 0) },
@@ -576,14 +568,6 @@ Node* Function::findNode(int x, int y)
 	return m_arg->findNode(x, y);
 }
 
-Node* Function::findNode(const Box& b)
-{
-	if (getFrame().box.inside(b))
-		return this;
-	else
-		return m_arg->findNode(b);
-}
-
 Node* Binary::findNode(int x, int y)
 {
 	Node* node = m_first->findNode(x, y);
@@ -591,31 +575,11 @@ Node* Binary::findNode(int x, int y)
 	return node;
 }
 
-Node* Binary::findNode(const Box& b)
-{
-	if (getFrame().box.inside(b))
-		return this;
-	else if (m_first->getFrame().box.intersect(b))
-		return m_first->findNode(b);
-	else
-		return m_second->findNode(b);
-}
-
 Node* Term::findNode(int x, int y)
 {
 	Node* node = nullptr;
 	for ( auto n : factors ) {
 		node = n->findNode(x, y);
-		if (node) break;
-	}
-	return node;
-}
-
-Node* Term::findNode(const Box& b)
-{
-	Node* node = nullptr;
-	for ( auto n : factors ) {
-		node = n->findNode(b);
 		if (node) break;
 	}
 	return node;
@@ -633,18 +597,6 @@ Node* Expression::findNode(int x, int y)
 	Node* node = nullptr;
 	for ( auto n : terms ) {
 		node = n->findNode(x, y);
-		if (node) break;
-	}
-	return node;
-}
-
-Node* Expression::findNode(const Box& b)
-{
-	if (getFrame().box.inside(b)) return this;
-	
-	Node* node = nullptr;
-	for ( auto n : terms ) {
-		node = n->findNode(b);
 		if (node) break;
 	}
 	return node;

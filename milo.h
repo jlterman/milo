@@ -166,14 +166,6 @@ public:
 	virtual Node* findNode(int x, int y);
 
 	/**
-	 * Virtual recursive function to return first node from a top to bottom
-	 * search whose frame is inside Box b.
-	 * @param b Bounding box.
-	 * @return Top node inside bounding box.
-	 */
-	virtual Node* findNode(const Box& b);
-
-	/**
 	 * Virtual function that queries node of number of factor in its subtree.
 	 * Default function returns 1 which is correct for leaf node. Non-leaf 
 	 * node queries its children.
@@ -559,14 +551,6 @@ public:
 	Node* findNode(int x, int y);
 
 	/**
-	 * Recursive function to return first node from a top to bottom
-	 * search whose frame is inside Box b.
-	 * @param b Bounding box.
-	 * @return Top node inside bounding box.
-	 */
-	Node* findNode(const Box& b);
-
-	/**
 	 * Get number of factor in this subtree.
 	 * @return Return total number of factors in term.
 	 */
@@ -837,14 +821,6 @@ public:
 	 * @return Deepest node at point (x,y).	 
 	 */
 	Node* findNode(int x, int y);
-
-	/**
-	 * Recursive function to return first node from a top to bottom
-	 * search whose frame is inside Box b.
-	 * @param b Bounding box.
-	 * @return Top node inside bounding box.
-	 */
-	Node* findNode(const Box& b);
 
 	/**
 	 * Get number of factors in this node.
@@ -1538,20 +1514,11 @@ public:
 	Node* findNode(int x, int y) { return m_root->findNode(x, y); }
 
 	/**
-	 * Query root node for shallowest factor node at inside rectangle box in given graphics context.
-	 * Call findNode(UI::Graphics&, Box&) method of root node.
-	 * @param b Bounding box
-	 * @return Node found inside bounding box b. Null if none found.
-	 */
-	Node* findNode(Box b) { return m_root->findNode(b); }
-
-	/**
-	 * Select region starting from Node object start to last node still in bounding
+	 * Select nodes inside bounding box inside same expression.
 	 * rectangle b.
-	 * @param start Starting node.
 	 * @param b Bounding box.
 	 */
-	void selectBox(Node* start, Box b);
+	void selectBox(Box b);
 
 	/**
 	 * Erase current selection and replace with new node.

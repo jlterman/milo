@@ -387,7 +387,7 @@ static void find(const string& params)
 		int x0 = stoi(coords[2]);
 		int y0 = stoi(coords[3]);
 		Box b(x, y, x0, y0);
-		panel.getEqn().findNode(b);
+		panel.getEqn().selectBox(b);
 	}
 	else {
 		throw logic_error("--find does not expect " + to_string(coords.size()) + " arguments");

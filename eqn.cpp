@@ -481,6 +481,10 @@ bool EqnBox::do_mouse_position(const MouseEvent& mouse)
 	};
 	LOG_TRACE_MSG("mouse position current box: " + box.toString());
 
+	m_eqn->selectBox(box);
+	m_eqn->draw(*m_gc);
+	return false;
+/*	
 	if (m_start_select != nullptr && box.area() > 1 ) {
 		Node* new_select = m_eqn->findNode(box);
 		LOG_TRACE_MSG("node found: " + ((new_select == nullptr) ? "None" : new_select->toString()));
@@ -501,6 +505,7 @@ bool EqnBox::do_mouse_position(const MouseEvent& mouse)
 		}
 	}
 	return false;
+*/
 }
 const unordered_map<MouseEvent, EqnBox::mouse_handler> EqnBox::mouse_event_map = {
 	{ MouseEvent(Mouse::RELEASED, 1), [](EqnBox& p, const MouseEvent& m) { return p.do_mouse_released(m); } },

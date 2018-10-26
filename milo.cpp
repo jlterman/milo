@@ -317,6 +317,7 @@ void Equation::clearSelect()
 {
 	if (m_selectStart) m_selectStart->setSelect(Node::Select::NONE);
 	if (m_selectEnd) m_selectEnd->setSelect(Node::Select::NONE);
+	m_selectStart = m_selectEnd = nullptr;
 }
 
 void Equation::setSelect(Node* start, Node* end)
@@ -362,12 +363,28 @@ void Equation::setSelectFromNode(Node* node)
 	}
 }
 
-void Equation::selectBox(Node* start, Box b)
+void Equation::selectBox(Box b)
 {
-	if (!start->getParent() || start->getParent()->getType() != Term::type) {
-		setSelect(start);
-		return;
+	clearSelect();
+	auto node_iter = begin();
+	while (node_iter != end() && !(*node_iter)->getFrame().box.inside(b)) { ++node_iter; }
+	if (node_iter == end()) return;
+
+	// Node iterator are always leafs. Find ancestor node inside box.
+	Node* start = *node_iter;
+	while (start->getParent() && start->getParent()->getFrame().box.inside(b)) {
+		// Skip a term and look at the expression above
+		if (!start->getParent()->isFactor()) {
+			if (start->getParent()->getParent()->getFrame().box.inside(b)) {
+				start = start->getParent();
+			}
+			else {
+				break;
+			}
+		}
+		start = start->getParent();
 	}
+
 	Node* end = nullptr;
 	FactorIterator itr(start);
 	while (!itr.isEnd() && (*itr)->getFrame().box.inside(b)) {
@@ -380,14 +397,6 @@ void Equation::selectBox(Node* start, Box b)
 Node* Node::findNode(int x, int y)
 {
 	if (getFrame().box.inside(x, y))
-		return this;
-	else
-		return nullptr;
-}
-
-Node* Node::findNode(const Box& b)
-{
-	if (getFrame().box.inside(b))
 		return this;
 	else
 		return nullptr;
@@ -411,7 +420,10 @@ void NodeIterator::prev()
 FactorIterator::FactorIterator(Node* node) : m_node(node)
 {
 	if (!m_node) return;
-
+	if (!m_node->getParent() || m_node->getParent()->isFactor()) {
+		m_node = nullptr;
+		return;
+	}
 	m_pTerm = dynamic_cast<Term*>(m_node->getParent());
 	m_gpExpr = dynamic_cast<Expression*>(m_pTerm->getParent());
 	m_factor_index = m_pTerm->factors.get_index(m_node);
